@@ -19,7 +19,7 @@ FILES = os.path.join(HERE, 'files')
 OUT = os.path.join(HERE, 'out')
 os.makedirs(OUT, exist_ok=True)
 
-CASES = ['photo.jpg', 'shot.png', 'offer.docx', 'fees.xlsx', 'pitch.pptx', 'memo.pdf']
+CASES = ['photo.jpg', 'shot.png', 'offer.docx', 'fees.xlsx', 'pitch.pptx', 'memo.pdf', 'memo-z.pdf']
 LEAKS = [b'Okafor', b'Priya', b'Delacroix', b'Lightroom', b'GIMP', b'iPhone', b'Oxford', b'Northwind', b'DEL-2026', b'Byrne', b'confidential']
 
 failures = []
@@ -31,7 +31,7 @@ def check(cond, msg):
         failures.append(msg)
 
 
-def verify(name, data, before):
+def verify(name, data, before, fig=''):
     ext = name.rsplit('.', 1)[1]
     leaks = [l for l in LEAKS if l in data]
     if ext == 'pdf':
@@ -45,7 +45,14 @@ def verify(name, data, before):
         check(all(not v for v in info.values()), f'pdf: Info values blank ({info})')
         xmp = r.xmp_metadata
         blank = lambda v: not ''.join(v if isinstance(v, list) else [v or '']).strip()
-        check(xmp is None or (blank(xmp.dc_creator) and blank(xmp.xmp_creator_tool)), f'pdf: XMP creator and tool blank ({xmp and xmp.dc_creator}, {xmp and xmp.xmp_creator_tool})')
+        if name == 'memo-z.pdf':
+            # The compressed stream is kept, and the page must say so rather than claim a clean file.
+            check(xmp is not None and not blank(xmp.dc_creator), f'pdf-z: compressed XMP kept, creator still present ({xmp and xmp.dc_creator})')
+            check('compressed XMP stream' in fig and 'shown and kept' in fig, 'pdf-z: figure note says the compressed stream is shown and kept')
+            check('8 removed, 1 kept' in fig, f'pdf-z: after line counts the kept field')
+        else:
+            check(xmp is None or (blank(xmp.dc_creator) and blank(xmp.xmp_creator_tool)), f'pdf: XMP creator and tool blank ({xmp and xmp.dc_creator}, {xmp and xmp.xmp_creator_tool})')
+            check('removed.' in fig and 'kept' not in fig.split('Before:')[-1], 'pdf: after line has no kept count')
         return
     check(not leaks, f'{ext}: no leaked strings ({leaks})')
     if ext in ('jpg', 'png'):
@@ -116,14 +123,23 @@ with sync_playwright() as p:
         with open(path, 'rb') as f:
             before = f.read()
         check(dl.value.suggested_filename == name.replace('.', '-clean.'), f'named {dl.value.suggested_filename}')
-        verify(name, data, before)
+        verify(name, data, before, page.inner_text('figure'))
     # Edge states.
     page.set_input_files('input[type=file]', os.path.join(FILES, 'clean.jpg'))
     page.wait_for_timeout(600)
     check('Nothing to remove' in page.inner_text('figure'), 'clean.jpg: nothing to remove')
     page.set_input_files('input[type=file]', os.path.join(FILES, 'notes.txt'))
     page.wait_for_timeout(600)
-    check('cannot read .txt' in page.inner_text('figure'), 'notes.txt: unsupported')
+    check('cannot read .txt files yet' in page.inner_text('figure'), 'notes.txt: unsupported by kind')
+    page.set_input_files('input[type=file]', os.path.join(FILES, 'notajpeg.jpg'))
+    page.wait_for_timeout(600)
+    check('This .jpg does not begin like a JPEG' in page.inner_text('figure'), 'notajpeg.jpg: refused by first bytes')
+    # The picker is single-file; two files only arrive by drop, so drop them.
+    dt = page.evaluate_handle('''() => { const dt = new DataTransfer(); dt.items.add(new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], 'photo.jpg')); dt.items.add(new File(['x'], 'shot.png')); return dt }''')
+    page.dispatch_event('figure', 'drop', {'dataTransfer': dt})
+    page.wait_for_timeout(600)
+    check('ONE FILE AT A TIME, READING PHOTO.JPG' in page.inner_text('figcaption').upper(), 'two files: reads the first and says so')
+    check(page.get_attribute('figcaption', 'aria-live') == 'polite', 'figcaption is a live region')
     check(not errors, f'no page errors ({errors})')
     check(len(requests) == n0, f'no network requests during {len(CASES)} reads and cleans ({requests[n0:]})')
     b.close()

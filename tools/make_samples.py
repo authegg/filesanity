@@ -184,8 +184,11 @@ def main():
     p.save(os.path.join(TST, 'pitch.pptx'))
     add_custom_and_app(os.path.join(TST, 'pitch.pptx'), 'Microsoft Office PowerPoint', 'Delacroix Partners', 'H. Delacroix', 63)
 
-    # PDF with an Info dictionary and an uncompressed XMP stream.
+    # PDF with an Info dictionary and an uncompressed XMP stream; and one whose XMP is a FlateDecode stream (Word, Acrobat).
     open(os.path.join(TST, 'memo.pdf'), 'wb').write(make_pdf())
+    open(os.path.join(TST, 'memo-z.pdf'), 'wb').write(make_pdf(compressed=True))
+    # A text file renamed .jpg: refused by its first bytes, not its name.
+    open(os.path.join(TST, 'notajpeg.jpg'), 'w').write('this is text wearing a .jpg name\n')
 
     # Unsupported type.
     open(os.path.join(TST, 'notes.txt'), 'w').write('plain text has no metadata FileSanity reads\n')
@@ -227,8 +230,11 @@ def add_custom_and_app(path, app, company, manager, total_time):
             out.writestr(n, b)
 
 
-def make_pdf():
+def make_pdf(compressed=False):
+    import zlib
     xmp = XMP.replace(b'Adobe Lightroom 8.2 (iOS)', b'Microsoft Word for Mac  ')
+    if compressed:
+        xmp = zlib.compress(xmp.replace(b'M. Okafor', b'Z. Aalto '))
     objs = []
     objs.append(b'<< /Type /Catalog /Pages 2 0 R /Metadata 6 0 R >>')
     objs.append(b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>')
@@ -236,7 +242,7 @@ def make_pdf():
     content = b'BT /F1 18 Tf 72 760 Td (Internal memo. Do not forward.) Tj ET'
     objs.append(b'<< /Length ' + str(len(content)).encode() + b' >>\nstream\n' + content + b'\nendstream')
     objs.append(b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
-    objs.append(b'<< /Type /Metadata /Subtype /XML /Length ' + str(len(xmp)).encode() + b' >>\nstream\n' + xmp + b'\nendstream')
+    objs.append(b'<< /Type /Metadata /Subtype /XML ' + (b'/Filter /FlateDecode ' if compressed else b'') + b'/Length ' + str(len(xmp)).encode() + b' >>\nstream\n' + xmp + b'\nendstream')
     objs.append(b'<< /Title (Internal memo) /Author (Priya Raman) /Subject (Northwind fees) /Keywords (confidential) '
                 b'/Creator (Microsoft Word for Mac) /Producer (macOS Version 15.4 Quartz PDFContext) '
                 b'/CreationDate (D:20260412090351+01\'00\') /ModDate (D:20260412091200+01\'00\') >>')
