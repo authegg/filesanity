@@ -1,0 +1,6 @@
+node_modules
+dist
+dist-artifact
+tests/out
+assets-src/codex.log
+*.local
