@@ -13,7 +13,7 @@ export default function Formats() {
     <>
       <PageHead
         eyebrow="Formats"
-        title="Every format, read and removed."
+        title="What is read and what is removed."
         lede="Files are told apart by their first bytes, not their names. Each format has its own parser, written for this page and small enough to read. This is the whole list."
       />
       <Section labelledBy="h-read">

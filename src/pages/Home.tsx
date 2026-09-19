@@ -61,7 +61,7 @@ export default function Home({ p }: { p: PickerApi }) {
               <div className="p-6 sm:p-8">
                 <h3 className="text-[1.25rem]">Photos</h3>
                 <p className="mt-2 max-w-[48ch] text-muted">JPEG and PNG carry the camera and lens, the exact time, GPS coordinates to a few metres, the owner's name, the software used, and often a small copy of the original picture from before it was cropped.</p>
-                <span className="mt-4 inline-flex items-center gap-2 text-[0.875rem] font-medium">Read about photos <ArrowRight size={14} weight="light" className="transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true" /></span>
+                <span className="mt-4 inline-flex items-center gap-2 text-[0.875rem] font-medium">Read about photos <ArrowRight size={14} weight="light" className="transition-transform duration-300 ease-[var(--ease)] group-hover:translate-x-0.5" aria-hidden="true" /></span>
               </div>
             </div>
           </a>
@@ -71,7 +71,7 @@ export default function Home({ p }: { p: PickerApi }) {
               <div className="p-6 sm:p-8">
                 <h3 className="text-[1.25rem]">Word, Excel, PowerPoint</h3>
                 <p className="mt-2 text-muted">Author, company, who last saved it, the revision count, total editing time, and the names on every comment and tracked change.</p>
-                <span className="mt-4 inline-flex items-center gap-2 text-[0.875rem] font-medium">Read about documents <ArrowRight size={14} weight="light" className="transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true" /></span>
+                <span className="mt-4 inline-flex items-center gap-2 text-[0.875rem] font-medium">Read about documents <ArrowRight size={14} weight="light" className="transition-transform duration-300 ease-[var(--ease)] group-hover:translate-x-0.5" aria-hidden="true" /></span>
               </div>
             </div>
           </a>
@@ -79,7 +79,7 @@ export default function Home({ p }: { p: PickerApi }) {
             <div className="plate flex h-full flex-col bg-[linear-gradient(160deg,var(--panel),var(--accent-tint))] p-6 sm:p-8">
               <h3 className="text-[1.25rem]">PDF</h3>
               <p className="mt-2 text-muted">The Info dictionary and the XMP packet: author, creator software, producer, creation and modification dates. Some of it sits in compressed streams, and the page says which.</p>
-              <span className="mt-4 inline-flex items-center gap-2 text-[0.875rem] font-medium">Read about PDF <ArrowRight size={14} weight="light" className="transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true" /></span>
+              <span className="mt-4 inline-flex items-center gap-2 text-[0.875rem] font-medium">Read about PDF <ArrowRight size={14} weight="light" className="transition-transform duration-300 ease-[var(--ease)] group-hover:translate-x-0.5" aria-hidden="true" /></span>
             </div>
           </a>
         </div>

@@ -1,13 +1,13 @@
 import { Check } from '@phosphor-icons/react'
 import { MAIL } from '../content'
-import { Closer, PageHead, Pill, Section } from '../ui/bits'
+import { Closer, Mailbox, PageHead, Pill, Section } from '../ui/bits'
 
 export const meta = {
   title: 'Pricing: free, no account, no upload',
   description: 'Everything on this site is free with no account and no limit. Pro and Teams plans for batches, an API and a browser extension are coming; no prices are set yet.',
 }
 
-const FREE = ['Every format on the formats page', 'No file size limit and no daily count', 'No account, no email, no cookie', 'Works offline once loaded', 'The full field table for every file', 'The source, readable in your browser']
+const FREE = ['Every format on the formats page', 'No file size limit and no daily count', 'No account, no email, no cookie', 'Works offline once loaded', 'The parser source, published as plain text']
 
 export default function Pricing() {
   const subject = encodeURIComponent('Tell me when Pro is ready')
@@ -65,7 +65,7 @@ export default function Pricing() {
       </Section>
       <Closer
         title="Hear when Pro is ready."
-        text={`A plain email, no list to join. Write to ${MAIL} and you will get one reply when there is something to try.`}
+        text={<>A plain email, no list to join. Write to <Mailbox /> and you will get one reply when there is something to try.</>}
         cta={<Pill href={`mailto:${MAIL}?subject=${subject}&body=${body}`}>Email us</Pill>}
       />
     </>

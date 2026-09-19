@@ -1,5 +1,5 @@
-import { ClientNote, PageHead, Section } from '../ui/bits'
-import { LAUNCH, MAIL } from '../content'
+import { ClientNote, Mailbox, PageHead, Section } from '../ui/bits'
+import { LAUNCH } from '../content'
 
 export const meta = {
   title: 'Terms of use',
@@ -26,8 +26,9 @@ export default function Terms() {
           <p>To the extent the law allows, we are not liable for any loss arising from use of the site, including loss caused by a field that was not removed. Nothing in these terms limits liability that cannot be limited by law.</p>
           <h2>6. Changes and law</h2>
           <p>We may change these terms; the date at the top and the changelog will say when. The governing law and the courts are those of the country where the operating company is registered, which is stated on the about page.</p>
+          <ClientNote>Client to supply: the country of registration, here and on the about page.</ClientNote>
           <h2>7. Contact</h2>
-          <p>Questions about these terms go to {MAIL}.</p>
+          <p>Questions about these terms go to <Mailbox />.</p>
         </div>
       </Section>
     </>

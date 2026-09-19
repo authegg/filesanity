@@ -190,10 +190,10 @@
   .burger span:last-child { translate: 0 3px; }
   .burger[aria-expanded='true'] span:first-child { translate: 0 0; rotate: 45deg; }
   .burger[aria-expanded='true'] span:last-child { translate: 0 0; rotate: -45deg; }
-  .menu { transition: opacity 400ms var(--ease), visibility 0s 400ms; }
-  .menu[data-open='true'] { transition: opacity 400ms var(--ease), visibility 0s; }
-  .menu a, .menu .menu-item { opacity: 0; translate: 0 2rem; transition: opacity 500ms var(--ease), translate 600ms var(--ease); transition-delay: var(--d, 0ms); }
-  .menu[data-open='true'] a, .menu[data-open='true'] .menu-item { opacity: 1; translate: 0 0; }
+  .menu { opacity: 0; visibility: hidden; transition: opacity 400ms var(--ease), visibility 0s 400ms; }
+  .menu[data-open='true'] { opacity: 1; visibility: visible; transition: opacity 400ms var(--ease), visibility 0s; }
+  .menu .menu-item { opacity: 0; translate: 0 2rem; transition: opacity 500ms var(--ease), translate 600ms var(--ease); transition-delay: var(--d, 0ms); }
+  .menu[data-open='true'] .menu-item { opacity: 1; translate: 0 0; }
 
   .spin { animation: spin 900ms linear infinite; }
   @keyframes spin { to { rotate: 360deg; } }
@@ -201,6 +201,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .js [data-reveal] { opacity: 1; translate: 0 0; transition: none; }
-  .menu a, .menu .menu-item, .burger span, .pill, .pill .orb, .menu { transition-duration: 0.01ms; }
+  .menu .menu-item, .burger span, .pill, .pill .orb, .menu { transition-duration: 0.01ms; }
   .spin { animation: none; }
 }

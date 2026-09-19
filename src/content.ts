@@ -1,7 +1,8 @@
 /** Shared facts. A number or a format that appears on two pages comes from here. */
 
 export const SITE = 'https://filesanity.com' // CLIENT: placeholder until the domain is confirmed
-export const MAIL = 'hello@filesanity.com' // CLIENT: placeholder address
+export const MAIL = 'hello@filesanity.com' // CLIENT: placeholder address; rendered only through <Mailbox /> so the mark travels with it
+export const POSTAL: string[] | null = null // CLIENT: the registered postal address, one line per element; null renders the client note
 export const LAUNCH = '20 September 2026'
 export const VERSION = '1.0'
 
@@ -15,8 +16,7 @@ export const FORMATS: Format[] = [
   { name: 'PowerPoint', ext: '.pptx', status: 'read', read: 'core.xml, app.xml and custom.xml, the thumbnail', removed: 'The three property parts are emptied, the thumbnail is dropped, the zip timestamps are reset.' },
   { name: 'PDF', ext: '.pdf', status: 'read', read: 'The Info dictionary (author, creator, producer, title, subject, keywords, dates) and the XMP packet', removed: 'Info values and an uncompressed XMP packet are blanked in place, same length, so nothing else in the file moves. A compressed XMP stream, which is what Word and Acrobat usually write, is shown and kept, and the page says so. Metadata inside compressed object streams is not read yet.' },
   { name: 'Video and audio', ext: '.mp4, .mov, .m4a, .m4v', status: 'not-yet', read: 'Not read yet', removed: 'Not yet. The udta and meta atoms are on the list.' },
-  { name: 'GIF', ext: '.gif', status: 'not-yet', read: 'Not read yet', removed: 'Not yet.' },
-  { name: 'TIFF', ext: '.tif, .tiff', status: 'not-yet', read: 'Not read yet', removed: 'Not yet.' },
+  { name: 'GIF and TIFF', ext: '.gif, .tif, .tiff', status: 'not-yet', read: 'Not read yet', removed: 'Not yet.' },
   { name: 'Photoshop', ext: '.psd', status: 'not-yet', read: 'Not read yet', removed: 'Not yet.' },
   { name: 'Legacy Office', ext: '.doc, .xls, .ppt', status: 'not-yet', read: 'Not read yet', removed: 'Not yet. The binary formats need a different parser.' },
   { name: 'OpenDocument', ext: '.odt, .ods, .odp', status: 'not-yet', read: 'Not read yet', removed: 'Not yet.' },
@@ -46,7 +46,7 @@ export const FAQ: { group: string; items: [string, string][] }[] = [
     items: [
       ['Why not just use metacleaner?', 'metacleaner and the sites like it upload your file to a server, clean it there and send it back, so you have to trust their storage, their logs and their deletion policy. FileSanity never has the file. That is not a promise; it is how the page is built.'],
       ['Do you use cookies or analytics?', 'No. The site sets no cookies and loads no analytics or advertising script, which is why there is no cookie banner. The privacy policy is short because there is nothing to describe.'],
-      ['Can I see the source?', 'Yes. The site is a static bundle with no server half: what your browser downloads is everything there is. View it with the browser\'s own tools. Every parser is a few hundred lines written for this page, with no metadata library behind it.'],
+      ['Can I see the source?', 'Yes. The parsers are published as plain text at /source, and the shipped script carries a source map, so the browser\'s developer tools show the original files rather than the minified bundle. There is no server half. Every parser is a few hundred lines written for this page, with no metadata library behind it.'],
       ['Who is behind this?', 'A small company with no investors and no data business. The about page says what it is and what it will not do; the contact page has the address.'],
     ],
   },

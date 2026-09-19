@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ArrowRight } from '@phosphor-icons/react'
+import { MAIL } from '../content'
 
 /** Page header for every page but the home. */
 export function PageHead({ eyebrow, title, lede, children }: { eyebrow?: string; title: string; lede?: ReactNode; children?: ReactNode }) {
@@ -33,7 +34,7 @@ export function Pill({ href, children, ghost, className = '' }: { href: string; 
 }
 
 /** The closing band: a bezel plate with the statement left and the one CTA right. */
-export function Closer({ title, text, cta }: { title: string; text: string; cta?: ReactNode }) {
+export function Closer({ title, text, cta }: { title: string; text: ReactNode; cta?: ReactNode }) {
   return (
     <Section>
       <div className="bezel bezel-lg" data-reveal="">
@@ -46,6 +47,16 @@ export function Closer({ title, text, cta }: { title: string; text: string; cta?
         </div>
       </div>
     </Section>
+  )
+}
+
+/** The mailbox, always with its mark: the address is a placeholder on the assumed domain until the client confirms it. */
+export function Mailbox() {
+  return (
+    <span>
+      <a className="link [overflow-wrap:anywhere]" href={`mailto:${MAIL}`}>{MAIL}</a>
+      <span className="ml-1.5 rounded bg-accent-tint px-1.5 py-0.5 align-middle text-[0.6875rem] font-medium text-accent-deep">client to confirm</span>
+    </span>
   )
 }
 

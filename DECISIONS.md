@@ -398,6 +398,51 @@ hover demonstration does not exist on the phone.
   client's archetype is silver-grey. Logged as the archetype, not a
   reflex.
 
+## Critic round 1 (2026-09-20): FAIL 10, all fixed
+
+- [2026-09-20] chose to ship a source map (`build.sourcemap: true`) and
+  to publish `src/lib/*.ts` as plain text at `/source/` (a `.txt` suffix,
+  because static hosts serve `.ts` as video/mp2t; an index page lists
+  them; Security links it) over removing the "readable source" claim,
+  because the claim is the trust argument and now it is true in one
+  click; the three sentences (FAQ, Pricing, Security) were reworded to
+  say exactly that.
+- [2026-09-20] chose one `<Mailbox />` component that renders the
+  address with its "client to confirm" mark everywhere it appears
+  (Pricing, Contact, Privacy, Terms) over dropping the mailbox from the
+  legal pages, because a policy with no contact is worse than a marked
+  one.
+- [2026-09-20] chose client notes inside Privacy §7 and Terms §6, and
+  folded About's and Contact's in-voice placeholders into the tinted
+  note; the postal block renders only when `POSTAL` in `src/content.ts`
+  is set.
+- [2026-09-20] chose `inert` on every sibling of the header plus a Tab
+  wrap inside the header while the menu is open over a focus-trap
+  library; Chromium lets Tab leave to the browser chrome after the last
+  control, so the wrap is needed with inert. Verified twelve Tabs in
+  both engines.
+- [2026-09-20] chose `ease-[var(--ease)]` on every Tailwind
+  transition-colors and transition-transform utility over the default
+  cubic-bezier(0.4, 0, 0.2, 1); `tools/verify.py` now reads the computed
+  timing function of every transitioned element on every route.
+- [2026-09-20] chose hairline-topped items in two columns for Security's
+  "what the site does not have" over six equal bezel cards (three equal
+  cards, tells.md), and the threat model stays on dl rows: the two lists
+  are two families.
+- [2026-09-20] reworded Formats to "What is read and what is removed."
+  and About to "A small company that does one thing."; PDF keeps "A PDF
+  knows what made it, and when." (House comma fragment noticed): the
+  comma is the sentence's own, "what made it" and "when" are the two
+  fields the page is about.
+- [2026-09-20] cut every divided list to five: Pricing Free (merged the
+  table line into the format line, the source line reworded), Formats
+  not-yet (GIF and TIFF as one row), the threat model (formats not yet
+  read and PDF streams as one entry).
+- [2026-09-20] chose DOM order over `z-[-1]`: the menu overlay comes
+  before the nav pill inside the fixed header so the pill paints over it
+  with no z-index; the inline opacity/visibility style is gone, CSS on
+  `data-open` drives both.
+
 # v1 record, 2026-09-19 (superseded; the parser calls below still hold)
 
 ## v1 log

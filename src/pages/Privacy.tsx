@@ -1,5 +1,5 @@
-import { ClientNote, PageHead, Section } from '../ui/bits'
-import { LAUNCH, MAIL } from '../content'
+import { ClientNote, Mailbox, PageHead, Section } from '../ui/bits'
+import { LAUNCH } from '../content'
 
 export const meta = {
   title: 'Privacy policy',
@@ -21,13 +21,14 @@ export default function Privacy() {
           <h2>3. Cookies, analytics and third parties</h2>
           <p>The site sets no cookies and uses no local storage. It loads no analytics, advertising or error-reporting script and embeds nothing from a third party. There is no cookie banner because there is nothing to consent to.</p>
           <h2>4. Email</h2>
-          <p>If you write to us at {MAIL}, we keep your message for as long as it takes to answer it and for our records after that. We do not add you to a list. You can ask us to delete the correspondence at any time.</p>
+          <p>If you write to us at <Mailbox />, we keep your message for as long as it takes to answer it and for our records after that. We do not add you to a list. You can ask us to delete the correspondence at any time.</p>
           <h2>5. Your rights</h2>
           <p>Because we hold no data about your use of the site, there is nothing to access, correct, export or erase, other than any email you have sent us, which you may ask us to delete.</p>
           <h2>6. Changes</h2>
           <p>If the site ever gains a feature that collects anything, this page will be rewritten before that feature ships, the date at the top will change, and the changelog will say so.</p>
           <h2>7. Who we are</h2>
-          <p>The company that operates this site is named on the about page, with the address on the contact page. Questions about this policy go to {MAIL}.</p>
+          <p>The company that operates this site is named on the about page, with its address on the contact page. Questions about this policy go to <Mailbox />.</p>
+          <ClientNote>Client to supply: the operating company's legal name and address, here and on the about and contact pages.</ClientNote>
         </div>
       </Section>
     </>

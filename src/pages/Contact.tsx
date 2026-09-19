@@ -1,5 +1,5 @@
-import { MAIL } from '../content'
-import { ClientNote, PageHead, Pill, Section } from '../ui/bits'
+import { MAIL, POSTAL } from '../content'
+import { ClientNote, Mailbox, PageHead, Pill, Section } from '../ui/bits'
 
 export const meta = {
   title: 'Contact FileSanity',
@@ -16,21 +16,19 @@ export default function Contact() {
             <div className="plate flex h-full flex-col p-6 sm:p-8">
               <h2 className="text-[1.5rem]">Email</h2>
               <p className="mt-2 max-w-[44ch] text-muted">Reports about a parser or the site are answered first. Anything else within a few days.</p>
-              <p className="mt-4 text-[1.125rem] font-medium">{MAIL}</p>
+              <p className="mt-4 text-[1.125rem] font-medium"><Mailbox /></p>
               <div className="mt-6"><Pill href={`mailto:${MAIL}`}>Email us</Pill></div>
-              <ClientNote>Client to confirm: the mailbox above is a placeholder on the assumed domain.</ClientNote>
             </div>
           </div>
           <div className="bezel" data-reveal="" style={{ '--d': '80ms' } as React.CSSProperties}>
             <div className="plate flex h-full flex-col p-6 sm:p-8">
               <h2 className="text-[1.5rem]">Post</h2>
               <p className="mt-2 max-w-[44ch] text-muted">For anything that needs a signature.</p>
-              <address className="mt-4 not-italic leading-relaxed text-muted">
-                FileSanity<br />
-                Registered address to follow<br />
-                Country to follow
-              </address>
-              <ClientNote>Client to supply: the registered postal address.</ClientNote>
+              {POSTAL ? (
+                <address className="mt-4 not-italic leading-relaxed text-muted">{POSTAL.map((l) => <span key={l} className="block">{l}</span>)}</address>
+              ) : (
+                <ClientNote>Client to supply: the registered postal address. The block renders once it is set in src/content.ts.</ClientNote>
+              )}
             </div>
           </div>
         </div>

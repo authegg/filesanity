@@ -16,14 +16,24 @@ export function Nav({ path, onClean }: { path: string; onClean?: () => void }) {
   const [open, setOpen] = useState(false)
   const first = useRef<HTMLAnchorElement>(null)
   const burger = useRef<HTMLButtonElement>(null)
+  const header = useRef<HTMLElement>(null)
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
+    // Everything outside the header is inert while the menu is open, so Tab stays inside nav and menu.
+    document.querySelectorAll<HTMLElement>('#root > :not(header)').forEach((el) => el.toggleAttribute('inert', open))
     if (open) first.current?.focus()
     const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
+      if (!open) return
+      if (e.key === 'Escape') {
         setOpen(false)
         burger.current?.focus()
+      } else if (e.key === 'Tab') {
+        // Wrap inside the header: inert covers the page, this covers the browser chrome.
+        const items = Array.from(header.current?.querySelectorAll<HTMLElement>('a[href], button') ?? []).filter((el) => el.tabIndex >= 0 && el.offsetParent !== null)
+        const i = items.indexOf(document.activeElement as HTMLElement)
+        if (e.shiftKey && (i <= 0)) { e.preventDefault(); items[items.length - 1]?.focus() }
+        else if (!e.shiftKey && i === items.length - 1) { e.preventDefault(); items[0]?.focus() }
       }
     }
     window.addEventListener('keydown', key)
@@ -43,7 +53,25 @@ export function Nav({ path, onClean }: { path: string; onClean?: () => void }) {
   )
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-30 flex justify-center px-4 pt-4 sm:pt-6">
+    <header ref={header} className="pointer-events-none fixed inset-x-0 top-0 z-30 flex justify-center px-4 pt-4 sm:pt-6">
+      {/* The overlay comes first in the DOM so the nav pill paints over it without a z-index. */}
+      <div id="menu" data-open={open} className="menu pointer-events-auto fixed inset-0 bg-[rgb(241_241_239/0.86)] backdrop-blur-2xl lg:hidden">
+        <ul className="flex h-full flex-col justify-center gap-2 px-8">
+          {NAV.map(([href, label], i) => (
+            <li key={href} className="menu-item" style={{ '--d': `${80 + i * 50}ms` } as React.CSSProperties}>
+              <a
+                ref={i === 0 ? first : undefined}
+                href={href}
+                aria-current={path === href ? 'page' : undefined}
+                tabIndex={open ? 0 : -1}
+                className="block py-2 text-[2rem] font-medium tracking-[-0.02em] text-ink aria-[current=page]:text-accent"
+              >
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
       <nav
         aria-label="Main"
         className="pointer-events-auto flex w-full max-w-[52rem] items-center gap-2 rounded-full bg-[rgb(253_253_252/0.78)] p-1.5 pl-4 shadow-[0_0_0_1px_var(--hair),var(--shadow)] backdrop-blur-xl lg:w-max"
@@ -57,7 +85,7 @@ export function Nav({ path, onClean }: { path: string; onClean?: () => void }) {
               <a
                 href={href}
                 aria-current={path === href ? 'page' : undefined}
-                className="block rounded-full px-3 py-1.5 text-[0.875rem] text-muted transition-colors duration-200 hover:text-ink aria-[current=page]:text-ink"
+                className="block rounded-full px-3 py-1.5 text-[0.875rem] text-muted transition-colors duration-200 ease-[var(--ease)] hover:text-ink aria-[current=page]:text-ink"
               >
                 {label}
               </a>
@@ -78,29 +106,6 @@ export function Nav({ path, onClean }: { path: string; onClean?: () => void }) {
           <span aria-hidden="true" />
         </button>
       </nav>
-      <div
-        id="menu"
-        data-open={open}
-        className="menu pointer-events-auto fixed inset-0 z-[-1] bg-[rgb(241_241_239/0.86)] backdrop-blur-2xl lg:hidden"
-        style={{ opacity: open ? 1 : 0, visibility: open ? 'visible' : 'hidden' }}
-      >
-        <ul className="flex h-full flex-col justify-center gap-2 px-8">
-          {NAV.map(([href, label], i) => (
-            <li key={href} style={{ '--d': `${80 + i * 50}ms` } as React.CSSProperties} className="menu-item">
-              <a
-                ref={i === 0 ? first : undefined}
-                href={href}
-                aria-current={path === href ? 'page' : undefined}
-                tabIndex={open ? 0 : -1}
-                className="block py-2 text-[2rem] font-medium tracking-[-0.02em] text-ink aria-[current=page]:text-accent"
-                style={{ '--d': `${80 + i * 50}ms` } as React.CSSProperties}
-              >
-                {label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
     </header>
   )
 }

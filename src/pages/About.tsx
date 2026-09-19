@@ -8,7 +8,7 @@ export const meta = {
 export default function About() {
   return (
     <>
-      <PageHead eyebrow="About" title="A small company, one job." lede="FileSanity removes the metadata a file carries about the person who made it, and does so without ever seeing the file. That is the whole product." />
+      <PageHead eyebrow="About" title="A small company that does one thing." lede="FileSanity removes the metadata a file carries about the person who made it, and does so without ever seeing the file. That is the whole product." />
       <Section labelledBy="h-why">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <h2 id="h-why" className="text-[1.75rem] sm:text-[2.25rem] lg:col-span-4">Why it exists.</h2>
@@ -35,8 +35,8 @@ export default function About() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <h2 id="h-who" className="text-[1.75rem] sm:text-[2.25rem] lg:col-span-4">Who makes it.</h2>
           <div className="prose lg:col-span-8">
-            <p>FileSanity is made and run by a small company with no investors and no data business. The people behind it and the registered company details will be listed here before launch.</p>
-            <ClientNote>Client to supply: the founders' names and roles, the company's legal name and registration number, and the country of incorporation.</ClientNote>
+            <p>FileSanity is made and run by a small company with no investors and no data business.</p>
+            <ClientNote>Client to supply: the founders' names and roles, the company's legal name, registration number and country of incorporation, to be listed here before launch.</ClientNote>
           </div>
         </div>
       </Section>

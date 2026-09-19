@@ -144,7 +144,7 @@ function Chip({ name, size, kind, onRemove }: { name: string; size?: number; kin
       </span>
       <span className="min-w-0 flex-1 truncate text-[0.875rem] font-medium" title={name}>{name}</span>
       {size !== undefined && <span className="flex-none text-[0.8125rem] tabular-nums text-muted">{fmtBytes(size)}</span>}
-      <button type="button" onClick={onRemove} aria-label={`Remove ${name}`} className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-panel hover:text-ink">
+      <button type="button" onClick={onRemove} aria-label={`Remove ${name}`} className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-muted transition-colors duration-200 ease-[var(--ease)] hover:bg-panel hover:text-ink">
         <X size={16} weight="light" aria-hidden="true" />
       </button>
     </div>

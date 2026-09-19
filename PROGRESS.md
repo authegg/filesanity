@@ -6,10 +6,14 @@ update before ending one.
 ## Current phase
 
 v2 built on branch `v2-site` (2026-09-20): the professional multi-page
-site with the custom picker. Build passes with every route prerendered,
-`tests/run.py` ALL PASS (103 checks, Chromium and Firefox),
-`tools/verify.py` VERIFY OK, shots taken. Awaiting the critic (not run by
-the builder) and the client's own Firefox pass.
+site with the custom picker. Critic round 1 returned FAIL 10 (source
+claim, unmarked placeholders, the mailbox mark, menu focus trap, default
+easings, six equal cards, comma headlines, six-item lists, z-index);
+all ten fixed and logged in DECISIONS.md. Build passes with every route
+prerendered plus `/source/` and a source map, `tests/run.py` ALL PASS
+(103 checks), `tools/verify.py` VERIFY OK (now also easing on every
+route and the menu trap in both engines), shots refreshed. Awaiting
+critic round 2 and the client's own Firefox pass.
 
 ## Done
 
