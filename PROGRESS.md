@@ -5,8 +5,8 @@ update before ending one.
 
 ## Current phase
 
-Built, tested, screenshotted, committed. Awaiting the critic (not run by
-the builder) and the client's own browser pass.
+Critic round 1 returned FAIL 6; all six fixed, measured and committed.
+Awaiting critic round 2 and the client's own browser pass.
 
 ## Done
 

@@ -452,3 +452,51 @@ anything is read.
 - The skill's "hero image under 200 kB" budget has no line for a page
   whose hero is a working component with no image; the LCP element here
   is a paragraph, which is what the critic will measure.
+
+## Critic round 1 (FAIL 6) and fixes, 2026-09-19
+
+1. Cleaned-state contrast: `.row-gone .callout` opacity 0.55 dropped text
+   to 2.4:1. Chose colour `var(--muted)` on the callout with no opacity
+   over keeping a lighter fade because muted measures 6.0:1 on paper and
+   6.7:1 on the dark ground; the plate itself still fades and goes dashed,
+   the values still strike through. Measured on painted glyphs in the
+   after-state (`tools/measure.py`): worst 4.9:1 light (the REMOVED tag's
+   ink on orange), 5.0:1 dark.
+2. Leader join: the leader was a fixed stub in its own grid column. Chose
+   a flex cell holding the plate at its byte-derived width and the leader
+   as `flex-1` over absolute positioning, so it starts at the plate's
+   drawn edge and ends at the callout at every width. Measured at
+   1917x870, 1366x650 and 390x844, empty and with a file: plate edge to
+   leader 4 px on every row, leader end to label 12 px (8 px on phone).
+3. PDF copy against the parser: compressed XMP streams are shown as
+   "compressed stream, kept"; the figure note and the spec row say a
+   compressed XMP stream (the usual Word or Acrobat case) is shown and
+   kept; the After line reads "N removed, M kept"; when nothing is
+   strippable but something is kept the foot says so instead of "Nothing
+   to remove". `tests/files/memo-z.pdf` (FlateDecode /Metadata) added;
+   `tests/run.py` asserts the creator survives, the note text and the
+   "8 removed, 1 kept" line.
+4. Refusals by reason: byte sniffing failing on a known extension says
+   "This .jpg does not begin like a JPEG"; an unknown kind says "cannot
+   read .txt files yet"; a dropped folder (webkitGetAsEntry isDirectory, or
+   an unreadable or empty File) says it is a folder; more than one file
+   reads the first and the caption says "One file at a time, reading
+   <name>". The picker itself is single-file, so two files arrive only by
+   drop; the test dispatches a synthetic drop. `tests/files/notajpeg.jpg`
+   added.
+5. Live region: `aria-live="polite"` on the figcaption, which carries the
+   state line, the hint and the request counter.
+6. Hygiene: dist rebuilt (og.png served as image/png), the scaffold's
+   icons.svg sprite gone from public and dist. Inline `style` on the body
+   plate replaced by `.plate-body`; the remaining inline styles are the
+   data-derived plate widths and row indents.
+
+Notes: the figure's "Drop a file here, or choose one" stays as the
+figure's own control, logged above. At 390x844 the drop bar sits at 886
+after tightening the hero spacing (was 947); the Success line's three
+items (what it does, that the file stays, the CTA) are above the fold and
+the bar is the figure's second way in, so it is left below.
+
+Not regressed: JS 80.4 kB gz, LCP 936 ms and CLS 0.006 throttled phone,
+six tab stops, zero requests during read and clean, ALL PASS on nine
+files and four edge paths.
