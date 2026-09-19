@@ -25,6 +25,7 @@ export default function App() {
   const [hint, setHint] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const figure = useRef<HTMLElement>(null)
+  const primary = useRef<HTMLButtonElement>(null)
 
   // Count every network request the page makes after a file is read. It stays at zero; the point is that you can watch it.
   useEffect(() => {
@@ -36,6 +37,11 @@ export default function App() {
     po.observe({ type: 'resource', buffered: false })
     return () => po.disconnect()
   }, [])
+
+  // The strip button is replaced by "Download again" on clean; after that commit, focus lands on it so a keyboard user is not dropped on body.
+  useEffect(() => {
+    if (state.status === 'cleaned') primary.current?.focus()
+  }, [state.status])
 
   const load = useCallback(async (file: File) => {
     setState((s) => {
@@ -159,7 +165,7 @@ export default function App() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-rule px-3 py-3 sm:px-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-rule px-3 py-3 sm:px-4" aria-live="polite">
               {state.status === 'empty' || state.status === 'unsupported' || state.status === 'error' ? (
                 <>
                   <button type="button" className="btn btn-quiet" onClick={pick}>Drop a file here, or choose one</button>
@@ -170,7 +176,7 @@ export default function App() {
               ) : state.status === 'ready' ? (
                 fields || stripParts.length ? (
                   <>
-                    <button type="button" className="btn" onClick={clean}>Strip {fields} {fields === 1 ? 'field' : 'fields'} and download</button>
+                    <button ref={primary} type="button" className="btn" onClick={clean}>Strip {fields} {fields === 1 ? 'field' : 'fields'} and download</button>
                     <span className="font-mono text-[0.75rem] text-muted">{stripParts.length} {stripParts.length === 1 ? 'part' : 'parts'} to remove, {fmtBytes(report!.bytes - report!.body.bytes)}</span>
                   </>
                 ) : (
@@ -185,7 +191,7 @@ export default function App() {
                     Before: {fmtBytes(state.report.bytes)}, {fields + kept} {fields + kept === 1 ? 'field' : 'fields'}. After: {fmtBytes(state.out.size)}, {fields} removed{kept ? `, ${kept} kept` : ''}.
                   </span>
                   <span className="flex flex-wrap gap-x-4 gap-y-2">
-                    <button type="button" className="btn btn-quiet" onClick={() => download(state.url, cleanName(state.file.name))}>Download again</button>
+                    <button ref={primary} type="button" className="btn btn-quiet" onClick={() => download(state.url, cleanName(state.file.name))}>Download again</button>
                     <button type="button" className="btn" onClick={pick}>Clean a file</button>
                   </span>
                 </>

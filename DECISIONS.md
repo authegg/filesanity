@@ -500,3 +500,15 @@ the bar is the figure's second way in, so it is left below.
 Not regressed: JS 80.4 kB gz, LCP 936 ms and CLS 0.006 throttled phone,
 six tab stops, zero requests during read and clean, ALL PASS on nine
 files and four edge paths.
+
+## Critic round 2 (FAIL 1), 2026-09-19
+
+Strip was silent and stranded focus. Chose a `useEffect` on the status
+change that focuses "Download again" after the commit over relabelling
+one button element, because the two buttons have different intents and a
+rAF after setState raced React's commit (focus fell to body on some
+runs). The foot is `aria-live="polite"`, so the Before/After line is
+announced. Verified in Firefox and Chromium across three files:
+activeElement after a keyboard strip is "Download again"; the result
+text sits in a polite live region. `tests/run.py` asserts both on every
+case.

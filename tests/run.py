@@ -113,8 +113,9 @@ with sync_playwright() as p:
         path = os.path.join(FILES, name)
         page.set_input_files('input[type=file]', path)
         page.wait_for_selector('button:has-text("Strip ")', timeout=8000)
+        page.focus('button:has-text("Strip ")')
         with page.expect_download() as dl:
-            page.click('button:has-text("Strip ")')
+            page.keyboard.press('Enter')
         out = os.path.join(OUT, dl.value.suggested_filename)
         dl.value.save_as(out)
         page.wait_for_selector('text=Before:', timeout=8000)
@@ -123,6 +124,11 @@ with sync_playwright() as p:
         with open(path, 'rb') as f:
             before = f.read()
         check(dl.value.suggested_filename == name.replace('.', '-clean.'), f'named {dl.value.suggested_filename}')
+        page.wait_for_timeout(150)
+        active = page.evaluate('document.activeElement.textContent')
+        check(active == 'Download again', f'focus after keyboard strip is on the download button ({active!r})')
+        live = page.evaluate('''() => Array.from(document.querySelectorAll('[aria-live=polite]')).map((e) => e.textContent).join(' ')''')
+        check('Before:' in live and 'removed' in live, 'result line is inside a live region')
         verify(name, data, before, page.inner_text('figure'))
     # Edge states.
     page.set_input_files('input[type=file]', os.path.join(FILES, 'clean.jpg'))
