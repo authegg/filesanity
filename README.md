@@ -1,20 +1,21 @@
 # FileSanity
 
-Metadata cleaner whose hero is the product: drop a JPEG, PNG, DOCX, XLSX,
-PPTX or PDF, the page reads its metadata in the browser, shows it as an
-exploded-parts diagram and a table, strips it and downloads the clean
-file. No server, no upload, no analytics.
+Metadata cleaner that runs in the browser. Fourteen prerendered pages;
+the home page's hero is the picker: drop a JPEG, PNG, DOCX, XLSX, PPTX
+or PDF, the page reads its metadata, lists it, removes it and downloads
+the clean file. No server, no upload, no analytics, no cookies.
 
 ```
 npm install
-npm run build
-npx vite preview --port 4184 --strictPort --host 127.0.0.1
-python3 tests/run.py          # strips every file in tests/files, asserts with Pillow, zipfile, pypdf
-python3 tools/shots.py        # screenshots, flow strip, network log
-python3 tools/verify.py       # LCP, CLS, widths, keyboard, reduced motion, dark, JS weight
+npm run build                 # tsc, client build, ssr build, prerender every route
+fuser -k 4184/tcp; setsid nohup npx vite preview --port 4184 --strictPort --host 127.0.0.1 < /dev/null &
+python3 tests/run.py          # picker states, every format cleaned and asserted, zero network (Chromium and Firefox)
+python3 tools/verify.py       # vitals, widths, keyboard, menu, reduced motion, font fallback, contrast, weight
+python3 tools/shots.py        # the screenshot set in shots/
 python3 tools/make_samples.py # rebuild public/sample.jpg and tests/files from assets-src
 ```
 
-Parsers live in `src/lib`: `jpeg.ts`, `png.ts`, `ooxml.ts`, `pdf.ts`,
-with `exif.ts` and `xmp.ts` shared. Files are read by Blob slices; the
-clean file is a Blob of slices of the original.
+Parsers live in `src/lib` (`jpeg.ts`, `png.ts`, `ooxml.ts`, `pdf.ts`,
+with `exif.ts` and `xmp.ts` shared). Pages in `src/pages`, the picker
+and shell in `src/ui`, shared facts in `src/content.ts`, routes in
+`src/routes.ts`, prerender in `scripts/prerender.mjs`.

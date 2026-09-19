@@ -5,225 +5,402 @@ The rejected alternative is the part that matters.
 
 Format: `- [date] chose X over Y because Z`
 
+# v2, 2026-09-20: the professional multi-page site
+
 ## Client environment
 
 Firefox at 1917x870 primary; phone 390x844; also 1366x650. Verified in
-Firefox (fold and full at 1917x870 and 390x844, the flow strip) and
-Chromium (1366x650, 390x844, 1917x870, the vitals run, dark mode,
-reduced motion, five widths).
+Firefox (home fold and full at 1917x870 and 390x844, the six picker
+states, the phone menu, the tests' Firefox pass) and Chromium (1366x650,
+390x844, the vitals run, widths, keyboard, reduced motion, contrast, the
+per-page shots at 1440).
 
-## Ledger read (SHIPPED.md, last three rows, 2026-09-19)
+## The client's verdict on v1, taken literally
 
-- lab-g-blath: geometric sans, warm paper with no accent (polychrome
-  bands as data), space and photographs, 7/5 split, colour-block closer,
-  backlit saturated stills, pick-a-Saturday interaction, light and dark.
-- lab-h-press: serif display, cotton card and ink with one red, italic
-  shoulder notes and a docket, 7/5 sprite stage, proof docket closer,
-  keyed sprite sheets, a terminating print run, light and dark.
+"What is this? Looks not professional and a scam site. Let's do it
+professionally, complete all pages, and make sure the file picker is not
+using the native one." Three instructions, each a fixed requirement:
+professional register (trusted product company), every page, a custom
+picker. v1's manual/typewriter register, metacleaner's own page and the
+padlock-and-shield privacy template are the anti-anchors.
+
+## Ledger read (SHIPPED.md, last three rows)
+
+- lab-g-blath: geometric sans, warm paper with no accent, space and
+  photographs, 7/5 split, colour-block closer, backlit stills, light and
+  dark.
+- lab-h-press: serif display, cotton card and ink with one red, shoulder
+  notes and a docket, sprite stage, proof-docket closer, keyed sprites,
+  light and dark.
 - lab-i-dental: signage sans, cool green ground with coral, drawing-sheet
-  fields with notched labels, 380vh pinned stage, chart-entry closer,
-  keyed molar traced into linework, one scroll value driving six paused
-  animations, light and dark.
+  fields with notched labels, pinned stage, chart-entry closer, keyed
+  molar, light and dark.
 
-Shared by all three: light and dark by token flip; a hero that is a
-working object with the copy beside it; generated photographs. This page
-also ships light and dark (reason from the brief: the audience opens
-this from a mail client mid-task, at whatever scheme their desk is in,
-and a tool page that flashes white on a dark desk reads as a popup) and
-a working object beside copy (the brief fixes it: "the hero IS the
-product"). It ships no generated photograph except the sample file
-itself, which is the product's input, not a mood image.
+Shared by all three: light and dark by token flip; a working object
+beside copy in the hero; generated photographs. This build keeps the
+working object (the client fixes it: the hero is the picker) and
+generated stills (three abstract product stills, the only way to get
+photographs with no people and no stock tells), and drops dual mode: it
+ships one scheme, light only, because the archetype the client's skill
+names, white panels floating on a silver ground, is an elevation system
+that does not invert; a dark version would be the vantablack-card glass
+page the studio names as anti-anchor one. Logged as the rejected
+alternative below.
 
 ## Reference pass
 
-Step 1. `get_filters` run 2026-09-19: 11 styles, 24 industries, 19
-macrostructures (coverage: specimen 110, split-studio 148, feature-stack
-124, marquee-hero 156, long-document 19, manifesto 11, type-specimen 21,
-component-playground 13, letter 5, stat-led 4). Searches, all with hero
-captures downloaded and looked at, not read from northstar text:
+Step 1. `get_filters` run 2026-09-20: 11 styles, 24 industries, 19
+macrostructures. Seven searches, each result's hero capture downloaded
+and looked at, not read from the autopsy text:
 
-1. "drop a file in the browser, it never uploads, works offline", 10:
-   tympanus-net, dropdeadgenerous-org, rapha-cc, generalintelligencecompany,
-   cyrillic-digital, forestadmin-com, tavus-io, humaan-com, mixpotion-co,
-   branchfurniture-ca. Semantic search does not understand "never
-   uploads"; junk.
-2. "tool that inspects a file and shows its hidden data", industry
-   developer-tools, 10: flatfile-io, mage-ai, sourcegraph-com, novu-co,
-   lottiefiles-com, posthog-com--about, qdrant-tech, statsig-com,
-   forestadmin-com, lithic-com. All dark SaaS heroes.
-3. "privacy tool metadata exif remover", style monochrome, 10: algolia,
-   astro-build, azure, bolt-new, builder-io, buildkite, bun-com, chakra-ui,
-   circleci, codepen. Every one "deep indigo expanse": the archive's
-   privacy/dev register is the anti-anchor.
-4. "utility that does one thing, the object is the headline", swiss,
-   paperBand light, 10: feathericons-com, synthesia-io,
-   thedesignersfoundry-com, forestadmin-com, clay-com, daisyui-com,
-   displaay-net--about, heatherwick-com--projects,
-   thecreativeindependent-com, thefutur-com.
-5. "file inspector hex dump table of fields", displayClass mono, 10:
-   arweave-org, bugatti-com, thecreativeindependent-com, finethought-com-au,
-   kvs-services, posterco-tv, motherduck-com, localcan-com,
-   brethrendesignco-com, jordan-delcros-com.
-6. "manifesto about privacy, plain speaking", macrostructure manifesto, 10:
-   deadwater-fr--vision, nglm-com--about, overmindlab-ai--about,
-   tokens-studio--about, nopan-com--about-us, goodside-studio--about,
-   cornellbotanicgardens-org, platonphoto-com, whitecube-com, everswap-com.
-7. "local first, offline, runs on your machine", brutalism, 10: qonto-com,
-   designmaestro-io, feathericons-com, tonal-com, bennettandclive-com,
-   portalone-studio, convex-dev, fontwerk-com, lusion-co, orpetron-com.
-8. "type specimen table of glyphs and values", industry type-foundry, 8:
-   commercialtype-com, pampatype-com, lift-type-fr--products-ace,
-   typearture-com, boldmonday-com, fontshare-com, lettersfromsweden-se,
-   newglyph-com.
-9. "developer tool with a live demo in the hero, product working",
-   developer-tools, 10: forestadmin-com, tavus-io, novu-co, fal-ai--pricing,
-   liveblocks-io--about, raycast-com--pricing, smashingmagazine-com,
-   unkey-com, polar-sh, mintlify-com.
+1. "fintech trust page, light ground, large grotesk, soft shadows,
+   floating cards", industry fintech, light: aave-com--about,
+   heyclicky-com--trust, step-com, mollie-com--pricing,
+   azure-microsoft-com, deel-com, mercury-com, public-com, stripe-com,
+   classcreator-io.
+2. "privacy first developer tool, light page, the product working in the
+   hero", developer-tools, minimalism, light: tavus-io, forestadmin-com,
+   polar-sh, together-ai, cyphr-studio, headroom-com,
+   generalintelligencecompany-com--writing, minimal-so, mintlify-com,
+   ethereum-org.
+3. "password manager or encrypted mail, trust register, light, calm, no
+   illustration", saas, swiss, light: brunocis-co, nogood-studio--work,
+   kononenkogroup-com--work, bymonolog-com--work, deno-com,
+   nanorcollection-com, ohnotype-co, works-studio, aristidebenoist-com,
+   normarchitects-com. Semantic search does not know the password
+   managers; junk for this brief.
+4. "drag and drop a file into the hero, the tool is the page, upload
+   zone": cyphr-studio, mage-ai, clay-com, unkey-com, milanote-com,
+   synthesis-partners--team-and-culture, generalintelligencecompany-com,
+   diffusion-studio, gehry-getty-edu, forestadmin-com.
+5. "consumer privacy app, white background, soft ambient shadows,
+   floating device", consumer-tech, light: tempo-fit, bowerswilkins-com,
+   copilot-microsoft-com, fellowproducts-com, signal-org, snap-com,
+   whoop-com, classcreator-io, flatfile-io, makingsoftware-com.
+6. "end-to-end encrypted, your data stays on your device, privacy
+   product, calm light": becomeautonomous-com, aerotime-com, qonto-com,
+   canvasapp-com, forestadmin-com, joindawn-com, designmaestro-io,
+   furoweb-eu, motherduck-com, mem-ai, bennettandclive-com, flatfile-io.
+7. "paper band light product page, large grotesk headline, one pill
+   button, the app in a soft framed window", swiss, light:
+   lookback-com--pricing, arc-net, parachutehome-com, flomoapp-com,
+   forestadmin-com, headroom-com, tavus-io, amie-so--pricing,
+   anytype-io--pricing, azure-microsoft-com, capacities-io--pricing,
+   cleanshot-com--pricing.
 
-Macrostructure pulls (`find_examples_for_macrostructure`): specimen 14,
-type-specimen 12, long-document 12, manifesto 11, split-studio 10.
+Slugs tried directly: linear-app, vercel-com, stripe-com, resend-com
+exist; 1password, proton, tailscale, bitwarden do not.
 
-Hero captures downloaded and looked at (26, on five contact sheets):
-arweave-org, bennettandclive-com, brilliant-org, commercialtype-com,
-craft-wild-as--bcp, deadwater-fr--vision, displaay-net, excalidraw-com,
-feathericons-com, fontwerk-com, gwern-net, kvs-services, localcan-com,
-makingsoftware-com, motherduck-com, newglyph-com, nglm-com--about,
-orpetron-com, overmindlab-ai--about, posterco-tv, realfood-gov,
-sourcetreeapp-com, thecreativeindependent-com, tympanus-net, unkey-com,
-velvetyne-fr. Full pages looked at (2): makingsoftware-com, excalidraw-com.
+Hero captures downloaded and looked at (22, one contact sheet):
+anytype-io--pricing, arc-net, becomeautonomous-com, canvasapp-com,
+clay-com, cleanshot-com--pricing, copilot-microsoft-com, deno-com,
+flatfile-io, linear-app, mem-ai, mercury-com, minimal-so, mintlify-com,
+mollie-com--pricing, polar-sh, public-com, resend-com, signal-org,
+stripe-com, uploadcare-com, vercel-com. Full pages looked at at 300px
+wide (6): minimal-so, polar-sh, copilot-microsoft-com,
+mollie-com--pricing, signal-org, public-com.
 
-What the captures showed that the text did not: nothing in the archive
-is a file tool, and the developer-tools register is one dark indigo
-page with a glowing accent, which is metacleaner in a hoodie. The
-mechanisms worth taking sat outside it: makingsoftware (the page is a
-reference manual whose hero is an exploded, labelled isometric diagram of
-a floppy disk, every part on a leader line in mono caps, figure boxes
-with rotated FIG numbers), excalidraw (the landing page is the empty
-tool; the storage claim, "your drawings are saved in your browser's
-storage", is a three-line note under the wordmark, not a headline),
-arweave (mono headline, the page is a map with four numbered tabs),
-brilliant (working widgets between the headline's words), feathericons
-(the tool's grid and its customise panel are the page under a one-line
-headline), craft-wild (a pixel field along the foot), localcan (a dark
-card whose right half is a 3x2 grid of drawn parts).
+What the captures showed that the text did not: linear, resend and
+vercel are dark or gradient heroes, the register the studio names as
+anti-anchor one; stripe's hero is a chromatic gradient. The calm-trust
+mechanisms sat in three light pages: minimal-so (headline top-left, one
+black pill, the working product in a hairline-framed window as the
+first screen), mollie-com--pricing (a warm silver band holding two
+white rounded cards with almost no shadow, one dark filled pill, a
+78px light headline, a mono-caps eyebrow), copilot-microsoft-com (the
+input field is the hero; nothing else on the page). signal-org is
+illustration-led and blue, the padlock register in cartoon form; public
+is serif and dark-banded.
 
 Step 2. Anchors.
 
-- Structure and pace: **excalidraw-com**, https://excalidraw.com,
-  developer-tools (an open-source tool, not a SaaS marketing page).
-  Mechanism: the page is the product's empty state; the first screen is
-  the tool with nothing in it, the instructions and the "saved in your
-  browser" claim are small notes placed where they apply, and there is
-  nothing to scroll to. Taking: the tool as the first and main screen;
-  the trust fact as a note on the object, not a banner; no feature
-  section, no pricing, no testimonials; motion limited to what the tool
-  does when you act. Leaving: the hand-drawn face, the toolbar, the
-  purple, the centred wordmark, the four text links.
-- Surface: **makingsoftware-com**, https://makingsoftware.com, education
-  and media (a book). Mechanism: an exploded-parts diagram, each part
-  lifted off the one below, joined by a dashed leader to a mono-caps
-  label; figures boxed on a dot grid with a caption; a reference manual's
-  register, no marketing sentence anywhere. Taking: the exploded stack as
-  the way the file is shown; dashed leaders and mono-caps callouts;
-  boxed figure with a dot-grid ground and a "Fig. 1" caption; a spec
-  table for the formats; body copy as a manual's paragraphs. Leaving:
-  Departure Mono (bitmap face) and the Arizona serif body; the isometric
-  drawing (ours is oblique, drawn by CSS from the file's own bytes); the
-  electric blue (blue on white is metacleaner); the rotated FIG labels
-  (a tell in tells.md, and ours would have nothing to say).
-- Neither is SaaS. Anti-anchors held: no centred dropzone icon, no
-  three feature columns, no tool cards, no blue, no padlock, no shield,
-  no green ticks.
-- `compare` on the pair: both light, both minimalism and swiss, distinct
-  macrostructures (Long Document, Component Playground). makingsoftware
-  spacing 40/128/256, radius 0 and 4, container 1536; excalidraw base 4,
-  radius 0/6/8, container 1440.
-- `get_design_system` makingsoftware-com: the extraction is thin and
-  partly wrong (h1 reported as arizona 16px; the autopsy names a pale
-  sage ground while the site's own `--background` is #fbfbfb and the
-  capture is white). Taken: 4px base; spacing 40/128 rounded to our
-  32/48/64/80 rhythm (256 dropped, the page is short); radius 0
-  everywhere (interactive included); container capped at 1400 rather
-  than 1536 so the figure's callouts stay under 60ch at 1917. Changed:
-  ground to a warm vellum (#f4f2ec) instead of near-white, so the dot
-  grid and the plates read as drafting paper rather than a web page;
-  cobalt to safety orange (below); the bitmap display face to IBM Plex
-  Mono.
-- Fonts: makingsoftware's Departure Mono is a bitmap face and would read
-  as retro; Arizona is commercial. IBM Plex Mono 400/500/600 for the
-  headline, figure, tables and buttons, IBM Plex Sans 400/500/600 for
-  body: one superfamily, the manual's face (Plex was drawn for IBM's
-  manuals), OFL, on Fontsource, Latin subset only. Rejected: Space
-  Grotesk plus Space Mono (the grotesk is the House display reflex);
-  Geist Mono (saltline); JetBrains Mono (lab-b); Inter (logged reflex).
-
-Step 3. Reference components (`find_reference_components`, then
-`get_reference_jsx` with type and id): hero/documentary (headline as a
-caption, a credit block in the margin: the figure caption and the
-"Requests since read" readout take its place), stat/before-after (two
-figures with movement between them: the "Before: 198.5 kB, 52 fields.
-After: 196.0 kB, 0 fields." line), features/workbench (copy left, working
-demo right, "real strings, no faux chrome": the hero split),
-footer/colophon (mono, one block, no link map). Used for structure only;
-the component library's `text-meta` became `.meta`.
+- Structure and pace: **minimal-so**, https://minimal.so, saas
+  (index-first). Mechanism: the page is the product; a short headline
+  with one sentence and one black pill, then the working tool in a
+  framed white window on the first screen, then plain two-column text
+  pairs under hairlines, then pricing as two columns. Taking: the tool
+  as the first screen; text pairs under hairlines for the sections
+  outside the panels; pricing as columns without towers. Leaving: the
+  black pill (ours is the accent), the yellow, the sign-in nav.
+- Surface: **mollie-com--pricing**, https://www.mollie.com/pricing,
+  fintech. Mechanism: white panels resting on a warm silver band with
+  hairline edges and a barely-there shadow; one large light-weight
+  grotesk headline with tight tracking; a mono-caps eyebrow; one
+  espresso filled pill and one tinted ghost pill; a long rate table on
+  hairlines. Taking: silver ground with white plates; the eyebrow pill;
+  the filled pill plus ghost pill pair; hairline rows for tables.
+  Leaving: the espresso (ours is oxblood, logged below), Inter (banned by
+  the client's skill), the accordion FAQ, the centred pricing headline.
+- `get_design_system` on both: mollie reports Inter Variable at 78px/400
+  with -2.4px tracking, spacing 32/80, radius 0 (the pills are rounded in
+  the capture; the extraction is thin). minimal-so reports Geist
+  Variable 48px/600, spacing 8 to 112 on a 4px base, radii 0 to 14,
+  container 1440. Taken: Geist; the 4px base; container capped at 1280
+  (80rem) so the hero panel's copy column stays under 60ch at 1917;
+  radius system: pill on every control, 1.75rem and 2rem on the bezels,
+  1rem to 1.25rem inside (a mixed system, written rule: outer radius
+  minus padding gives the inner radius, concentric everywhere).
 
 ## Read
 
 Read A, the first association, kept.
 
 ```
-Reading this as: a launch page for a file tool, for people about to send a
-file to a stranger, built as one page of a hardware manual: the file taken
-apart as an exploded diagram beside a typewritten fact, serving
-excalidraw-com for structure and pace and makingsoftware-com for surface
-(studio anchor 1, the hardware manual).
-MOTION 4: what excalidraw ships: nothing moves until you act; then the
-tool responds. The plates lift off when you strip; no reveals, no load
-animation, no scroll work.
-RISK: the hero is a hardware manual's exploded-parts diagram of the
-visitor's own file, drawn from its bytes: every metadata segment a plate
-lifted off the picture, sized by its byte count, joined by a dashed leader
-to the real values found, with a safety-orange REMOVE tag on each; the
-file's body is the bottom plate, and cleaning knocks the tagged plates off
-and strikes their values through while the body stays. Before any input the
-same diagram shows a typical file's anatomy, so the concept is on the page
-with nothing dropped. No dropzone icon, no padlock, no feature columns.
-COST: if the diagram reads as decoration, a journalist who wanted a big
-"upload" box does not find where to drop the file and leaves; if it reads
-as a developer's hex viewer, HR and sellers think it is not for them.
-Rejected larger risk: brilliant.org's mechanism, the drop target and the
-request counter set inside the headline's own words; rejected because the
-headline has to state the fixed idea legibly in a 300px thumbnail and a
-sentence full of controls is not readable at that size.
-SEEN: a short page on warm vellum: top-left a two-line typewriter
-headline, one orange button and a red-brown link; right, a large boxed
-figure on a dot grid holding a staircase of four tilted plates joined by
-dashed leaders to labelled notes, three with a small orange tag; under it
-one mono spec table and a short column of manual text; a one-line footer.
-NEW: a monospaced display face (lab-g geometric sans, lab-h serif, lab-i
-signage sans); a hero shape that is a boxed figure with callouts beside a
-copy stack (lab-g and lab-h 7/5 splits with photographs and a sprite
-stage, lab-i a pinned stage); no photograph on the page beyond the sample
-file the visitor loads (all three ship generated stills); a warm vellum
-ground (lab-g warm paper is close; lab-h cotton card is close; lab-i cool
-green is not: so the ground is not the NEW line, the face and the figure
-are).
-GREP: exploded, diagram, callout, leader, plate, figure, schematic, manual,
-dot grid, parts.
-MOTION: the diagram is drawn from the visitor's file: plate widths follow
-each segment's byte count, the callouts carry the values found, and on
-"Strip and download" the tagged plates slide off and their values strike
-through, with the before and after sizes and field counts under the figure.
+Reading this as: a multi-page product site for a browser-side metadata
+cleaner, for people about to send a file to a stranger (journalists,
+lawyers, HR, sellers), in the register of a trusted product company:
+Soft Structuralism, a silver-grey ground with white panels floating on
+diffused shadows, one large clean grotesk, pill controls, serving
+minimal-so for structure and mollie-com--pricing for surface (studio
+anchor 3 for the grouping by rule and space outside the panels).
+MOTION 5: the tool is the motion: the table is drawn from the visitor's
+file and the figures recompute on clean; beyond that, entrances on view,
+a pill whose icon moves on hover, the phone menu's stagger, nothing
+driven by scroll.
+RISK: the first screen is the drop tray. One white double-bezel panel
+fills the fold below the floating nav; the headline, the sub-line and
+the one pill sit inside its top-left corner and the picker at its right,
+and a file dropped anywhere on the panel, headline included, is read.
+There is no page around the tool until you scroll.
+COST: if the panel reads as a hero card and not a target, a visitor with
+a file in hand looks for an upload box, finds the dashed area late or not
+at all, and leaves; a template would set the headline on the page and
+the dropzone in a card beside it. Rejected larger risk: opening with the
+sample already read, a stranger's GPS, name and camera serial as the
+first thing on the page; rejected because it fetches on load, pre-empts
+the idle state the client asked for, and a page of someone's personal
+data reads as a leak, not a cleaner.
+SEEN: a silver page with a small white pill at the top; under it one
+big white rounded panel filling the first screen, a two-line headline in
+its top-left with one oxblood pill and a dashed rectangle at its right;
+below, three white tiles of unequal width, two with a photograph of
+paper, a short numbered list, a six-row table, a glass block beside a
+paragraph, and a white band at the foot with the same pill.
+NEW: grouping by elevation: white panels on a silver ground with
+diffused, tinted shadows and a detached floating nav pill (lab-g space
+and photographs, lab-h shoulder notes and a docket, lab-i drawing-sheet
+fields); one colour scheme, light only (all three ship light and dark);
+pill radius on every control.
+GREP: tray, panel, drop target, fold, hero as the tool, headline inside,
+dropzone, double-bezel, first screen.
+MOTION: the table of fields is drawn from the visitor's own file, the
+count in the card header and the pill label are computed from it, and
+cleaning strikes the rows through and writes the before and after sizes
+and counts; the request counter beside the result reads the page's own
+network record since the read.
 ```
 
-Read B, the counter-read, rejected in one line: a manifesto page serving
-anchor 3 (are.na) and deadwater-fr--vision, one black screen with the
-sentence "The file never leaves your browser." set huge and the tool
-pushed to a second screen; rejected because the brief fixes the hero as
-the product working, and a black manifesto ground beside an orange tag
-is the "privacy tool" register the brief names as an anti-anchor.
+Read B, the counter-read, rejected in one line: serving anchor 2
+(rauno.me) and polar-sh, an Editorial Split with a large quiet headline
+on the left half and a staggered stack of three file chips on the right,
+each turning on hover to show what it leaks, the tool below the fold;
+rejected because the client fixes the hero as the working picker, and a
+hover demonstration does not exist on the phone.
 
 ## Log
+
+- [2026-09-20] chose Soft Structuralism (skill archetype A3) over
+  Ethereal Glass (A1, the dark mesh and glow the studio names as
+  anti-anchor one) and Editorial Luxury (A2, cream and serif, a
+  lifestyle register for a tool that lawyers use).
+- [2026-09-20] chose the Editorial Split inside the hero panel (copy
+  left, the working picker right) and an Asymmetrical Bento for the
+  "what a file carries" section over the Z-Axis Cascade (rotated
+  overlapping cards read as playful, not trusted).
+- [2026-09-20] chose Geist Variable, one family for display and body,
+  over Plus Jakarta Sans (rounded terminals, consumer-app register),
+  Manrope (geometric, startup register), Onest (less tested at display
+  size, weaker tabular figures) and Instrument Sans (no weight below
+  400, uneven at 3.5rem); Geist has tabular figures for the table and a
+  29 kB Latin variable file. Inter, Roboto, Arial, Helvetica banned by
+  the client's skill. Latin subset only, self-hosted from Fontsource's
+  file, preloaded, with a metric-matched Arial fallback (size-adjust
+  104%, ascent 96%, descent 28%) measured to move the phone fold by 0px
+  when the font request is aborted. No mono anywhere: the table's
+  values are Geist with tabular figures, because the typewriter register
+  is the client's anti-anchor.
+- [2026-09-20] chose Phosphor at weight light for every icon (arrow in
+  the pill's orb, the drop arrow, the file glyphs on the chip, the
+  warning, the check) over Phosphor thin (too faint at 14px on the
+  oxblood pill) and over Lucide (the skill bans it).
+- [2026-09-20] chose the accent oxblood (#8c2f2a, saturation 70%), the
+  pen a document is struck through with, used identically as the CTA
+  fill, links, focus rings, the "Coming soon" tint and the strike
+  through removed rows, over ink-black pills (Vercel; leaves a page with
+  no accent), blue (metacleaner), green (the shield-and-tick register),
+  orange (v1) and Mollie's espresso (borrowed, not from this brief).
+- [2026-09-20] chose a silver ground (#f1f1ef) with white plates
+  (#fdfdfc) over a white page with grey cards because the archetype's
+  elevation reads only when the ground is darker than the panel; House
+  "cold off-white paper" noticed and logged: the ground here is a
+  grouping device (the plate is the panel), not paper.
+- [2026-09-20] chose light only over light and dark (all three ledger
+  rows ship both; v1 shipped both) because diffused shadows and white
+  plates do not invert, and a dark scheme of this archetype is the glass
+  anti-anchor; `color-scheme: light` is set so form controls match. The
+  ledger's shared property is dropped, not reasoned around.
+- [2026-09-20] chose no router library and no client-side navigation:
+  every route is prerendered to `dist/<route>/index.html` (and
+  `<route>.html` so vite preview and every static host serve the clean
+  URL), links are plain anchors, the client hydrates the page for its
+  path. Rejected: react-router (about 25 kB gz for pushState navigation
+  that prerendered static pages do not need, and a second scroll and
+  focus model to manage) and a hand router (state, scroll restoration
+  and focus on route change, for nothing). The brief allows React Router
+  or multi-entry; this is the multi-entry output with one bundle.
+- [2026-09-20] chose one JS bundle for every route (104 kB gz, of which
+  React and react-dom are about 65) over per-route code splitting because
+  hydration of a prerendered page with a lazy page module means a second
+  round trip before the picker works, and the budget is 150 kB per route.
+- [2026-09-20] chose CSS transitions on `[data-reveal]` toggled by one
+  IntersectionObserver over the `motion` package (30 kB gz to do what
+  eight lines of CSS do). The hero panel carries no reveal so the LCP
+  element paints at once; reveals are hidden only under `html.js`, set
+  by an inline script, so the prerendered page is whole without JS and
+  under reduced motion.
+- [2026-09-20] chose `cubic-bezier(0.32, 0.72, 0, 1)` from the client's
+  skill for entrances and pills, and the studio's (0.16, 1, 0.3, 1) for
+  the hamburger; both custom, neither linear nor ease-in-out.
+- [2026-09-20] chose the drop surface as a `<button>` that opens the
+  picker on click, Enter and Space, with the whole hero section as the
+  drag target, over a `<label for=input>` (a label is not a button and
+  Space does not fire it in Firefox) and over a `<div role=button>` (a
+  real button needs no key handler). The `<input type=file>` is
+  `sr-only`, `tabIndex -1`, `aria-hidden`, and is clicked only from the
+  custom controls; Playwright's `set_input_files` still reaches it.
+- [2026-09-20] chose a drag-enter counter on the hero section over
+  `dragover` state on the surface alone because entering a child fires
+  `dragleave` on the parent and the ring flickers.
+- [2026-09-20] chose paste on `document` reading `clipboardData.files`
+  over a focused paste target because Ctrl+V anywhere on the page is what
+  the client asked for.
+- [2026-09-20] chose to put the field table inside the hero panel, in a
+  scroll region capped at 26rem with a sticky head, over a separate
+  section below the fold because the client asked for the table inside
+  the double-bezel card with the count and the pill, and the panel is
+  that card; below 40rem the table stacks each row as a block with the
+  part as a group label (the comparison-table exception, stacked, no
+  inner scroll).
+- [2026-09-20] chose "Remove all and download" for the action on a read
+  file, "Download again" and "Clean another" after a clean, as the
+  client wrote them, and "Clean a file" for every control that opens
+  the picker (nav, hero, closer, the nothing-to-remove state). "Clean
+  another" and "Clean a file" share an intent; the client fixed both
+  labels, so the studio's one-label rule is overridden here and logged.
+- [2026-09-20] chose the nav's "Clean a file" to open the picker on the
+  home page and link to `/` elsewhere over mounting the picker on every
+  page because a File cannot cross a page load, and a picker on the FAQ
+  page would need its own result surface.
+- [2026-09-20] chose a floating detached nav pill with a morphing
+  two-line hamburger and a full-screen staggered menu on phone, as the
+  client's skill prescribes, over the studio's one-line bar; the pill is
+  the one fixed element with backdrop-blur, the menu overlay the other.
+  Menu: body scroll locked, focus to the first link on open, Escape
+  closes and returns focus, links out of the tab order when closed.
+- [2026-09-20] chose eyebrow pills on two of the home page's six sections
+  (hero, "what a file carries") and one per inner page header over the
+  skill's "before every H1/H2", to stay inside the studio's one-per-three
+  cap; tells.md "an eyebrow above every section headline" noticed.
+- [2026-09-20] chose section rhythm `pt-24` to `pt-32` (6rem to 8rem)
+  over the skill's `py-40` because at 870px tall the client would see
+  one section per screen and the page would read as empty.
+- [2026-09-20] chose the closer as a bezel plate with the statement left
+  and the pill right (mollie's "Building a platform?" row) over a centred
+  closing statement with the CTA (House tell). The footer is three
+  columns of links beside the wordmark, not a four-column link farm
+  (tells.md noticed): fourteen pages need a map, and the nav carries six.
+- [2026-09-20] chose "Coming soon" as an accent-tinted eyebrow pill on
+  Pro and Teams because the client asked for the plans marked so;
+  tells.md "pill-shaped New and Beta badges" noticed and logged.
+- [2026-09-20] chose the Free plan as one large plate (col-span-7) with
+  Pro and Teams stacked beside it over three pricing towers with the
+  middle one taller (tells.md), and a check icon per Free line over
+  bullets.
+- [2026-09-20] chose the FAQ as three groups of four, two columns, all
+  open, over an accordion (tells.md) because twelve answers are the page.
+- [2026-09-20] chose the formats page as a three-column table above
+  768px and a stacked list below, no inner scroll, over `overflow-x`.
+- [2026-09-20] chose three Codex stills, one session, one palette and
+  light clause (silver #f1f1ef, white, charcoal, one dark red detail,
+  diffused light upper left): a print face down (the metadata is on the
+  back of a photo), a stack of A4 with a dark red clip, a clear glass
+  block on the surface (you can see through it). No people, no padlock,
+  no shield. AVIF at 1536 and 768 with srcset; 4 to 17 kB each. Rejected:
+  Higgsfield (the brief names Codex), a hero image (the hero is the
+  tool), and no images (the studio says text plus a gradient is not a
+  page). Codex wrote to `~/.codex/generated_images` and copied to the
+  paths asked; both were checked.
+- [2026-09-20] chose the PDF cell of the bento as a panel-to-accent-tint
+  gradient over a fourth still because the bento rule wants two or three
+  cells with a real image or a palette gradient, and a PDF has no honest
+  object to photograph.
+- [2026-09-20] chose visible client-marked placeholders (a tinted note
+  "Client to supply: ...") on About and Contact over invented names and
+  an address, and over hiding the sections, because the brief says the
+  client fills them and a hidden section is forgotten.
+- [2026-09-20] chose the privacy policy and terms as real short
+  documents, dated 20 September 2026, with a visible "Marked for legal
+  review" note, over a placeholder page; every sentence in them is true
+  for a site that collects nothing, including the ordinary access logs a
+  host keeps.
+- [2026-09-20] chose the email capture on Pricing as a mailto with a
+  subject and body over a form because a form would post somewhere.
+- [2026-09-20] chose `https://filesanity.com` as the canonical, sitemap
+  and og domain, and `hello@filesanity.com` as the mailbox, marked as
+  placeholders in `src/content.ts` and on the contact page.
+- [2026-09-20] chose `appType: 'mpa'` for vite preview so unknown paths
+  404 instead of serving the home page, and a `404.html` that every
+  static host picks up.
+- [2026-09-20] chose to keep the request counter ("Requests since read")
+  in the ready and cleaned states, from a PerformanceObserver, over
+  dropping it, because the "verify it yourself" page points at it.
+- [2026-09-20] chose to keep the sample as a fetched `/sample.jpg` on
+  "Try a sample" (one request, before the read) over bundling it into the
+  JS because 198 kB in the bundle is a cost every visitor pays.
+- [2026-09-20] chose `og.png` as a 1200x630 capture of the home fold over
+  a designed card because the fold is the product.
+
+## Tells present, logged
+
+- Eyebrow pills (the client's skill prescribes them; capped at one per
+  three sections).
+- A pill "Coming soon" badge (the client asked for the marking).
+- Cold off-white ground (silver as elevation ground, the archetype).
+- A two-line headline top-left over a grey sub-paragraph and one button
+  (House): here it sits inside the drop tray, which is the risk, and the
+  sub-paragraph is the brief's statement.
+- Generated stills, no people, lit from the upper left (House "lit from
+  the left" noticed): three, all one light.
+- A check icon per pricing line (the "green ticks" register): oxblood,
+  light weight, six lines, on the Free plan only.
+- A three-column footer link map on fourteen pages.
+
+## What in the skills conflicted, and which won
+
+- The client's skill wants `py-24` to `py-40` sections; at the client's
+  870px-tall window `py-40` shows one section per screen. `pt-24` to
+  `pt-32` won.
+- The client's skill wants a `blur-md` on entrances; the brief bans blur
+  filters on scrolling content. Opacity and translate only won.
+- The client's skill wants an eyebrow before every H1/H2; the studio caps
+  eyebrows at one per three sections. The cap won.
+- The client's skill says "elements never appear statically on load";
+  the studio's LCP budget and CLS 0 mean the hero renders at rest. The
+  hero is exempt from reveals.
+- The client's skill names Lucide as banned and Phosphor Light as
+  allowed; the studio's default is Phosphor. No conflict.
+- The studio's "one label per CTA intent" against the client's "Download
+  again" and "Clean another": the client's labels won, logged.
+- inspo's `get_design_system` extraction for mollie reports radius 0 and
+  a 12px body; the capture shows rounded pills and a 16px body. The
+  capture won.
+- The studio's tells list names "cold off-white paper" as House; the
+  client's archetype is silver-grey. Logged as the archetype, not a
+  reflex.
+
+# v1 record, 2026-09-19 (superseded; the parser calls below still hold)
+
+## v1 log
 
 - [2026-09-19] chose an exploded oblique stack in HTML and CSS (skewed
   plates in a grid, dashed leaders as background gradients) over an SVG
@@ -367,6 +544,7 @@ is the "privacy tool" register the brief names as an anti-anchor.
   exception for a comparison table is stacking or fitting, not scrolling;
   the file's field table keeps `overflow-x-auto` because long values (a
   full XMP history line) cannot stack.
+
 
 ## Parser scope and tests
 

@@ -6,85 +6,114 @@ studio layer.
 ---
 
 ## What this is
-A one-page launch site for filesanity.com, a metadata cleaner that
-competes with metacleaner.com, whose hero is the product itself: drop a
-photo or an Office document, the page reads what it carries, shows it in
-a table, strips it and downloads the clean file, all inside the visitor's
-browser. For people who send files to strangers: journalists, lawyers,
-HR, freelancers, marketplace sellers, and the privacy-minded who found
-metacleaner and hesitated at "upload".
+A multi-page product site for filesanity.com, a metadata cleaner that
+competes with metacleaner.com. The home page's hero is the product: drop
+a photo, an Office document or a PDF, the page reads what it carries,
+lists it in a table, removes it and downloads the clean file, all inside
+the visitor's browser. For people who send files to strangers:
+journalists, lawyers, HR, freelancers, marketplace sellers, and the
+privacy-minded who found metacleaner and hesitated at "upload".
+
+v2 (branch `v2-site`, 2026-09-20) replaces v1's one-page typewriter
+manual after the client's verdict: "Looks not professional and a scam
+site. Let's do it professionally, complete all pages, and make sure the
+file picker is not using the native one."
+
+## Pages
+Home `/`, How it works `/how-it-works`, Photos `/photos`, Documents
+`/documents`, PDF `/pdf`, Formats `/formats`, Pricing `/pricing`,
+Security `/security`, FAQ `/faq`, About `/about`, Contact `/contact`,
+Privacy policy `/privacy`, Terms `/terms`, Changelog `/changelog`, and a
+404. Each is prerendered to its own HTML with its own title and
+description; `sitemap.xml` and `robots.txt` are written at build. The nav
+carries Home, How it works, Formats, Pricing, Security, FAQ; the footer
+carries the rest. No blog.
 
 ## Constraints
-- Stack: React + Vite, Tailwind v4 via `@tailwindcss/vite`, self-hosted
-  fonts, no animation library, no zip library (native
-  `DecompressionStream` / `CompressionStream`), hand-written parsers.
+- The three client instructions, taken literally:
+  1. Professional: the register of a trusted product company (1Password,
+     Proton, Linear, Vercel, Stripe in their calm modes). Soft
+     Structuralism from the client's design skill: silver-grey ground,
+     white panels on diffused shadows, one clean grotesk, pill controls,
+     double-bezel containers, a floating detached nav.
+  2. Complete: every page above, real URLs, shared nav and footer, 404,
+     sitemap, robots, per-page meta.
+  3. The file picker is not the native one: a custom drop surface with
+     idle, drag-over, reading, ready, cleaned and error states; a file
+     chip; paste; a sample; the hidden `<input type="file">` is triggered
+     only from the custom control and never painted. The OS dialog is the
+     browser's and cannot be replaced.
+- Stack: React + Vite, Tailwind v4 via `@tailwindcss/vite`, Geist
+  self-hosted (Fontsource files), Phosphor icons at weight light, no
+  animation library, no router library (each route is its own prerendered
+  HTML; links are plain anchors), no zip library, hand-written parsers
+  kept from v1 in `src/lib` with their tests.
 - Client environment: Firefox at 1917x870 primary, phone 390x844, also
   1366x650. Verified in Firefox and Chromium.
-- Hard cap 150 kB gzipped JS total; hero image under 200 kB.
-- The one fixed idea (from the brief, not contradicted by the client):
-  **the file never leaves the browser.** Metadata is read and stripped on
-  the visitor's machine. No fetch, no beacon, no analytics; no size cap
-  from a server, no daily count, no trust claim to make.
-- One CTA label everywhere: "Clean a file". It opens the file picker.
-- Scope of the parser for v1: JPEG (APP1 EXIF and XMP, APP13 IPTC, COM),
-  PNG (tEXt, zTXt, iTXt, eXIf, tIME), DOCX/XLSX/PPTX (docProps/core.xml,
-  app.xml, custom.xml). PDF: the Info dictionary and the XMP packet are
-  read and shown, and their values are blanked in place; metadata inside
-  compressed object streams is neither read nor removed, and the page
-  says so.
+- Hard standards: LCP under 2.0 s at 390x844 throttled (1.6 Mbps, 150 ms,
+  4x); 150 kB gzipped JS per route; AA on painted glyphs in every picker
+  state; 320 px; keyboard and visible focus; reduced motion renders
+  entrances at rest; CLS 0 cold; transform and opacity only;
+  backdrop-blur only on the fixed nav and the menu overlay.
+- The one fixed idea: **the file never leaves the browser.** No fetch,
+  no beacon, no analytics, no cookies, no cookie banner.
+- One CTA label everywhere: "Clean a file". On the home page it opens the
+  picker; elsewhere it leads to the home page.
+- Parser scope (unchanged from v1): JPEG, PNG, DOCX/XLSX/PPTX, PDF (Info
+  and uncompressed XMP blanked in place; compressed streams shown and
+  kept, and the page says so).
 
 ### Open assumptions (the client has fixed none of these)
-- Name: "FileSanity" and the domain filesanity.com are taken from the
-  brief as given; wordmark is set in the page's type, no logo supplied.
-- Pricing: none. The page has no pricing section until the client
-  supplies one. Free use is implied by the absence of a server cost and is
-  not stated as a plan.
-- Formats: the v1 parser list above is the builder's choice, scoped to
-  what can be done correctly without a library. Audio and video
-  (m4a/m4v/mov/mp4), legacy Office (doc/xls/ppt), OpenDocument, GIF, TIFF,
-  PSD and VSD are not read in v1 and are named on the page as not yet.
-- Account: none. Nothing on the page requires or mentions one.
-- API: none.
-- Legal: the page collects nothing, stores nothing and sells nothing, so
-  it ships no privacy policy or terms link; a one-line statement in the
-  footer says why. Revisit when the client adds anything that collects.
-- The sample photograph is generated (Codex CLI) and injected with EXIF,
-  XMP and IPTC by the build; it stands in for "a photo from your phone"
-  and is captioned as a sample.
-- Domain for `og:url`: https://filesanity.com, a placeholder until the
-  client confirms.
+- Name "FileSanity" and domain filesanity.com from the brief; wordmark set
+  in the page's type. `og:url`, the sitemap and the contact mailbox
+  (hello@filesanity.com) use the domain as a placeholder.
+- Pricing: Free is everything on the site. Pro and Teams are listed as
+  coming soon with no prices; the email capture is a mailto link.
+- Formats: the v1 list; video and audio, GIF, TIFF, PSD, legacy Office
+  and OpenDocument are listed as not yet.
+- Account: none. API: none (listed under Teams as coming soon).
+- Legal: privacy policy and terms are written to be true for a site that
+  collects nothing, dated 20 September 2026, and marked for legal review
+  on the page.
+- About and Contact carry visible client-marked placeholders for names,
+  company registration and postal address. No invented people.
+- The sample photograph is generated (Codex) and its metadata is
+  invented; the footer says so.
+- Images: three abstract product stills (Codex), no people, no padlocks
+  or shields.
 
 ## Success
-At 390x844 with no input, the first screen shows what FileSanity does
-(the exploded file diagram and its labels), that the file stays on your
-device (the headline), and the "Clean a file" button; dropping the
-bundled sample JPEG lists its camera, position, date, software and author
-fields, and "Strip and download" produces a JPEG that Pillow opens with
-no EXIF, XMP or IPTC, while the Playwright network log shows zero
-requests after page load.
+At 390x844 with no input, the first screen shows the headline "The file
+never leaves your browser.", the "Clean a file" pill and the drop
+surface; dropping `tests/files/photo.jpg` lists its camera, position,
+date, software and author fields in the table, "Remove all and download"
+produces a JPEG that Pillow opens with no EXIF, XMP or IPTC, and the
+Playwright network log shows zero requests during read and clean in both
+engines. `tests/run.py` measures this.
 
 ## The risk
-The hero is a hardware manual's exploded-parts diagram of the visitor's
-own file: each metadata segment drawn as a plate lifted off the picture,
-joined by a leader line to its real values, with a safety-orange tag on
-every plate that will be removed; cleaning knocks the plates off and
-leaves the picture plate alone. No dropzone icon, no padlock, no feature
-columns. In the full-page thumbnail a stranger sees a two-line
-typewriter headline beside a boxed figure of tilted plates with labels
-and orange tags, then one spec table.
+The first screen is the drop tray: one white double-bezel panel fills
+the fold below the floating nav, with the headline, the sub-line and the
+one pill inside its top-left and the picker at its right; a file dropped
+anywhere on the panel, headline included, is read. There is no page
+around the tool until you scroll. Full block in `DECISIONS.md`.
 
 ## Out of scope
-Accounts, pricing, API, anything server-side (no backend, no upload, no
-analytics, no error reporting), audio and video formats, legacy binary
-Office formats, batch cleaning, a browser extension, a CLI.
+Accounts, a server of any kind, batch cleaning, the API, the extension,
+the CLI (all named as coming soon on Pricing, none built), audio and
+video, legacy binary Office, a blog, client-side routing.
 
 ---
 
 ## Working files
-- `DECISIONS.md`: autonomous calls + rejected alternatives, the read, `RISK:`
-- `PROGRESS.md`: state across sessions, survives CLI interruptions
+- `DECISIONS.md`: reference pass, both reads, every call with its
+  rejected alternative, tells logged
+- `PROGRESS.md`: state across sessions
 - `HARVEST.md`: manual fixes made after "done", for the studio layer
-- `tests/`: sample files and `run.py`, which strips each and asserts
+- `tests/run.py`: the picker's states, every format cleaned and asserted,
+  zero network in both engines
+- `tools/verify.py`: vitals, widths, keyboard, reduced motion, contrast,
+  font fallback, weight; `tools/shots.py`: the screenshot set
 
 ## Session start
 Read the studio layer, this brief, `DECISIONS.md`, `PROGRESS.md`.
