@@ -1,0 +1,9 @@
+Generate three images, one file each, then reply with only the three paths, one per line.
+
+Shared style for all three: editorial product still, one subject alone on a pale silver-grey matte surface (#f1f1ef) that fills the whole frame, soft diffused daylight from the upper left, faint soft shadow, shallow depth of field, colours limited to silver grey, white, charcoal (#18181b) and at most one small dark red (#8c2f2a) detail. Aspect ratio 3:2. No text, no letters, no logos, no UI, no watermark, no people, no hands.
+
+1. A single glossy photographic print lying face down on the surface, its blank white back facing the camera, one corner slightly lifted. Save it as /home/arde/projects/authegg/filesanity/assets-src/v2/photo-back.png
+
+2. A short, neat stack of white A4 paper sheets on the surface, seen from a low three-quarter angle so the stack's edge is visible, a thin dark red paper clip on the top sheet. Save it as /home/arde/projects/authegg/filesanity/assets-src/v2/paper-stack.png
+
+3. A clear solid glass block, rectangular with softly rounded edges, resting on the surface, the surface visible through it undistorted, a faint caustic highlight beside it. Save it as /home/arde/projects/authegg/filesanity/assets-src/v2/glass.png

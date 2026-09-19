@@ -1,0 +1,35 @@
+import { ClientNote, PageHead, Section } from '../ui/bits'
+import { LAUNCH, MAIL } from '../content'
+
+export const meta = {
+  title: 'Terms of use',
+  description: 'The terms for using FileSanity, in plain words, dated.',
+}
+
+export default function Terms() {
+  return (
+    <>
+      <PageHead eyebrow="Terms" title="Terms of use." lede={`Effective ${LAUNCH}. Using the site means agreeing to these. They are short because the site does little on our side.`}>
+        <ClientNote>Marked for legal review before launch.</ClientNote>
+      </PageHead>
+      <Section>
+        <div className="prose max-w-[68ch]">
+          <h2>1. What the service is</h2>
+          <p>FileSanity is a web page that reads and removes metadata from files inside your browser. It is provided free, without an account, for personal and commercial use.</p>
+          <h2>2. What it does, and does not, promise</h2>
+          <p>The page removes the fields it lists on the formats page, and it says in each result what was removed and what was kept. It does not remove content, it does not read formats marked as not yet, and it does not open compressed PDF streams. It is provided as is. We do not warrant that a cleaned file is free of every piece of identifying information, and you remain responsible for checking a file before you send it, especially where the consequences of a leak are serious.</p>
+          <h2>3. Your files</h2>
+          <p>Your files stay on your device and remain yours. We take no licence to them, because we never receive them.</p>
+          <h2>4. Acceptable use</h2>
+          <p>Do not use the site to interfere with its operation, and do not present the site as your own or as endorsed by us. Beyond that, clean whatever files you have the right to clean.</p>
+          <h2>5. Liability</h2>
+          <p>To the extent the law allows, we are not liable for any loss arising from use of the site, including loss caused by a field that was not removed. Nothing in these terms limits liability that cannot be limited by law.</p>
+          <h2>6. Changes and law</h2>
+          <p>We may change these terms; the date at the top and the changelog will say when. The governing law and the courts are those of the country where the operating company is registered, which is stated on the about page.</p>
+          <h2>7. Contact</h2>
+          <p>Questions about these terms go to {MAIL}.</p>
+        </div>
+      </Section>
+    </>
+  )
+}
