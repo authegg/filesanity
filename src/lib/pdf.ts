@@ -50,7 +50,9 @@ export async function readPdf(blob: Blob, name: string): Promise<Report> {
   const b = await read(blob, 0, blob.size)
   const { segments, edits } = scan(b)
   const objStm = indexOf(b, ascii('/ObjStm')) >= 0
-  let note = 'PDF: the Info dictionary and the XMP packet are blanked in place. Metadata inside compressed object streams is not read or removed yet.'
+  const zipped = segments.some((s) => !s.strip)
+  let note = 'PDF: the Info dictionary and an uncompressed XMP packet are blanked in place, same length.'
+  if (zipped) note += ' This file also carries a compressed XMP stream, the usual Word or Acrobat case: it is shown and kept, not removed in this version.'
   if (objStm && !segments.some((s) => s.label === 'Info')) note = 'This PDF keeps its objects in compressed streams. FileSanity cannot read or blank metadata inside them yet, so treat this file as not cleaned.'
   return { kind: 'pdf', kindLabel: 'PDF document', name, bytes: blob.size, segments, body: { label: 'The document', bytes: blob.size - edits.reduce((n, e) => n + e.end - e.start, 0) }, note }
 }
@@ -104,7 +106,7 @@ function scan(b: Uint8Array) {
     i = 0
     while ((i = indexOf(b, pat, i)) >= 0) {
       const head = latin1(b, Math.max(0, i - 200), Math.min(b.length, i + 200))
-      if (/\/Filter/.test(head)) segments.push({ id: `mdz-${i}`, label: 'XMP', what: 'a compressed metadata stream', bytes: 0, fields: [{ name: 'XMP packet', value: 'compressed, not readable in this version' }], strip: false, why: 'shown, not removed: the packet is compressed and FileSanity does not rewrite PDF streams yet' })
+      if (/\/Filter/.test(head)) segments.push({ id: `mdz-${i}`, label: 'XMP', what: 'a compressed metadata stream', bytes: 0, fields: [{ name: 'XMP packet', value: 'compressed stream, kept' }], strip: false, why: 'shown and kept: the packet is a compressed stream and FileSanity does not rewrite PDF streams yet' })
       i += pat.length
     }
   }

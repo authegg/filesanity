@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plates } from './Figure'
-import { cleanName, fieldCount, fmtBytes, inspect, strip, Unsupported, type Report } from './lib'
+import { cleanName, fieldCount, fmtBytes, inspect, keptCount, strip, Unsupported, type Report } from './lib'
 
 type State =
   | { status: 'empty' }
   | { status: 'reading'; name: string }
-  | { status: 'unsupported'; name: string; ext: string }
+  | { status: 'unsupported'; name: string; reason: string }
   | { status: 'error'; name: string; message: string }
   | { status: 'ready'; file: File; report: Report; thumb?: string }
   | { status: 'cleaned'; file: File; report: Report; thumb?: string; out: Blob; url: string }
@@ -14,7 +14,7 @@ const SPEC = [
   ['JPEG', 'EXIF, XMP, IPTC and Photoshop resources, comments', 'All removed. The ICC colour profile stays. If the photo was shot sideways, one EXIF value is written back so it still displays the right way up.'],
   ['PNG', 'tEXt, zTXt and iTXt text chunks, eXIf, tIME', 'All removed. The colour profile stays.'],
   ['DOCX, XLSX, PPTX', 'core.xml, app.xml, custom.xml, the first-page thumbnail; authors of tracked changes and comments', 'The four parts are emptied and the package is rewritten part for part. Tracked changes and comments are shown, not removed: that is an edit to the document, so it stays your call.'],
-  ['PDF', 'The Info dictionary and the XMP packet', 'Blanked in place, same length, so nothing else in the file moves. Metadata inside compressed object streams is not read or removed yet, and the page says so when it sees one.'],
+  ['PDF', 'The Info dictionary and the XMP packet', 'The Info dictionary and an uncompressed XMP packet are blanked in place, same length, so nothing else in the file moves. A compressed XMP stream, which is what Word and Acrobat usually write, is shown and kept; the figure says so. Metadata inside compressed object streams is not read yet.'],
   ['Not yet', 'MP4, MOV, M4A, GIF, TIFF, PSD, DOC, XLS, PPT, ODT, ODS, ODP', 'Shown as unsupported. Nothing is sent anywhere either way.'],
 ]
 
@@ -22,6 +22,7 @@ export default function App() {
   const [state, setState] = useState<State>({ status: 'empty' })
   const [over, setOver] = useState(false)
   const [requests, setRequests] = useState(0)
+  const [hint, setHint] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const figure = useRef<HTMLElement>(null)
 
@@ -49,7 +50,7 @@ export default function App() {
       setState({ status: 'ready', file, report, thumb })
       figure.current?.scrollIntoView({ block: 'nearest' })
     } catch (e) {
-      if (e instanceof Unsupported) setState({ status: 'unsupported', name: file.name, ext: e.ext })
+      if (e instanceof Unsupported) setState({ status: 'unsupported', name: file.name, reason: e.message })
       else setState({ status: 'error', name: file.name, message: e instanceof Error ? e.message : 'could not be read' })
     }
   }, [])
@@ -79,21 +80,33 @@ export default function App() {
     a.click()
   }
 
+  /** One file at a time; a folder is refused by name; more than one file reads the first and says so. */
+  const take = (files: FileList | null, entry?: { isDirectory?: boolean } | null) => {
+    if (!files?.length) return
+    if (entry?.isDirectory) {
+      setHint('')
+      setState({ status: 'unsupported', name: files[0].name, reason: `${files[0].name} is a folder. Drop one file from inside it.` })
+      return
+    }
+    setHint(files.length > 1 ? `One file at a time, reading ${files[0].name}.` : '')
+    load(files[0])
+  }
+
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setOver(false)
-    const f = e.dataTransfer.files[0]
-    if (f) load(f)
+    take(e.dataTransfer.files, e.dataTransfer.items?.[0]?.webkitGetAsEntry?.())
   }
 
   const report = state.status === 'ready' || state.status === 'cleaned' ? state.report : null
   const fields = report ? fieldCount(report) : 0
+  const kept = report ? keptCount(report) : 0
   const stripParts = report ? report.segments.filter((s) => s.strip) : []
 
   return (
     <>
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:bg-paper focus:p-2">Skip to content</a>
-      <input ref={input} type="file" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => e.target.files?.[0] && load(e.target.files[0])} />
+      <input ref={input} type="file" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => take(e.target.files)} />
 
       <header className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4 sm:px-6">
         <a href="/" aria-current="page" className="font-mono text-[0.9375rem] font-semibold tracking-[-0.01em]">FileSanity</a>
@@ -104,8 +117,8 @@ export default function App() {
         <section className="grid grid-cols-1 gap-8 border-t border-rule pt-6 lg:grid-cols-12 lg:gap-10 lg:pt-8" aria-labelledby="h1">
           <div className="min-w-0 lg:col-span-5">
             <h1 id="h1" className="m-0 text-[clamp(1.75rem,4.8vw,2.75rem)] leading-[1.1] lg:text-[clamp(1.75rem,1.9vw,2.25rem)]">The file never leaves your browser.</h1>
-            <p className="mt-5 max-w-[42ch] text-[1.0625rem] leading-relaxed text-muted">Drop a photo or a document. It is read and stripped on your own machine. Nothing is uploaded.</p>
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <p className="mt-4 max-w-[42ch] text-[1.0625rem] leading-relaxed text-muted lg:mt-5">Drop a photo or a document. It is read and stripped on your own machine. Nothing is uploaded.</p>
+            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 lg:mt-6">
               <button type="button" className="btn" onClick={pick}>Clean a file</button>
               <button type="button" className="link font-mono text-[0.9375rem]" onClick={sample}>Try a sample</button>
             </div>
@@ -119,7 +132,7 @@ export default function App() {
             onDrop={onDrop}
             aria-label="Your file, taken apart"
           >
-            <figcaption className="flex items-center justify-between gap-4 border-b border-rule px-3 py-2 sm:px-4">
+            <figcaption className="flex items-center justify-between gap-4 border-b border-rule px-3 py-2 sm:px-4" aria-live="polite">
               <span className="meta">
                 {state.status === 'empty' && 'Fig. 1, a typical file'}
                 {state.status === 'reading' && `Reading ${state.name}`}
@@ -127,14 +140,14 @@ export default function App() {
                 {state.status === 'error' && `Fig. 1, ${state.name}`}
                 {report && `Fig. 1, ${report.name}, ${report.kindLabel.toLowerCase()}, ${fmtBytes(report.bytes)}`}
               </span>
-              {report && <span className="meta text-muted" aria-live="polite">Requests since read: {requests}</span>}
+              {hint ? <span className="meta text-muted">{hint}</span> : report && <span className="meta text-muted">Requests since read: {requests}</span>}
             </figcaption>
 
-            <div className="grid-paper px-3 py-4 sm:px-5 sm:py-6">
+            <div className="grid-paper px-3 py-3 sm:px-5 sm:py-6">
               {state.status === 'unsupported' ? (
                 <div className="max-w-[52ch] font-mono text-[0.8125rem] leading-relaxed">
                   <p className="m-0"><span className="tag tag-kept">not read</span></p>
-                  <p className="mt-3">FileSanity cannot read .{state.ext} files yet. It reads JPEG, PNG, DOCX, XLSX, PPTX and PDF. Your file was not sent anywhere, and nothing was changed.</p>
+                  <p className="mt-3">{state.reason} Nothing was sent anywhere, and nothing was changed.</p>
                 </div>
               ) : state.status === 'error' ? (
                 <div className="max-w-[52ch] font-mono text-[0.8125rem] leading-relaxed">
@@ -162,14 +175,14 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <span className="font-mono text-[0.8125rem]">Nothing to remove. This file carries no metadata FileSanity reads.</span>
+                    <span className="font-mono text-[0.8125rem]">{kept ? `Nothing FileSanity can remove here. ${kept} ${kept === 1 ? 'field is' : 'fields are'} shown and kept.` : 'Nothing to remove. This file carries no metadata FileSanity reads.'}</span>
                     <button type="button" className="btn btn-quiet" onClick={pick}>Clean a file</button>
                   </>
                 )
               ) : (
                 <>
                   <span className="font-mono text-[0.8125rem] tabular-nums">
-                    Before: {fmtBytes(state.report.bytes)}, {fields} {fields === 1 ? 'field' : 'fields'}. After: {fmtBytes(state.out.size)}, 0 fields.
+                    Before: {fmtBytes(state.report.bytes)}, {fields + kept} {fields + kept === 1 ? 'field' : 'fields'}. After: {fmtBytes(state.out.size)}, {fields} removed{kept ? `, ${kept} kept` : ''}.
                   </span>
                   <span className="flex flex-wrap gap-x-4 gap-y-2">
                     <button type="button" className="btn btn-quiet" onClick={() => download(state.url, cleanName(state.file.name))}>Download again</button>

@@ -27,3 +27,4 @@ export type Report = {
 }
 
 export const fieldCount = (r: Report) => r.segments.filter((s) => s.strip).reduce((n, s) => n + s.fields.length, 0)
+export const keptCount = (r: Report) => r.segments.filter((s) => !s.strip).reduce((n, s) => n + s.fields.length, 0)

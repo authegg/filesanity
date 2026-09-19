@@ -22,11 +22,13 @@ export function Plates({ report, state, thumb }: { report: Report | null; state:
   return (
     <ol className="relative m-0 list-none p-0" aria-label={report ? 'Parts of the file' : 'Parts of a typical file'}>
       {segs.map((s, i) => (
-        <li key={s.id} className={`relative grid grid-cols-[5.5rem_1rem_1fr] items-center gap-x-2 py-1 sm:grid-cols-[minmax(6rem,11rem)_2rem_1fr] sm:gap-x-3 lg:grid-cols-[14rem_2rem_1fr] ${state === 'cleaned' && s.strip ? 'row-gone' : ''}`} style={{ paddingLeft: `${Math.min(i, 5) * 1}rem` }}>
-          <div className="plate h-10 sm:h-12 lg:h-14" style={{ width: `${width(s.bytes, report?.body.bytes ?? 0, 70 + i * 8)}%` }} aria-hidden="true">
-            <div className="plate-inner flex h-full items-center justify-center font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em]">{s.label}</div>
+        <li key={s.id} className={`relative grid grid-cols-[6.5rem_1fr] items-center gap-x-2 py-1 sm:grid-cols-[minmax(8rem,13rem)_1fr] sm:gap-x-3 lg:grid-cols-[16rem_1fr] ${state === 'cleaned' && s.strip ? 'row-gone' : ''}`} style={{ paddingLeft: `${Math.min(i, 5) * 1}rem` }}>
+          <div className="flex items-center" aria-hidden="true">
+            <div className="plate h-10 shrink-0 sm:h-12 lg:h-14" style={{ width: `${width(s.bytes, report?.body.bytes ?? 0, 70 + i * 8)}%` }}>
+              <div className="plate-inner flex h-full items-center justify-center font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em]">{s.label}</div>
+            </div>
+            <div className="leader ml-1 min-w-2 flex-1" />
           </div>
-          <div className="leader self-center" aria-hidden="true" />
           <div className="callout min-w-0 py-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="meta">{s.label}{report && s.bytes ? `, ${fmtBytes(s.bytes)}` : ''}</span>
@@ -43,11 +45,13 @@ export function Plates({ report, state, thumb }: { report: Report | null; state:
           </div>
         </li>
       ))}
-      <li className="relative grid grid-cols-[5.5rem_1rem_1fr] items-center gap-x-2 py-1 sm:grid-cols-[minmax(6rem,11rem)_2rem_1fr] sm:gap-x-3 lg:grid-cols-[14rem_2rem_1fr]" style={{ paddingLeft: `${Math.min(segs.length, 5) * 1}rem` }}>
-        <div className="plate h-14 overflow-hidden sm:h-20 lg:h-24" style={{ background: 'var(--paper-2)' }} aria-hidden="true">
-          {thumb ? <img src={thumb} alt="" className="plate-inner h-full w-full scale-[1.6] object-cover" decoding="async" /> : <div className="plate-inner flex h-full items-center justify-center font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted">{report ? report.kind : 'file'}</div>}
+      <li className="relative grid grid-cols-[6.5rem_1fr] items-center gap-x-2 py-1 sm:grid-cols-[minmax(8rem,13rem)_1fr] sm:gap-x-3 lg:grid-cols-[16rem_1fr]" style={{ paddingLeft: `${Math.min(segs.length, 5) * 1}rem` }}>
+        <div className="flex items-center" aria-hidden="true">
+          <div className="plate plate-body h-14 w-[88%] shrink-0 overflow-hidden sm:h-20 lg:h-24">
+            {thumb ? <img src={thumb} alt="" className="plate-inner h-full w-full scale-[1.6] object-cover" decoding="async" /> : <div className="plate-inner flex h-full items-center justify-center font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted">{report ? report.kind : 'file'}</div>}
+          </div>
+          <div className="leader ml-1 min-w-2 flex-1" />
         </div>
-        <div className="leader self-center" aria-hidden="true" />
         <div className="callout min-w-0 py-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="meta">{bodyLabel}{report ? `, ${fmtBytes(report.body.bytes)}` : ''}</span>

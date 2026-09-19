@@ -148,9 +148,9 @@
   }
   .plate-inner { transform: skewX(24deg); }
   .row-gone .plate { translate: 40px 0; opacity: 0.35; border-style: dashed; }
-  .row-gone .callout { opacity: 0.55; }
+  .row-gone .callout { color: var(--muted); }
   .row-gone .callout .field { text-decoration: line-through; text-decoration-color: var(--accent-ink); }
-  .callout { transition: opacity 500ms var(--ease-out); }
+  .callout { transition: color 300ms; }
   .leader {
     background-image: linear-gradient(to right, var(--ink) 50%, transparent 50%);
     background-size: 8px 1px;
@@ -158,12 +158,7 @@
     background-position: 0 50%;
     height: 1px;
   }
-  .leader-v {
-    background-image: linear-gradient(to bottom, var(--ink) 50%, transparent 50%);
-    background-size: 1px 8px;
-    background-repeat: repeat-y;
-    width: 1px;
-  }
+  .plate-body { background: var(--paper-2); }
   .drop-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
   .spec td, .spec th { vertical-align: top; padding: 0.625rem 0.75rem 0.625rem 0; border-top: 1px solid var(--rule); }
   .spec th { font-weight: 500; text-align: left; }
