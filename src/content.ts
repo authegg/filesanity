@@ -29,7 +29,7 @@ export const FAQ: { group: string; items: [string, string][] }[] = [
       ['Is this really free?', 'Yes. Everything on this site runs in your browser, so there is no server to pay for and nothing to charge you for. There is no account, no limit on file size or count, and no upload. Paid plans for batches, an API and a browser extension are planned and marked as coming soon on the pricing page; nothing here moves behind them.'],
       ['Does it work offline?', 'Yes. Once the page has loaded, disconnect and it keeps working. The sample file is the only thing fetched on demand, and only when you press "Try a sample".'],
       ['What happens to my file?', 'Your browser hands the page a reference to it. The page reads the header bytes it needs, shows you what it found, and builds the clean copy from slices of the original. The file is never sent anywhere and is forgotten when you close the tab.'],
-      ['How do I know nothing is uploaded?', 'Open your browser\'s developer tools, choose the Network tab, then drop a file and clean it. No request appears. The counter beside your result reads the same data from the browser. The source is unminified enough to read, and there is no server component at all.'],
+      ['How do I know nothing is uploaded?', 'Open your browser\'s developer tools, choose the Network tab, then drop a file and clean it. No request appears. The counter beside your result reads the same data from the browser. The parsers are published as plain text at /source and the script carries a source map, and there is no server component at all.'],
     ],
   },
   {
