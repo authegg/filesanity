@@ -1,81 +1,126 @@
-"""Screenshots at the client's sizes (Firefox for the primary size), the
-four-state flow strip, and the network log during a clean.
+"""Screenshots: home fold and full page at the client's sizes (Firefox for
+1917x870 and 390x844, Chromium for 1366x650), the picker's six states side
+by side, the phone menu open, one full page per other route at 1440, and
+the anchors-vs-page sheet.
 
-Usage: python3 tools/shots.py [url] [--quick]
+Usage: python3 tools/shots.py [url]
 """
-import json
 import os
 import sys
 
+from PIL import Image, ImageDraw
 from playwright.sync_api import sync_playwright
 
-URL = next((a for a in sys.argv[1:] if a.startswith('http')), 'http://127.0.0.1:4184/')
-QUICK = '--quick' in sys.argv
+URL = next((a for a in sys.argv[1:] if a.startswith('http')), 'http://127.0.0.1:4184')
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'shots')
 FILES = os.path.join(ROOT, 'tests', 'files')
-SIZES = [('1917x870', 1917, 870, 'firefox'), ('1366x650', 1366, 650, 'chromium'), ('390x844', 390, 844, 'chromium'), ('390x844', 390, 844, 'firefox'), ('1917x870', 1917, 870, 'chromium')]
-if QUICK:
-    SIZES = SIZES[:3]
+ROUTES = ['how-it-works', 'photos', 'documents', 'pdf', 'formats', 'pricing', 'security', 'faq', 'about', 'contact', 'privacy', 'terms', 'changelog', '404.html']
+os.makedirs(OUT, exist_ok=True)
 
 
-def settle(page):
-    page.wait_for_timeout(700)
-    page.evaluate('document.fonts.ready')
-    page.wait_for_timeout(200)
-
-
-def load_file(page, path):
-    page.set_input_files('input[type=file]', path)
-    page.wait_for_selector('button:has-text("Strip ")', timeout=5000) if path.endswith(('.jpg', '.png', '.docx', '.xlsx', '.pptx', '.pdf')) and 'clean' not in path else page.wait_for_timeout(400)
-    settle(page)
+def settle(page, full=False):
+    page.wait_for_timeout(500)
+    if full:
+        page.evaluate('''async () => { const h = document.documentElement.scrollHeight; for (let y = 0; y < h; y += 400) { window.scrollTo(0, y); await new Promise(r => setTimeout(r, 30)) } window.scrollTo(0, 0) }''')
+        page.wait_for_timeout(1100)
 
 
 with sync_playwright() as p:
-    os.makedirs(OUT, exist_ok=True)
-    for name, w, h, engine in SIZES:
+    for name, w, h, engine in (('1917x870', 1917, 870, 'firefox'), ('1366x650', 1366, 650, 'chromium'), ('390x844', 390, 844, 'firefox'), ('390x844-chromium', 390, 844, 'chromium')):
         b = getattr(p, engine).launch()
         page = b.new_page(viewport={'width': w, 'height': h})
-        page.goto(URL, wait_until='load')
+        page.goto(URL + '/', wait_until='load')
         settle(page)
-        tag = f'{name}-{engine}' if (name, engine) in [('390x844', 'firefox'), ('1917x870', 'chromium')] else name
-        page.screenshot(path=os.path.join(OUT, f'fold-{tag}.png'))
-        page.screenshot(path=os.path.join(OUT, f'full-{tag}.png'), full_page=True)
+        page.screenshot(path=os.path.join(OUT, f'home-fold-{name}.png'))
+        settle(page, full=True)
+        page.screenshot(path=os.path.join(OUT, f'home-full-{name}.png'), full_page=True)
         b.close()
 
-    # Flow strip at 1917x870 in Firefox: empty, read, cleaned, unsupported. Plus the network log.
+    # Six picker states at 1917x870 in Firefox, the hero panel cropped, side by side.
     b = p.firefox.launch()
     ctx = b.new_context(viewport={'width': 1917, 'height': 870}, accept_downloads=True)
     page = ctx.new_page()
-    log = []
-    page.on('request', lambda r: log.append({'method': r.method, 'url': r.url, 'type': r.resource_type}))
-    page.goto(URL, wait_until='load')
+    page.goto(URL + '/', wait_until='load')
     settle(page)
-    shots = []
-    page.screenshot(path=os.path.join(OUT, 'flow-0-empty.png'))
-    n_before = len(log)
-    load_file(page, os.path.join(FILES, 'photo.jpg'))
-    page.screenshot(path=os.path.join(OUT, 'flow-1-read.png'))
-    with page.expect_download() as dl:
-        page.click('button:has-text("Strip ")')
-    dl.value.save_as(os.path.join(OUT, 'flow-download.jpg'))
-    page.wait_for_timeout(900)
-    page.screenshot(path=os.path.join(OUT, 'flow-2-cleaned.png'))
-    after = [r for r in log[n_before:] if not r['url'].startswith('blob:')]  # blob: URLs are the page's own object URLs
-    load_file(page, os.path.join(FILES, 'notes.txt'))
-    page.screenshot(path=os.path.join(OUT, 'flow-3-unsupported.png'))
-    with open(os.path.join(OUT, 'network-log.json'), 'w') as f:
-        json.dump({'requests_during_read_and_clean': after, 'total_requests_on_page': len(log), 'all': log}, f, indent=1)
-    print('requests during read and clean:', after)
+    states = []
+
+    def grab(label):
+        page.wait_for_timeout(300)
+        box = page.query_selector('.plate-hero').bounding_box()
+        page.screenshot(path=os.path.join(OUT, '_tmp.png'))
+        im = Image.open(os.path.join(OUT, '_tmp.png')).crop((int(box['x'] + box['width'] * 0.5), int(box['y']), int(box['x'] + box['width']), int(box['y'] + box['height'])))
+        states.append((label, im))
+
+    grab('idle')
+    dt = page.evaluate_handle("async () => { const r = await fetch('/sample.jpg'); const b = await r.blob(); const dt = new DataTransfer(); dt.items.add(new File([b], 'IMG_4471.jpg', { type: 'image/jpeg' })); return dt }")
+    page.dispatch_event('section[aria-labelledby=h1]', 'dragenter', {'dataTransfer': dt})
+    grab('drag-over')
+    page.dispatch_event('section[aria-labelledby=h1]', 'dragleave', {'dataTransfer': dt})
+    # Reading: hold the parser by loading a large file through a slowed inspect; simplest is to capture right after the drop.
+    page.evaluate("() => { const o = Blob.prototype.arrayBuffer; Blob.prototype.arrayBuffer = function () { Blob.prototype.arrayBuffer = o; return new Promise((res) => setTimeout(() => res(o.call(this)), 1200)) } }")
+    page.dispatch_event('section[aria-labelledby=h1]', 'drop', {'dataTransfer': dt})
+    page.wait_for_timeout(150)
+    grab('reading')
+    page.wait_for_selector('button:has-text("Remove all")', timeout=15000)
+    grab('ready')
+    with page.expect_download():
+        page.click('button:has-text("Remove all")')
+    page.wait_for_selector('button:has-text("Download again")')
+    grab('cleaned')
+    page.set_input_files('input[type=file]', os.path.join(FILES, 'notes.txt'))
+    page.wait_for_selector('[data-state=error]', timeout=8000)
+    grab('error')
+    os.remove(os.path.join(OUT, '_tmp.png'))
+    W = sum(im.width for im, in [(s[1],) for s in states]) + 10 * (len(states) - 1)
+    H = max(s[1].height for s in states) + 30
+    sheet = Image.new('RGB', (W, H), '#333')
+    d = ImageDraw.Draw(sheet)
+    x = 0
+    for label, im in states:
+        sheet.paste(im, (x, 30))
+        d.text((x + 6, 8), label, fill='white')
+        x += im.width + 10
+    sheet.save(os.path.join(OUT, 'picker-states-1917x870.png'))
     b.close()
 
-    from PIL import Image
-    ims = [Image.open(os.path.join(OUT, f'flow-{i}-{n}.png')) for i, n in enumerate(['empty', 'read', 'cleaned', 'unsupported'])]
-    W = sum(i.width for i in ims) + 30
-    sheet = Image.new('RGB', (W, ims[0].height), '#888')
+    # Phone menu open.
+    b = p.firefox.launch()
+    page = b.new_page(viewport={'width': 390, 'height': 844})
+    page.goto(URL + '/security', wait_until='load')
+    settle(page)
+    page.click('button.burger')
+    page.wait_for_timeout(900)
+    page.screenshot(path=os.path.join(OUT, 'menu-390x844.png'))
+    b.close()
+
+    # One full page per other route at 1440.
+    b = p.chromium.launch()
+    for r in ROUTES:
+        page = b.new_page(viewport={'width': 1440, 'height': 900})
+        page.goto(URL + '/' + r, wait_until='load')
+        settle(page, full=True)
+        page.screenshot(path=os.path.join(OUT, f'page-{r.replace(".html", "")}-1440.png'), full_page=True)
+        page.close()
+    b.close()
+
+# Anchors beside the page: minimal-so (structure), mollie-com--pricing (surface), our fold.
+refs = os.path.join(ROOT, 'refs')
+tiles = []
+for f, label in ((os.path.join(refs, 'minimal-so.hero.webp'), 'minimal-so: structure'), (os.path.join(refs, 'mollie-com--pricing.hero.webp'), 'mollie-com--pricing: surface'), (os.path.join(OUT, 'home-fold-1917x870.png'), 'filesanity v2: home fold, 1917x870')):
+    if os.path.exists(f):
+        im = Image.open(f).convert('RGB')
+        im.thumbnail((900, 600))
+        tiles.append((label, im))
+if tiles:
+    W = sum(t[1].width for t in tiles) + 10 * (len(tiles) - 1)
+    H = max(t[1].height for t in tiles) + 30
+    sheet = Image.new('RGB', (W, H), '#333')
+    d = ImageDraw.Draw(sheet)
     x = 0
-    for im in ims:
-        sheet.paste(im, (x, 0))
+    for label, im in tiles:
+        sheet.paste(im, (x, 30))
+        d.text((x + 6, 8), label, fill='white')
         x += im.width + 10
-    sheet.save(os.path.join(OUT, 'flow-1917x870.png'))
+    sheet.save(os.path.join(OUT, 'anchors-vs-page.png'))
 print('ok', sorted(os.listdir(OUT)))
