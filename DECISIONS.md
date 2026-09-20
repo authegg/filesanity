@@ -952,7 +952,7 @@ Not changed: the empty left half of the home tray at 1917 wide (the tray is the 
 
 ## Launch as open source (2026-09-20)
 
-- Owner's calls: the repo is public under MIT; "we" is authegg, an open-source project, no company, no postal address; hello@filesanity.com forwards through Cloudflare Email Routing (enabled by API, rule created, destination already verified). Terms name Irish law as an assumption, marked.
+- Owner's calls: the repo is public under MIT; "we" is authegg, an open-source project, no company, no postal address; hello@filesanity.com forwards through Cloudflare Email Routing (enabled by API, rule created, destination already verified). Terms name Philippine law (the owner is based in the Philippines; first draft wrongly assumed Ireland from the studio's other projects), still marked for a lawyer.
 - About, Contact, Privacy and Terms rewritten for that: GitHub replaces the postal column on Contact; Privacy names the offline cache, the batch policy in the URL and the extension's two stored values; the mailbox mark is gone. Rejected: keeping the client placeholders (a public page saying "client to supply" is the scam signal the v1 verdict named).
 - `refs/` (captures of two reference sites) untracked before the flip; they stay on disk. Rejected: rewriting history to remove them (they are screenshots of public pages, and the log cites them).
 - README rewritten for a stranger: the claim, the table of what is removed, the tree, the commands, the licence.
