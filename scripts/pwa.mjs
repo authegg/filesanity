@@ -29,12 +29,11 @@ addEventListener('fetch', (e) => {
   if (r.method !== 'GET' || u.origin !== location.origin) return
   const k = key(u)
   if (r.mode === 'navigate') {
-    // Stale-while-revalidate: the cached page now, the network copy for next time, 404 when neither exists.
+    // Network first, so an edited page shows on the next load; the cached page within 3 s if the network is slow or gone, 404 when neither exists.
     e.respondWith(caches.open(V).then(async (c) => {
-      const hit = await c.match(k)
       const net = fetch(r).then((res) => { if (res.ok && has.has(k)) c.put(k, res.clone()); return res }).catch(() => null)
-      if (hit) e.waitUntil(net)
-      return hit || (await net) || c.match('/404')
+      const slow = new Promise((ok) => setTimeout(() => ok(null), 3000))
+      return (await Promise.race([net, slow])) || (await c.match(k)) || (await net) || c.match('/404')
     }))
   } else if (has.has(k)) e.respondWith(caches.match(k).then((hit) => hit || fetch(r)))
 })
