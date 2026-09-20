@@ -45,7 +45,7 @@ Firefox, and `tests/run.py` against the served site with its headers.
 - `src/entry-server.tsx`: re-exports `FAQ` for the prerender.
 - `scripts/pwa.mjs`: `_headers` and `_redirects` excluded from the
   precache.
-- `public/_redirects`: www to bare domain, 301.
+- www to bare domain, 301: `www/worker.mjs`, a separate Worker (static assets accept only relative `_redirects` sources).
 - `public/_headers`: nosniff, Referrer-Policy, Permissions-Policy, CSP
   (`default-src 'self'`, script-src with the hash of the one inline
   script, style-src split so only `style` attributes are inline,
@@ -101,7 +101,7 @@ Firefox, and `tests/run.py` against the served site with its headers.
   breadcrumbs, headers) because the prerender handles it.
 - `tests/run.py` line 185 expects the old multi-file note text; update
   it to the new Picker wording.
-- The www redirect rule in `public/_redirects` needs one check on the
+- The www redirect Worker needs one check on the
   live domain after deploy: `curl -sI https://www.filesanity.com/faq`
   should return 301 to `https://filesanity.com/faq`.
 - Confirm the domain: `SITE` in `scripts/prerender.mjs` and

@@ -8,7 +8,7 @@
     "not_found_handling": "404-page"
   },
   "routes": [
-    { "pattern": "filesanity.com", "custom_domain": true },
-    { "pattern": "www.filesanity.com", "custom_domain": true }
+    { "pattern": "filesanity.com", "custom_domain": true }
+    // www.filesanity.com is a separate one-line Worker in www/ that 301s here; static assets cannot redirect by host.
   ]
 }

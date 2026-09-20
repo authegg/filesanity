@@ -1,0 +1,6 @@
+{
+  "name": "filesanity-www",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-20",
+  "routes": [{ "pattern": "www.filesanity.com", "custom_domain": true }]
+}

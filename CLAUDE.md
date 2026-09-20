@@ -55,7 +55,7 @@ owner's request, overriding v2's "no blog".
   1366x650. Verified in Firefox and Chromium.
 - The site is an installable PWA: `scripts/pwa.mjs` writes `dist/sw.js`
   with a precache of every route and asset; `public/_headers` carries the
-  CSP and cache rules, `public/_redirects` sends www to the bare domain.
+  CSP and cache rules; `www/` is a one-line Worker that 301s www to the bare domain.
 - Hard standards: LCP under 2.0 s at 390x844 throttled (1.6 Mbps, 150 ms,
   4x); 150 kB gzipped JS per route; AA on painted glyphs in every picker
   state; 320 px; keyboard and visible focus; reduced motion renders
