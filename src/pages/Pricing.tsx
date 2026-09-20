@@ -22,7 +22,7 @@ export default function Pricing() {
       <PageHead
         eyebrow="Pricing"
         title="Everything is free."
-        lede="There is no server behind the page, so there is nothing to charge you for. The tools that were planned as paid plans are built and free too: nothing on this site sits behind a price or an account."
+        lede="There is no server behind the page, so there is nothing to charge you for. The page, batch, the command line, the extension, the API and team policies: all of it, with no account and no limit."
       />
       <Section>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -50,7 +50,7 @@ export default function Pricing() {
             <div className="plate p-6 sm:p-10">
               <div className="flex flex-wrap items-baseline justify-between gap-4">
                 <h2 className="text-[1.75rem] sm:text-[2.25rem]">Also free</h2>
-                <span className="text-[1.125rem] text-muted">Built, not planned</span>
+                <span className="text-[1.125rem] text-muted">Same parsers</span>
               </div>
               <ol className="rows mt-8 border-b border-hair-2">
                 {TOOLS.map(([href, name, who, what]) => (
@@ -67,7 +67,7 @@ export default function Pricing() {
       </Section>
       <Closer
         title="Nothing to pay for, nothing to sign up for."
-        text="If a paid plan ever appears, it will be for something a page cannot do, and the changelog will say so first."
+        text="Drop a file and it is read and cleaned on your own machine. That is the whole product."
       />
     </>
   )

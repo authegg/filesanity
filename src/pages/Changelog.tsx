@@ -18,7 +18,7 @@ export default function Changelog() {
               <p className="mt-1 text-muted">{LAUNCH}</p>
             </div>
             <div className="prose md:col-span-8">
-              <p>The tools that were listed as paid plans are built and free. Nothing sits behind a price or an account.</p>
+              <p>Five tools beyond the page, all free, all the same parsers.</p>
               <ul>
                 <li>Batch: drop a folder or many files, get one zip in the same shape, in the browser.</li>
                 <li>Policy: the kinds a team keeps, carried in the page's address as a link and stored nowhere; the home page honours it too.</li>
