@@ -2,8 +2,8 @@ import { MAIL, POSTAL } from '../content'
 import { ClientNote, Mailbox, PageHead, Pill, Section } from '../ui/bits'
 
 export const meta = {
-  title: 'Contact FileSanity',
-  description: 'An email address and a postal address. No form, because a form would need a server.',
+  title: 'Contact FileSanity: an email and a postal address',
+  description: 'How to reach FileSanity: an email address and a postal address. There is no contact form, because a form would need a server and the site has none.',
 }
 
 export default function Contact() {

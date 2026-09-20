@@ -1,16 +1,12 @@
 import { latin1, u16, u32, utf8 } from './bytes'
 import type { Field } from './types'
+import { parseXml, type XEl } from './xml'
 
 /** XMP packet (XML) to fields: every attribute on rdf:Description and every leaf element with text. */
 export function parseXmp(xml: string): Field[] {
   const fields: Field[] = []
-  let doc: Document
-  try {
-    doc = new DOMParser().parseFromString(xml.replace(/^[^<]*/, ''), 'application/xml')
-  } catch {
-    return fields
-  }
-  if (doc.getElementsByTagName('parsererror').length) return [{ name: 'XMP packet', value: `${xml.length} characters, could not be parsed` }]
+  const doc = parseXml(xml.replace(/^[^<]*/, '').replace(/[^>]*$/, ''))
+  if (!doc) return [{ name: 'XMP packet', value: `${xml.length} characters, could not be parsed` }]
   const seen = new Set<string>()
   const push = (name: string, value: string) => {
     const v = value.trim()
@@ -20,22 +16,20 @@ export function parseXmp(xml: string): Field[] {
     seen.add(key)
     fields.push({ name, value: v })
   }
-  const walk = (el: Element) => {
-    for (const a of Array.from(el.attributes)) {
+  const walk = (el: XEl) => {
+    for (const a of el.attrs) {
       if (a.name.startsWith('xmlns') || a.name === 'rdf:about' || a.name === 'rdf:parseType' || a.name === 'xml:lang') continue
       push(a.name, a.value)
     }
-    const kids = Array.from(el.children)
-    if (!kids.length) {
-      const name = el.nodeName === 'rdf:li' ? (el.parentElement?.parentElement?.nodeName ?? 'item') : el.nodeName
-      push(name, el.textContent ?? '')
+    if (!el.children.length) {
+      const name = el.name === 'rdf:li' ? (el.parent?.parent?.name ?? 'item') : el.name
+      push(name, el.textContent)
       return
     }
-    for (const k of kids) walk(k)
+    for (const k of el.children) walk(k)
   }
-  const roots = doc.getElementsByTagNameNS('*', 'Description')
-  for (const r of Array.from(roots)) walk(r)
-  const tk = doc.documentElement.getAttribute('x:xmptk')
+  for (const r of [doc, ...doc.all()]) if (r.localName === 'Description') walk(r)
+  const tk = doc.getAttribute('x:xmptk')
   if (tk) push('x:xmptk', tk)
   return fields
 }

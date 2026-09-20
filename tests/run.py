@@ -100,6 +100,60 @@ def verify(name, data, before, fig=''):
 
 PICKER = '[data-state]'
 HERO = 'section[aria-labelledby=h1]'
+BATCH = ['photo.jpg', 'shot.png', 'offer.docx', 'fees.xlsx', 'pitch.pptx', 'memo.pdf', 'notes.txt']
+
+
+def run_batch(page, requests):
+    """/batch: many files in, one zip out, every clean file verified; a policy link keeps what it names, on /batch and on /."""
+    print('\nbatch')
+    page.goto(URL.rstrip('/') + '/batch', wait_until='load')
+    page.wait_for_timeout(500)
+    n0 = len(requests)
+    page.set_input_files('input[type=file][multiple]', [os.path.join(FILES, f) for f in BATCH])
+    page.wait_for_selector(f'text=fields to remove in {len(BATCH) - 1} files', timeout=10000)
+    check('1 skipped' in page.inner_text('[aria-label="Files in the batch"] ~ *, .plate'), 'batch: notes.txt listed and skipped')
+    with page.expect_download() as dl:
+        page.click(f'button:has-text("download {len(BATCH) - 1} files")')
+    path = dl.value.path()
+    check(dl.value.suggested_filename == 'files-clean.zip', f'batch: zip named files-clean.zip ({dl.value.suggested_filename})')
+    z = zipfile.ZipFile(path)
+    check(z.testzip() is None and sorted(z.namelist()) == sorted(f.rsplit('.', 1)[0] + '-clean.' + f.rsplit('.', 1)[1] for f in BATCH[:-1]), f'batch: zip holds the six clean files ({z.namelist()})')
+    for f in BATCH[:-1]:
+        name = f.rsplit('.', 1)[0] + '-clean.' + f.rsplit('.', 1)[1]
+        data = z.read(name)
+        if f.endswith('.pdf'):
+            check(len(data) == os.path.getsize(os.path.join(FILES, f)) and not [l for l in LEAKS if l in data], f'batch pdf: same length, no leaks')
+        else:
+            verify(f, data, open(os.path.join(FILES, f), 'rb').read())
+    check(f'{len(BATCH) - 1} files cleaned' in page.inner_text('.plate'), 'batch: the figure reads cleaned')
+    check(len(requests) == n0, f'batch: no network requests ({requests[n0:]})')
+    # A policy in the address keeps what it names, and the address is the only store.
+    page.click('label:has-text("EXIF") input')
+    check(page.evaluate('location.search') == '?keep=exif', f'batch: ticking EXIF writes ?keep=exif ({page.evaluate("location.search")})')
+    page.goto(URL.rstrip('/') + '/batch?keep=exif,core', wait_until='load')
+    page.wait_for_timeout(500)
+    n0 = len(requests)
+    page.set_input_files('input[type=file][multiple]', [os.path.join(FILES, 'photo.jpg'), os.path.join(FILES, 'offer.docx')])
+    page.wait_for_selector('text=fields to remove in 2 files', timeout=10000)
+    check(page.is_checked('label:has-text("EXIF") input') and page.is_checked('label:has-text("Core properties") input'), 'batch: the link ticks its kinds')
+    with page.expect_download() as dl:
+        page.click('button:has-text("download 2 files")')
+    z = zipfile.ZipFile(dl.value.path())
+    from PIL import Image
+    im = Image.open(io.BytesIO(z.read('photo-clean.jpg')))
+    check(dict(im.getexif()) and 'xmp' not in im.info, f'policy: EXIF kept, XMP gone ({len(dict(im.getexif()))} tags)')
+    core = zipfile.ZipFile(io.BytesIO(z.read('offer-clean.docx'))).read('docProps/core.xml')
+    check(b'<dc:creator' in core, 'policy: core.xml kept')
+    check(len(requests) == n0, f'policy: still no network requests ({requests[n0:]})')
+    # The home page honours the same link.
+    page.goto(URL.rstrip('/') + '/?keep=exif', wait_until='load')
+    page.set_input_files('input[type=file]', os.path.join(FILES, 'photo.jpg'))
+    page.wait_for_selector('button:has-text("Remove all")', timeout=8000)
+    check('Policy from this link: keeping EXIF' in page.inner_text(PICKER), 'home: the policy note names EXIF')
+    with page.expect_download() as dl:
+        page.click('button:has-text("Remove all")')
+    im = Image.open(dl.value.path())
+    check(dict(im.getexif()) and 'xmp' not in im.info, 'home: EXIF kept under the policy link, XMP gone')
 
 
 def run_cases(page, requests):
@@ -182,13 +236,15 @@ with sync_playwright() as p:
     dt = page.evaluate_handle("() => { const dt = new DataTransfer(); dt.items.add(new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], 'photo.jpg')); dt.items.add(new File(['x'], 'shot.png')); return dt }")
     page.dispatch_event(HERO, 'drop', {'dataTransfer': dt})
     page.wait_for_timeout(600)
-    check('One file at a time. Reading photo.jpg.' in page.inner_text(PICKER), 'two files: reads the first and says so')
+    check('Reading photo.jpg. For 2 files at once, use batch.' in page.inner_text(PICKER), 'two files: reads the first and points at batch')
     # Paste.
     page.evaluate("() => { const dt = new DataTransfer(); dt.items.add(new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], 'pasted.png', { type: 'image/png' })); document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })) }")
     page.wait_for_timeout(600)
     check('pasted.png' in page.inner_text(PICKER), 'a pasted file is read')
     check(not errors, f'no page errors ({errors})')
     check(len(requests) == n0, f'chromium: no network requests during {len(CASES)} reads and cleans ({requests[n0:]})')
+    run_batch(page, requests)
+    check(not errors, f'no page errors after batch ({errors})')
     b.close()
 
     # Firefox: the client's browser. One read and clean, zero requests.

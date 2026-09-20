@@ -1,8 +1,8 @@
 import { Closer, PageHead, Section } from '../ui/bits'
 
 export const meta = {
-  title: 'Photos: what a JPEG or PNG reveals',
-  description: 'EXIF, GPS, XMP and IPTC in JPEG and PNG files: what each field reveals about you, and what FileSanity removes.',
+  title: 'Photos: what a JPEG or PNG reveals about you',
+  description: 'EXIF, GPS, XMP and IPTC in JPEG and PNG files: what each field reveals about you, which ones matter most, and what FileSanity removes in the browser.',
 }
 
 const BLOCKS: [string, string, [string, string][]][] = [

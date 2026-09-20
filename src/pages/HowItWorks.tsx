@@ -2,7 +2,7 @@ import { Closer, PageHead, Section } from '../ui/bits'
 
 export const meta = {
   title: 'How it works: the browser does the work',
-  description: 'How FileSanity reads and removes metadata without a server: the file API, header-only parsing, a clean copy built from slices, and how to verify it yourself in the network panel.',
+  description: 'How FileSanity removes metadata without a server: the File API, header-only parsing, a clean copy built from slices, and how to verify it in the network panel.',
 }
 
 const STEPS: [string, string, string][] = [

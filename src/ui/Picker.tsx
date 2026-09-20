@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowDown, ArrowRight, CircleNotch, File as FileIcon, FileDoc, FilePdf, FilePpt, FileXls, Image, WarningCircle, X } from '@phosphor-icons/react'
-import { cleanName, fieldCount, fmtBytes, inspect, keptCount, strip, Unsupported, type Report } from '../lib'
+import { applyPolicy, cleanName, fieldCount, fmtBytes, inspect, keptCount, parsePolicy, POLICY, strip, Unsupported, type Report } from '../lib'
 
 export type PickerState =
   | { status: 'idle' }
@@ -37,7 +37,8 @@ export function usePicker() {
       return { status: 'reading', name: file.name }
     })
     try {
-      const report = await inspect(file)
+      // A policy shared as a link (/?keep=exif,xmp) flips those kinds to kept; see /batch.
+      const report = applyPolicy(await inspect(file), parsePolicy(location.search))
       setRequests(0)
       setState({ status: 'ready', file, report })
     } catch (e) {
@@ -46,7 +47,7 @@ export function usePicker() {
     }
   }, [])
 
-  /** One file at a time; a folder is refused; more than one reads the first and says so. */
+  /** One file at a time; a folder is refused; more than one reads the first and points at batch. */
   const take = useCallback((files: FileList | File[] | null, entry?: { isDirectory?: boolean } | null) => {
     if (!files?.length) return
     const list = Array.from(files)
@@ -55,7 +56,7 @@ export function usePicker() {
       setState({ status: 'error', name: list[0].name, message: `${list[0].name} is a folder. Drop one file from inside it.` })
       return
     }
-    setNote(list.length > 1 ? `One file at a time. Reading ${list[0].name}.` : '')
+    setNote(list.length > 1 ? `Reading ${list[0].name}. For ${list.length} files at once, use batch.` : '')
     load(list[0])
   }, [load])
 
@@ -216,7 +217,7 @@ export function Picker({ p }: { p: PickerApi }) {
         <div className="flex flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Chip name={report!.name} size={state.status === 'cleaned' ? state.out.size : report!.bytes} kind={report!.kind} onRemove={reset} />
-            {note && <span className="text-[0.8125rem] text-muted">{note}</span>}
+            {note && <span className="text-[0.8125rem] text-muted">{note.endsWith('use batch.') ? <>{note.slice(0, -6)}<a href="/batch" className="link">batch</a>.</> : note}</span>}
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-ground shadow-[inset_0_0_0_1px_var(--hair)]">
@@ -251,6 +252,11 @@ export function Picker({ p }: { p: PickerApi }) {
           </div>
 
           {report!.note && <p className="text-[0.8125rem] leading-relaxed text-muted">{report!.note}</p>}
+          {report!.segments.some((s) => s.why === 'kept by your policy') && (
+            <p className="text-[0.8125rem] leading-relaxed text-muted">
+              Policy from this link: keeping {parsePolicy(location.search).map((k) => POLICY.find((p) => p.key === k)!.label).join(', ')}. <a href="/" className="link">Clear it</a> or <a href="/batch" className="link">change it</a>.
+            </p>
+          )}
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             {state.status === 'ready' ? (

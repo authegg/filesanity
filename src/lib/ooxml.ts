@@ -1,5 +1,6 @@
 import { ascii, concat, crc32, deflateRaw, inflateRaw, lastIndexOf, read, u16, u32, utf8, type Bytes } from './bytes'
 import type { Field, Report, Segment } from './types'
+import { parseXml, type XEl } from './xml'
 
 type Entry = { name: string; nameBytes: Bytes; flags: number; method: number; crc: number; csize: number; usize: number; offset: number; extAttr: number; madeBy: number; dataStart?: number }
 
@@ -36,10 +37,7 @@ async function content(blob: Blob, en: Entry): Promise<Uint8Array> {
   throw new Error(`unsupported zip method ${en.method}`)
 }
 
-const xmlDoc = (b: Uint8Array) => {
-  const doc = new DOMParser().parseFromString(utf8(b), 'application/xml')
-  return doc.getElementsByTagName('parsererror').length ? null : doc
-}
+const xmlDoc = (b: Uint8Array) => parseXml(utf8(b))
 
 const PRETTY: Record<string, string> = {
   creator: 'Author', lastModifiedBy: 'Last modified by', created: 'Created', modified: 'Modified', revision: 'Revision count',
@@ -52,11 +50,10 @@ const PRETTY: Record<string, string> = {
   LinksUpToDate: 'Links up to date', HyperlinksChanged: 'Hyperlinks changed', PresentationFormat: 'Presentation format', MMClips: 'Multimedia clips',
 }
 
-function leafFields(doc: Document): Field[] {
+function leafFields(root: XEl): Field[] {
   const out: Field[] = []
-  const root = doc.documentElement
-  for (const child of Array.from(root.children)) {
-    const leaves = child.children.length ? Array.from(child.getElementsByTagName('*')).filter((e) => !e.children.length) : [child]
+  for (const child of root.children) {
+    const leaves = child.children.length ? child.all().filter((e) => !e.children.length) : [child]
     const vals = leaves.map((l) => (l.textContent ?? '').trim()).filter(Boolean)
     if (!vals.length) continue
     let value = vals.join(', ')
@@ -66,8 +63,8 @@ function leafFields(doc: Document): Field[] {
   return out
 }
 
-function customFields(doc: Document): Field[] {
-  return Array.from(doc.documentElement.children).map((p) => ({ name: p.getAttribute('name') ?? 'property', value: (p.textContent ?? '').trim() })).filter((f) => f.value)
+function customFields(root: XEl): Field[] {
+  return root.children.map((p) => ({ name: p.getAttribute('name') ?? 'property', value: (p.textContent ?? '').trim() })).filter((f) => f.value)
 }
 
 const EMPTY: Record<string, string> = {
@@ -115,16 +112,16 @@ const le32 = (n: number) => [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >>>
 
 /** Rewrite the package: metadata parts replaced by empty ones, the thumbnail dropped, every other part copied byte for byte
  *  (the zip's own per-part timestamps are reset to 1980-01-01; they are metadata too). */
-export async function stripOoxml(blob: Blob): Promise<Blob> {
+export async function stripOoxml(blob: Blob, keep = new Set<string>()): Promise<Blob> {
   const entries = await directory(blob)
   const parts: BlobPart[] = []
   const central: Bytes[] = []
   let offset = 0
-  const dropped = entries.filter((e) => /^docProps\/thumbnail\./i.test(e.name))
+  const dropped = entries.filter((e) => /^docProps\/thumbnail\./i.test(e.name) && !keep.has(e.name))
   for (const en of entries) {
     if (dropped.includes(en)) continue
     let data: BlobPart, csize = en.csize, usize = en.usize, crc = en.crc, method = en.method
-    if (EMPTY[en.name] || (en.name === '_rels/.rels' && dropped.length)) {
+    if ((EMPTY[en.name] && !keep.has(en.name)) || (en.name === '_rels/.rels' && dropped.length)) {
       let raw: Bytes
       if (EMPTY[en.name]) raw = ascii(EMPTY[en.name])
       else {

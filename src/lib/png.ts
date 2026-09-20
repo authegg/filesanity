@@ -68,8 +68,9 @@ export async function readPng(blob: Blob, name: string): Promise<Report> {
   return { kind: 'png', kindLabel: 'PNG image', name, bytes: blob.size, segments: chunks.filter((c) => c.seg).map((c) => c.seg!), body: { label: 'The picture', bytes: blob.size - stripped } }
 }
 
-export async function stripPng(blob: Blob): Promise<Blob> {
+export async function stripPng(blob: Blob, keep = new Set<string>()): Promise<Blob> {
   const chunks = await walk(blob)
+  for (const c of chunks) if (c.seg && keep.has(c.seg.id)) c.strip = false
   const parts: BlobPart[] = [blob.slice(0, 8)]
   for (const c of chunks) if (!c.strip) parts.push(blob.slice(c.start, c.end))
   return new Blob(parts, { type: 'image/png' })

@@ -1,7 +1,7 @@
 export const meta = {
   slug: 'what-a-pdf-carries',
   title: 'What a PDF carries, and the honest limits',
-  description: 'The Info dictionary and the XMP packet are where a PDF stores its author, software and dates. FileSanity blanks them in place. What it cannot reach yet, and how the page tells you.',
+  description: 'Where a PDF keeps its author, software and dates, the Info dictionary and the XMP packet. FileSanity blanks both in place, and says what it cannot reach.',
   date: '2026-09-16',
   readingMinutes: 3,
 }

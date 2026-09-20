@@ -4,7 +4,7 @@ export const SITE = 'https://filesanity.com' // CLIENT: placeholder until the do
 export const MAIL = 'hello@filesanity.com' // CLIENT: placeholder address; rendered only through <Mailbox /> so the mark travels with it
 export const POSTAL: string[] | null = null // CLIENT: the registered postal address, one line per element; null renders the client note
 export const LAUNCH = '20 September 2026'
-export const VERSION = '1.0'
+export const VERSION = '1.1'
 
 export type Format = { name: string; ext: string; read: string; removed: string; status: 'read' | 'not-yet' }
 
@@ -26,7 +26,7 @@ export const FAQ: { group: string; items: [string, string][] }[] = [
   {
     group: 'The basics',
     items: [
-      ['Is this really free?', 'Yes. Everything on this site runs in your browser, so there is no server to pay for and nothing to charge you for. There is no account, no limit on file size or count, and no upload. Paid plans for batches, an API and a browser extension are planned and marked as coming soon on the pricing page; nothing here moves behind them.'],
+      ['Is this really free?', 'Yes. Everything on this site runs in your browser, so there is no server to pay for and nothing to charge you for. There is no account, no limit on file size or count, and no upload. Batch, the command line tool, the browser extension, the self-hosted API and team policies are free as well; nothing on this site sits behind a price or an account.'],
       ['Does it work offline?', 'Yes. Once the page has loaded, disconnect and it keeps working. The sample file is the only thing fetched on demand, and only when you press "Try a sample".'],
       ['What happens to my file?', 'Your browser hands the page a reference to it. The page reads the header bytes it needs, shows you what it found, and builds the clean copy from slices of the original. The file is never sent anywhere and is forgotten when you close the tab.'],
       ['How do I know nothing is uploaded?', 'Open your browser\'s developer tools, choose the Network tab, then drop a file and clean it. No request appears. The counter beside your result reads the same data from the browser. The parsers are published as plain text at /source and the script carries a source map, and there is no server component at all.'],

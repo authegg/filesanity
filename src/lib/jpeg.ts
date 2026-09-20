@@ -71,10 +71,12 @@ export async function readJpeg(blob: Blob, name: string): Promise<Report> {
 }
 
 /** The clean file is a Blob of slices of the original: nothing is decoded, nothing is re-encoded. */
-export async function stripJpeg(blob: Blob): Promise<Blob> {
+export async function stripJpeg(blob: Blob, keep = new Set<string>()): Promise<Blob> {
   const { segs, sos, orientation } = await walk(blob)
+  for (const s of segs) if (s.seg && keep.has(s.seg.id)) s.strip = false
   const parts: BlobPart[] = [blob.slice(0, 2)]
-  if (orientation && orientation !== 1) {
+  const exifKept = segs.some((s) => s.seg?.label === 'EXIF' && !s.strip)
+  if (orientation && orientation !== 1 && !exifKept) {
     const ex = orientationOnlyExif(orientation)
     parts.push(new Uint8Array([0xff, 0xe1, (ex.length + 2) >> 8, (ex.length + 2) & 0xff]), ex)
   }

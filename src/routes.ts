@@ -7,6 +7,10 @@ import * as Documents from './pages/Documents'
 import * as Pdf from './pages/Pdf'
 import * as Formats from './pages/Formats'
 import * as Pricing from './pages/Pricing'
+import * as Batch from './pages/Batch'
+import * as Cli from './pages/Cli'
+import * as Api from './pages/Api'
+import * as Extension from './pages/Extension'
 import * as Security from './pages/Security'
 import * as Faq from './pages/Faq'
 import * as About from './pages/About'
@@ -30,6 +34,10 @@ export const ROUTES: Route[] = [
   { path: '/pdf', ...Pdf },
   { path: '/formats', ...Formats },
   { path: '/pricing', ...Pricing },
+  { path: '/batch', ...Batch },
+  { path: '/cli', ...Cli },
+  { path: '/api', ...Api },
+  { path: '/extension', ...Extension },
   { path: '/security', ...Security },
   { path: '/faq', ...Faq },
   { path: '/about', ...About },

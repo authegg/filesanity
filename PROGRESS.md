@@ -52,6 +52,22 @@ critic round 2 and the client's own Firefox pass.
 - CLAUDE.md rewritten for v2; DECISIONS.md carries the v2 record on top
   of the v1 parser record.
 
+## Done 2026-09-20, v1.1
+
+- TypeScript 7. Repo github.com/authegg/filesanity (private), deployed as
+  Cloudflare Worker `filesanity` with static assets on filesanity.com and
+  www (wrangler.jsonc, `_headers`, `_redirects`).
+- Blog: five posts in `src/posts/`, `/blog`, RSS, BlogPosting JSON-LD.
+- PWA: manifest, icons, hand-written `sw.js` from `scripts/pwa.mjs`,
+  offline verified by `tools/pwa_check.py`.
+- SEO: `SEO.md` audit; JSON-LD graph per page, twitter/og metas, lastmod
+  sitemap, CSP and cache headers, www redirect; `tools/seo_check.py`.
+- Pro and Teams built free: `/batch` (folder in, zip out, policy link),
+  `/cli`, `/api`, `/extension`, all served from the site and built by
+  `scripts/tools.mjs`; `src/lib/xml.ts` replaces DOMParser; policy via
+  `?keep=` on `/` too. `tests/run.py` 155 checks, `tools/ext_check.py`.
+- Changelog 1.1, pricing rewritten, FAQ answer updated.
+
 ## In progress
 
 Nothing.
@@ -63,8 +79,12 @@ Nothing.
 - Client to supply: names and company details (About), postal address
   and mailbox (Contact), the domain, and a legal review of Privacy and
   Terms.
+- Critic pass on the four tool pages and the blog (none run yet).
+- Extension store listings and a signed Firefox build; npm publication of
+  the CLI; Search Console and Bing verification (client accounts).
 - v3 candidates, logged not built: PDF object streams, MP4/MOV atoms,
-  EXIF inside pictures embedded in Office packages, batch.
+  EXIF inside pictures embedded in Office packages, per-field policy,
+  per-route code splitting if JS nears 150 kB.
 
 ## Blocked
 

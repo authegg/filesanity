@@ -5,9 +5,9 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const dist = fileURLToPath(new URL('../dist/', import.meta.url))
-// Not precached: source maps, the worker itself, crawler files, the published parser text,
+// Not precached: source maps, the worker itself, crawler files, the host's _headers and _redirects, the published parser text,
 // the social image, and the <route>.html twins (the /<route> form is the one the browser asks for).
-const skip = (p) => /\.map$|^sw\.js$|^sitemap\.xml$|^robots\.txt$|^source\/|^og\.png$/.test(p) || (p.endsWith('.html') && p !== '404.html' && !p.endsWith('index.html'))
+const skip = (p) => /\.map$|^sw\.js$|^sitemap\.xml$|^robots\.txt$|^_|^source\/|^og\.png$|^server\/|\.(mjs|zip|md|jsonc)$/.test(p) || (p.endsWith('.html') && p !== '404.html' && !p.endsWith('index.html'))
 const walk = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${d}${e.name}/`) : `${d}${e.name}`))
 // Route URLs as the browser asks for them; never the .html form, which hosts redirect and Chrome then refuses for a navigation.
 const url = (p) => (p === 'index.html' ? '/' : p.endsWith('/index.html') ? `/${p.slice(0, -11)}` : p === '404.html' ? '/404' : `/${p}`)

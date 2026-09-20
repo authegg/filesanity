@@ -2,8 +2,8 @@ import { POSTS, fmtDate } from '../posts'
 import { Closer, PageHead, Section } from '../ui/bits'
 
 export const meta = {
-  title: 'Blog: notes on what files carry',
-  description: 'Short, factual posts on the metadata inside photographs, Office documents and PDFs, how FileSanity removes it in the browser, and what to check before you send a file.',
+  title: 'Blog: notes on the metadata files carry',
+  description: 'Short, factual posts on the metadata inside photographs, Office documents and PDFs, how FileSanity removes it, and what to check before you send a file.',
 }
 
 export default function Blog() {

@@ -1,7 +1,7 @@
 export const meta = {
   slug: 'what-office-documents-carry',
   title: 'What a Word, Excel or PowerPoint file carries',
-  description: 'A .docx, .xlsx or .pptx is a zip of XML parts. Three of them are about you: core, app and custom properties. Plus a thumbnail, the zip timestamps, and the names on tracked changes.',
+  description: 'A .docx, .xlsx or .pptx is a zip of XML parts, and three are about you: core, app and custom properties. Plus a thumbnail, zip timestamps and comment authors.',
   date: '2026-09-17',
   readingMinutes: 4,
 }

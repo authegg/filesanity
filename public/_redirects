@@ -1,0 +1,2 @@
+# Cloudflare static assets. www to the bare domain; /x.html already redirects to /x through html_handling.
+https://www.filesanity.com/* https://filesanity.com/:splat 301

@@ -1,0 +1,6 @@
+{
+  "name": "filesanity-api",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-20"
+  // Set a token once: npx wrangler secret put API_TOKEN
+}

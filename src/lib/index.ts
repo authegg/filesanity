@@ -34,13 +34,45 @@ export async function inspect(file: File): Promise<Report> {
   throw new Unsupported(`FileSanity cannot read ${ext ? `.${ext}` : 'this kind of'} files yet. It reads JPEG, PNG, DOCX, XLSX, PPTX and PDF.`)
 }
 
+/** Removes every segment the report marks `strip`; segments flipped to kept (see `applyPolicy`) stay byte for byte. */
 export function strip(file: File, report: Report): Promise<Blob> {
+  const keep = new Set(report.segments.filter((s) => !s.strip).map((s) => s.id))
   switch (report.kind) {
-    case 'jpeg': return stripJpeg(file)
-    case 'png': return stripPng(file)
-    case 'pdf': return stripPdf(file)
-    default: return stripOoxml(file)
+    case 'jpeg': return stripJpeg(file, keep)
+    case 'png': return stripPng(file, keep)
+    case 'pdf': return stripPdf(file, keep)
+    default: return stripOoxml(file, keep)
   }
+}
+
+/** A policy is the list of segment kinds a team keeps; everything else is removed. Shared as a URL, stored nowhere. */
+export const POLICY: { key: string; label: string; formats: string }[] = [
+  { key: 'exif', label: 'EXIF', formats: 'JPEG' },
+  { key: 'xmp', label: 'XMP', formats: 'JPEG, PDF' },
+  { key: 'iptc', label: 'IPTC', formats: 'JPEG' },
+  { key: 'com', label: 'Comments', formats: 'JPEG' },
+  { key: 'text', label: 'Text chunks', formats: 'PNG' },
+  { key: 'exif-png', label: 'EXIF chunk', formats: 'PNG' },
+  { key: 'time', label: 'Last-modified time', formats: 'PNG' },
+  { key: 'core', label: 'Core properties', formats: 'Word, Excel, PowerPoint' },
+  { key: 'app', label: 'App properties', formats: 'Word, Excel, PowerPoint' },
+  { key: 'custom', label: 'Custom properties', formats: 'Word, Excel, PowerPoint' },
+  { key: 'thumbnail', label: 'Thumbnail', formats: 'Word, Excel, PowerPoint' },
+  { key: 'info', label: 'Info dictionary', formats: 'PDF' },
+]
+const KEY: [RegExp, string][] = [
+  [/^exif-/, 'exif'], [/^xmpx?-/, 'xmp'], [/^iptc-/, 'iptc'], [/^com-/, 'com'],
+  [/^(tEXt|zTXt|iTXt)-/, 'text'], [/^eXIf-/, 'exif-png'], [/^tIME-/, 'time'],
+  [/^docProps\/core\.xml$/, 'core'], [/^docProps\/app\.xml$/, 'app'], [/^docProps\/custom\.xml$/, 'custom'], [/^docProps\/thumbnail\./i, 'thumbnail'],
+  [/^info-/, 'info'],
+]
+export const policyKey = (id: string) => KEY.find(([re]) => re.test(id))?.[1]
+/** Parses `keep=exif,xmp` from a URL hash or query; unknown keys are dropped. */
+export const parsePolicy = (s: string) => (new URLSearchParams(s.replace(/^[#?]/, '')).get('keep') ?? '').split(',').filter((k) => POLICY.some((p) => p.key === k))
+export function applyPolicy(r: Report, keep: string[]): Report {
+  if (!keep.length) return r
+  const segments = r.segments.map((s) => (s.strip && keep.includes(policyKey(s.id) ?? '') ? { ...s, strip: false, why: 'kept by your policy' } : s))
+  return { ...r, segments }
 }
 
 export const cleanName = (name: string) => {

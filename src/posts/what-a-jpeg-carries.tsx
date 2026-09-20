@@ -1,7 +1,7 @@
 export const meta = {
   slug: 'what-a-jpeg-carries',
   title: 'What a JPEG carries, and what comes out',
-  description: 'EXIF, XMP, IPTC, Photoshop resources and comments: the five places a JPEG stores metadata, what each one says about you, and exactly what FileSanity removes and keeps.',
+  description: 'EXIF, XMP, IPTC, Photoshop resources and comments: the five places a JPEG stores metadata, what each says about you, and what FileSanity removes and keeps.',
   date: '2026-09-18',
   readingMinutes: 4,
 }

@@ -1,8 +1,8 @@
 import { ClientNote, Closer, PageHead, Section } from '../ui/bits'
 
 export const meta = {
-  title: 'About FileSanity',
-  description: 'A small company that makes a metadata cleaner which runs in the browser. What it is, what it will not do, and who makes it.',
+  title: 'About FileSanity: a small company, no data business',
+  description: 'A small company that makes a metadata cleaner which runs in the browser. What FileSanity is, what it will not do, and who makes it.',
 }
 
 export default function About() {

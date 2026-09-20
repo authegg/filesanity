@@ -1,7 +1,7 @@
 export const meta = {
   slug: 'why-the-file-never-leaves-the-browser',
   title: 'Why the file never leaves your browser',
-  description: 'A web page can read bytes from a file and write a new one without a server. How the File API, byte-range reads and Blobs make that work, and how to watch the network panel prove it.',
+  description: 'A page can read bytes from a file and write a new one with no server. How the File API, byte-range reads and Blobs do it, and how the network panel shows it.',
   date: '2026-09-19',
   readingMinutes: 4,
 }

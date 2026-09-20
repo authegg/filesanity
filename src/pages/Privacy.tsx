@@ -2,8 +2,8 @@ import { ClientNote, Mailbox, PageHead, Section } from '../ui/bits'
 import { LAUNCH } from '../content'
 
 export const meta = {
-  title: 'Privacy policy',
-  description: 'FileSanity collects nothing. The whole privacy policy, in plain words, dated.',
+  title: 'Privacy policy for a site that collects nothing',
+  description: 'FileSanity collects nothing: no upload, no account, no cookies, no analytics. The whole privacy policy, in plain words and dated, on one page.',
 }
 
 export default function Privacy() {

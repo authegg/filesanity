@@ -1,7 +1,7 @@
 import { Closer, PageHead, Section } from '../ui/bits'
 
 export const meta = {
-  title: 'PDF: the Info dictionary and XMP',
+  title: 'PDF: what the Info dictionary and XMP reveal',
   description: 'What a PDF reveals in its Info dictionary and XMP packet, what FileSanity blanks, and an honest note on compressed object streams.',
 }
 

@@ -2,7 +2,7 @@ import { FAQ } from '../content'
 import { Closer, PageHead, Section } from '../ui/bits'
 
 export const meta = {
-  title: 'FAQ: twelve questions about FileSanity',
+  title: 'FAQ: twelve questions, answered in full',
   description: 'Is it really free, does it work offline, what about video, why not metacleaner, what happens to my file, and eight more.',
 }
 

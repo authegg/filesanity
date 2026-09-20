@@ -2,7 +2,7 @@ import { PageHead, Pill, Section } from '../ui/bits'
 
 export const meta = {
   title: 'Page not found',
-  description: 'There is no page at this address.',
+  description: 'There is no page at this address. The link may be mistyped or the page may have moved. Nothing was sent anywhere by trying.',
 }
 
 export default function NotFound() {

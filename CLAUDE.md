@@ -23,11 +23,14 @@ file picker is not using the native one."
 Home `/`, How it works `/how-it-works`, Photos `/photos`, Documents
 `/documents`, PDF `/pdf`, Formats `/formats`, Pricing `/pricing`,
 Security `/security`, FAQ `/faq`, About `/about`, Contact `/contact`,
-Privacy policy `/privacy`, Terms `/terms`, Changelog `/changelog`, and a
-404. Each is prerendered to its own HTML with its own title and
-description; `sitemap.xml` and `robots.txt` are written at build. The nav
-carries Home, How it works, Formats, Pricing, Security, FAQ; the footer
-carries the rest. No blog.
+Privacy policy `/privacy`, Terms `/terms`, Changelog `/changelog`, Batch
+`/batch`, Command line `/cli`, API `/api`, Extension `/extension`, Blog
+`/blog` with one page per post and `/blog/feed.xml`, and a 404. Each is
+prerendered to its own HTML with its own title, description and JSON-LD;
+`sitemap.xml` (with lastmod) and `robots.txt` are written at build. The
+nav carries Home, How it works, Formats, Pricing, Security, FAQ; the
+footer carries the rest. The blog was added 2026-09-20 at the studio
+owner's request, overriding v2's "no blog".
 
 ## Constraints
 - The three client instructions, taken literally:
@@ -50,6 +53,9 @@ carries the rest. No blog.
   kept from v1 in `src/lib` with their tests.
 - Client environment: Firefox at 1917x870 primary, phone 390x844, also
   1366x650. Verified in Firefox and Chromium.
+- The site is an installable PWA: `scripts/pwa.mjs` writes `dist/sw.js`
+  with a precache of every route and asset; `public/_headers` carries the
+  CSP and cache rules, `public/_redirects` sends www to the bare domain.
 - Hard standards: LCP under 2.0 s at 390x844 throttled (1.6 Mbps, 150 ms,
   4x); 150 kB gzipped JS per route; AA on painted glyphs in every picker
   state; 320 px; keyboard and visible focus; reduced motion renders
@@ -67,11 +73,14 @@ carries the rest. No blog.
 - Name "FileSanity" and domain filesanity.com from the brief; wordmark set
   in the page's type. `og:url`, the sitemap and the contact mailbox
   (hello@filesanity.com) use the domain as a placeholder.
-- Pricing: Free is everything on the site. Pro and Teams are listed as
-  coming soon with no prices; the email capture is a mailto link.
+- Pricing: everything is free, including what v2 listed as Pro and Teams
+  (decided 2026-09-20): batch and policy on `/batch`, the command line
+  at `/cli/filesanity.mjs`, the self-hosted API at `/api/*.mjs`, the
+  extension zip at `/extension/`. All built from `src/lib` by
+  `scripts/tools.mjs`, no payments, no accounts.
 - Formats: the v1 list; video and audio, GIF, TIFF, PSD, legacy Office
   and OpenDocument are listed as not yet.
-- Account: none. API: none (listed under Teams as coming soon).
+- Account: none. The API is self-hosted by the visitor; the site runs none.
 - Legal: privacy policy and terms are written to be true for a site that
   collects nothing, dated 20 September 2026, and marked for legal review
   on the page.
@@ -99,9 +108,9 @@ anywhere on the panel, headline included, is read. There is no page
 around the tool until you scroll. Full block in `DECISIONS.md`.
 
 ## Out of scope
-Accounts, a server of any kind, batch cleaning, the API, the extension,
-the CLI (all named as coming soon on Pricing, none built), audio and
-video, legacy binary Office, a blog, client-side routing.
+Accounts, a server of any kind behind the site, payments, store listings
+for the extension, npm publication of the CLI, audio and video, legacy
+binary Office, client-side routing.
 
 ---
 
@@ -111,7 +120,12 @@ video, legacy binary Office, a blog, client-side routing.
 - `PROGRESS.md`: state across sessions
 - `HARVEST.md`: manual fixes made after "done", for the studio layer
 - `tests/run.py`: the picker's states, every format cleaned and asserted,
-  zero network in both engines
+  zero network in both engines, batch zip and the policy link
+- `tools/ext_check.py`: the extension loaded unpacked into Chromium;
+  `tools/pwa_check.py`: offline; `tools/seo_check.py`: every URL's metas,
+  JSON-LD, headers, CSP (needs `npx wrangler dev --port 4187`)
+- Deploy: `npm run build && npx wrangler deploy` (Worker `filesanity`,
+  custom domains filesanity.com and www). Repo github.com/authegg/filesanity.
 - `tools/verify.py`: vitals, widths, keyboard, reduced motion, contrast,
   font fallback, weight; `tools/shots.py`: the screenshot set
 

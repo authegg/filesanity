@@ -831,3 +831,104 @@ column. The nav stays at six.
 - Tells: the middle-dot byline is a default of blog templates, logged.
   Post h1s are the page's `PageHead` at 3.25rem; a long title wraps to
   three lines at 390, which is accepted over a smaller post-only size.
+
+## SEO (2026-09-20)
+
+Audit of the built site, written up in `SEO.md`. Every fix below stays
+out of the client bundle: metas in the shell, everything per page in
+`scripts/prerender.mjs`, host behaviour in `public/_headers` and
+`public/_redirects`.
+
+- Title suffix ` | FileSanity` added at prerender to every title that
+  does not already contain the brand; rejected a suffix on all of them,
+  because "About FileSanity | FileSanity" reads as a template.
+- Short titles and descriptions lengthened in the pages I own
+  (Changelog, Terms, Privacy, About, Contact, Photos, PDF, FAQ, Blog,
+  404, four posts); rejected padding them with keywords, because the
+  house style sets the fixed fact as the line.
+- JSON-LD written per page as one `@graph` in the prerender, built from
+  the SSR bundle's exports (`FAQ` re-exported from `entry-server.tsx`);
+  rejected a `<script>` in the React tree, which would ship the FAQ
+  text twice and the schema into the client bundle.
+- Organization + WebSite + SoftwareApplication (price 0, operating
+  system "Any (web browser)") on the home page, FAQPage on `/faq`, Blog
+  + ItemList on `/blog`, BlogPosting + BreadcrumbList on posts,
+  BreadcrumbList on every other inner page; rejected Product or
+  WebApplication, because SoftwareApplication is the type Google's
+  rich-result docs name for a free tool.
+- Breadcrumb names are the title before its colon ("Photos", "FAQ");
+  rejected the whole title, because a crumb is a page's name.
+- Publisher logo is `/icons/icon-512.png` and BlogPosting `image` is
+  `/og.png`; rejected leaving them out, because Google's article
+  validator marks both as recommended and the files already exist.
+- `og:type` moved from the shell into the prerender so posts get
+  `article` with `article:published_time` and `article:modified_time`;
+  rejected a second shell, because one placeholder line does it.
+- `og:site_name`, `og:locale`, `og:image:width/height/alt`,
+  `twitter:card summary_large_image` and `twitter:title/description/
+  image` added to the shell; the alt describes what the image shows.
+  Rejected a per-page og:image, because there is one social image.
+- Sitemap `lastmod`: posts from `updated ?? date`, other pages from
+  `git log -1 --format=%cI -- src/pages/<Name>.tsx` (the route name in
+  PascalCase), falling back to the build date when git is absent;
+  rejected the build date for every page, because it would tell
+  crawlers that nothing ever stays the same.
+- The 404 page gets `<meta name="robots" content="noindex">` and stays
+  out of the sitemap; `/404` itself serves 200 (it is a real file) and
+  every other missing path serves 404, checked.
+- `public/_redirects`: `https://www.filesanity.com/*` to the bare
+  domain, 301. Cannot be exercised in `wrangler dev` (the host is
+  localhost); the syntax is the one the Workers `_headers` docs show
+  for a scheme-and-host source. `/faq.html` already 307s to `/faq`
+  through `html_handling: auto-trailing-slash`, so no rule for it;
+  rejected a `/:page/ /:page` rule for the trailing-slash twin, because
+  `/source/` is a real directory and the rule would loop it.
+- `public/_headers`: nosniff, Referrer-Policy strict-origin-when-
+  cross-origin, Permissions-Policy denying camera, microphone,
+  geolocation, payment and usb, and a CSP. Immutable caching for
+  `/assets`, `/fonts`, `/icons`, `/img`; `no-cache` for `sw.js` and the
+  manifest; HTML keeps the platform default `max-age=0,
+  must-revalidate`. Each override detaches `Cache-Control` first (`!
+  Cache-Control`), because the host joins repeated headers with a comma
+  and the first run served `must-revalidate, no-cache`.
+- CSP: `default-src 'self'`; `script-src 'self'` plus the sha256 of the
+  one inline `.js` class script; `style-src 'self' 'unsafe-inline'`
+  with `style-src-elem 'self'` and `style-src-attr 'unsafe-inline'`, so
+  browsers that know the split allow only the reveal-delay `style`
+  attributes and older ones fall back to inline for both; `img-src
+  'self' data:`; `object-src 'none'`; `base-uri 'self'`; `form-action
+  'self'`; `frame-ancestors 'none'`. Checked: the `--d` attributes
+  apply, the worker registers, the blob download works, zero console
+  violations in Chromium. Rejected `'unsafe-inline'` alone for
+  style-src, because the split costs one directive; rejected a nonce,
+  because the pages are static files. `blob:` is not in `img-src`
+  because nothing paints a blob; the download is an anchor, which CSP
+  does not govern.
+- `X-Robots-Tag: noindex` on `/*.html`, so the twins are never indexed
+  even though they redirect; rejected removing the twins, because
+  vite preview and the tests serve from them.
+- `_headers` and `_redirects` excluded from the worker precache
+  (`^_` in `scripts/pwa.mjs`); the first run precached them.
+- `tools/seo_check.py`: sitemap, every page, a missing page and
+  `/faq.html`, in Chromium by default and Firefox with `firefox`.
+  Firefox does not surface CSP violations through Playwright's console,
+  so the CSP assertion is real only in Chromium; noted in the file's
+  docstring.
+- Tells: a brand suffix in the title is a default of every site; logged
+  as such, kept because search results show it.
+
+## Pro and Teams, built free (2026-09-20)
+
+The studio owner chose "build them all, free" over a Stripe-gated licence (a server, tax and a price nobody set) and over "in-browser parts only" (would leave three coming-soon labels on a page that says everything is free).
+
+- Batch is its own page, `/batch`, not a mode of the hero: the hero's one-file table is the named risk and stays. Rejected: a multi-file hero.
+- Many files come back as one stored zip built by `src/lib/zip.ts` (30 lines, same writer shape as ooxml's), named after the dropped folder with `-clean`. Rejected: one download per file (Chrome prompts on the second), and a zip library (the brief bans one).
+- Policy = the segment kinds to keep, carried only in the URL (`/batch?keep=exif,core`, honoured on `/` too). Rejected: localStorage (the site says it stores nothing) and a settings page (would need an account to mean anything for a team).
+- Policy works at segment level (EXIF as a whole, core.xml as a whole), not per field; the page says "kinds". Rejected: per-field EXIF rewriting, a v3 candidate.
+- `strip(file, report)` keeps its signature; the report's own `strip` flags drive the byte writer, so the CLI, API, extension and page share one path. Rejected: a second `keep` argument on the public API.
+- The parsers' DOMParser calls were replaced by `src/lib/xml.ts` (90 lines) so the same bundle runs in Node and Workers. Rejected: @xmldom/xmldom (a dependency for one subset), a Node-only fallback (two code paths to test).
+- CLI, API and extension are served from the site itself (`/cli/filesanity.mjs`, `/api/worker.mjs`, `/extension/filesanity-extension.zip`), bundled by `scripts/tools.mjs`. Rejected: npm publication and store listings (external accounts, ask first), linking the private repo.
+- The API is one fetch handler with a Node adapter and a bearer token from the environment. Rejected: no auth (a self-hosted open file endpoint), Express (a dependency).
+- The extension intercepts `input` and `change` on file inputs in the capture phase and re-dispatches marked events with the clean files. Rejected: patching `HTMLInputElement.prototype.files` (fragile across frameworks), drag-and-drop coverage (no input to swap; stated on the page).
+- Pricing is one Free plate and an "Also free" list of five rows with links; the mailto capture is gone. Rejected: keeping Pro and Teams cards with "free" badges (a plan with no price is not a plan).
+- JS is one bundle for every route, now 122.5 kB gz (from 104.4): the blog posts and four tool pages hydrate with the app. Under the 150 kB standard; splitting per route is the fix if it grows.

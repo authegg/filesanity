@@ -2,8 +2,8 @@ import { ClientNote, Mailbox, PageHead, Section } from '../ui/bits'
 import { LAUNCH } from '../content'
 
 export const meta = {
-  title: 'Terms of use',
-  description: 'The terms for using FileSanity, in plain words, dated.',
+  title: 'Terms of use for a site that collects nothing',
+  description: 'The terms for using FileSanity, in plain words and dated: what the site does, what it does not promise, and what you agree to by cleaning a file here.',
 }
 
 export default function Terms() {

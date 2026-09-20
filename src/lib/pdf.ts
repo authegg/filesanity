@@ -5,7 +5,7 @@ import type { Field, Report, Segment } from './types'
 /* ponytail: the PDF is scanned as one byte array, capped at 256 MB; a chunked scan is the upgrade if anyone hits it. */
 const CAP = 256 * 1024 * 1024
 
-type Edit = { start: number; end: number; bytes: Uint8Array<ArrayBuffer> }
+type Edit = { seg: string; start: number; end: number; bytes: Uint8Array<ArrayBuffer> }
 
 const NAMES: Record<string, string> = { Title: 'Title', Author: 'Author', Subject: 'Subject', Keywords: 'Keywords', Creator: 'Created with', Producer: 'Produced by', CreationDate: 'Created', ModDate: 'Modified', Trapped: 'Trapped' }
 
@@ -79,7 +79,7 @@ function scan(b: Uint8Array) {
         if (!value.trim()) continue
         fields.push({ name: NAMES[key] ?? key, value: /Date$/.test(key) ? pdfDate(value) : value })
         const at = s + m.index! + m[0].length - lit.length
-        edits.push({ start: at + 1, end: at + lit.length - 1, bytes: new Uint8Array(lit.length - 2).fill(0x20) })
+        edits.push({ seg: `info-${s}`, start: at + 1, end: at + lit.length - 1, bytes: new Uint8Array(lit.length - 2).fill(0x20) })
       }
       if (fields.length) segments.push({ id: `info-${s}`, label: 'Info', what: 'author, software, dates', bytes: e - s, fields, strip: true })
     }
@@ -96,7 +96,7 @@ function scan(b: Uint8Array) {
     const fields = parseXmp(xml)
     if (fields.length) {
       segments.push({ id: `xmp-${i}`, label: 'XMP', what: 'software, history, names', bytes: e - i, fields, strip: true })
-      edits.push({ start: i, end: e, bytes: blankXmp(b.subarray(i, e)) })
+      edits.push({ seg: `xmp-${i}`, start: i, end: e, bytes: blankXmp(b.subarray(i, e)) })
     }
     i = e
   }
@@ -122,9 +122,9 @@ function blankXmp(src: Uint8Array): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(out, (c) => c.charCodeAt(0)) as Uint8Array<ArrayBuffer>
 }
 
-export async function stripPdf(blob: Blob): Promise<Blob> {
+export async function stripPdf(blob: Blob, keep = new Set<string>()): Promise<Blob> {
   const b = await read(blob, 0, blob.size)
-  const { edits } = scan(b)
+  const edits = scan(b).edits.filter((e) => !keep.has(e.seg))
   edits.sort((x, y) => x.start - y.start)
   const parts: BlobPart[] = []
   let pos = 0
