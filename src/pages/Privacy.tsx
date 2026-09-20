@@ -25,8 +25,8 @@ export default function Privacy() {
           <p>Because we hold no data about your use of the site, there is nothing to access, correct, export or erase, other than any email you have sent us, which you may ask us to delete.</p>
           <h2>6. Changes</h2>
           <p>If the site ever gains a feature that collects anything, this page will be rewritten before that feature ships, the date at the top will change, and the changelog will say so.</p>
-          <h2>7. The extension, the command line tool and the API</h2>
-          <p>The browser extension keeps two values in the browser's own extension storage: whether it is switched on, and how many files it has cleaned. Nothing leaves the browser. The command line tool and the self-hosted API run on your machines; what they log is under your control, and none of it reaches us.</p>
+          <h2>7. The extension, the command line tool, the API and the Cloud API</h2>
+          <p>The browser extension keeps two values in the browser's own extension storage: whether it is switched on, and how many files it has cleaned. Nothing leaves the browser. The command line tool and the self-hosted API run on your machines; what they log is under your control, and none of it reaches us. The hosted Cloud API at api.filesanity.com is the one service that receives a file; it is covered by <a className="link" href="/cloud/terms">its own policy</a>, not this one.</p>
           <h2>8. Who we are</h2>
           <p>This site is run by {MAKER}, the studio that makes FileSanity, as an open-source project; the code is at <a className="link" href={REPO}>{REPO.replace('https://', '')}</a>. Questions about this policy go to <Mailbox />.</p>
         </div>

@@ -1,7 +1,7 @@
 import { REPO } from '../content'
 const COLS: [string, [string, string][]][] = [
   ['Product', [['/how-it-works', 'How it works'], ['/formats', 'Formats'], ['/pricing', 'Pricing'], ['/changelog', 'Changelog'], ['/blog', 'Blog']]],
-  ['Tools', [['/batch', 'Batch'], ['/cli', 'Command line'], ['/api', 'API'], ['/extension', 'Extension'], ['/source', 'Source']]],
+  ['Tools', [['/batch', 'Batch'], ['/cli', 'Command line'], ['/api', 'API'], ['/extension', 'Extension'], ['/cloud', 'Cloud API'], ['/source', 'Source']]],
   ['What files carry', [['/photos', 'Photos'], ['/documents', 'Documents'], ['/pdf', 'PDF'], ['/security', 'Security'], ['/faq', 'FAQ']]],
   ['Company', [['/about', 'About'], ['/contact', 'Contact'], ['/privacy', 'Privacy policy'], ['/terms', 'Terms']]],
 ]

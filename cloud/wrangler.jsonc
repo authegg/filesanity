@@ -1,0 +1,10 @@
+{
+  "name": "filesanity-cloud",
+  "main": "worker.ts",
+  "compatibility_date": "2026-09-20",
+  "routes": [{ "pattern": "api.filesanity.com", "custom_domain": true }],
+  "kv_namespaces": [{ "binding": "KEYS", "id": "KV_NAMESPACE_ID" }],
+  // Secrets, set once with `npx wrangler secret put <NAME>` from this folder:
+  //   LS_STORE_ID, LS_WEBHOOK_SECRET, LS_VARIANT_STARTER, LS_VARIANT_BUSINESS, REPORT_PRIVATE_KEY_JWK (see README)
+  "vars": {}
+}

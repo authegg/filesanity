@@ -45,6 +45,7 @@ export default function Api() {
             <p><code>POST /inspect</code> takes the file as the request body, or as a multipart part named <code>file</code>, and returns the same report the page shows: every segment, every field, what would be removed and what kept.</p>
             <p><code>POST /clean</code> takes the same input and returns the clean file, with <code>X-FileSanity-Removed</code> and <code>X-FileSanity-Kept</code> counts and, where the page would show a note, <code>X-FileSanity-Note</code>. <code>?keep=exif,xmp</code> applies a <a href="/batch" className="link">policy</a>.</p>
             <p>The name comes from the part, an <code>X-Filename</code> header or <code>?name=</code>; the bytes decide the format. Set <code>API_TOKEN</code> and every call needs a bearer token; without one the API is open, so keep it on a private network. Errors are 401, 415 for a format it does not read, 422 for a file it could not rewrite.</p>
+            <p>Rather not host it? The same routes run as the <a href="/cloud" className="link">Cloud API</a> with a key and a monthly quota; that page says what changes when a file leaves your machine.</p>
             <p>Your server holds each file only for the length of the request. Nothing is written, logged or forwarded by the handler; what your platform logs is your platform's business.</p>
           </div>
         </div>

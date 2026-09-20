@@ -12,6 +12,8 @@ import * as Cli from './pages/Cli'
 import * as Api from './pages/Api'
 import * as Extension from './pages/Extension'
 import * as Source from './pages/Source'
+import * as Cloud from './pages/Cloud'
+import * as CloudTerms from './pages/CloudTerms'
 import * as Security from './pages/Security'
 import * as Faq from './pages/Faq'
 import * as About from './pages/About'
@@ -40,6 +42,8 @@ export const ROUTES: Route[] = [
   { path: '/api', ...Api },
   { path: '/extension', ...Extension },
   { path: '/source', ...Source },
+  { path: '/cloud', ...Cloud },
+  { path: '/cloud/terms', ...CloudTerms },
   { path: '/security', ...Security },
   { path: '/faq', ...Faq },
   { path: '/about', ...About },

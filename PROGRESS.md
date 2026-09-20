@@ -80,7 +80,12 @@ critic round 2 and the client's own Firefox pass.
 
 ## In progress
 
-Nothing.
+- Cloud API (Lemon Squeezy): `cloud/worker.ts` built and checked
+  (`tools/cloud_check.py`, 15 checks), `/cloud` and `/cloud/terms`
+  pages built. NOT deployed: waits on the owner's Lemon Squeezy store
+  (store id, two variant ids and buy links, webhook secret) and a KV
+  namespace; steps in `cloud/README.md`. `src/cloud.ts` still carries
+  placeholder buy links, so the site build is not deployed either.
 
 ## Next
 

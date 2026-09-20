@@ -16,12 +16,16 @@ const TOOLS: [string, string, string, string][] = [
   ['/batch', 'Policy', 'For a team with a rule.', 'Which kinds stay, as a link the whole desk uses, stored nowhere.'],
 ]
 
+const PAID: [string, string, string, string][] = [
+  ['/cloud', 'Cloud API', 'For a system that would rather not host.', 'The API run for you with a key: a 500-file trial, then $19 or $79 a month. The one place a file leaves your machine.'],
+]
+
 export default function Pricing() {
   return (
     <>
       <PageHead
         eyebrow="Pricing"
-        title="Everything is free."
+        title="Everything on this site is free."
         lede="There is no server behind the page, so there is nothing to charge you for. The page, batch, the command line, the extension, the API and team policies: all of it, with no account and no limit."
       />
       <Section>
@@ -50,10 +54,10 @@ export default function Pricing() {
             <div className="plate p-6 sm:p-10">
               <div className="flex flex-wrap items-baseline justify-between gap-4">
                 <h2 className="text-[1.75rem] sm:text-[2.25rem]">Also free</h2>
-                <span className="text-[1.125rem] text-muted">Same parsers</span>
+                <span className="text-[1.125rem] text-muted">Same parsers, one hosted</span>
               </div>
               <ol className="rows mt-8 border-b border-hair-2">
-                {TOOLS.map(([href, name, who, what]) => (
+                {[...TOOLS, ...PAID].map(([href, name, who, what]) => (
                   <li key={name} className="grid grid-cols-1 gap-1 py-4 md:grid-cols-12 md:gap-6">
                     <a href={href} className="text-[1.0625rem] font-medium hover:text-accent md:col-span-3">{name}</a>
                     <span className="text-[0.9375rem] text-muted md:col-span-4">{who}</span>

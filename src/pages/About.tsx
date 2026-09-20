@@ -24,7 +24,7 @@ export default function About() {
           <h2 id="h-wont" className="text-[1.75rem] sm:text-[2.25rem] lg:col-span-4">What it will not do.</h2>
           <div className="prose lg:col-span-8">
             <ul>
-              <li>Upload a file, ever. A feature that needs a server would be a separate thing with its own page and its own policy; the API you can host yourself is the closest it comes.</li>
+              <li>Upload a file from this site, ever. The one service that receives a file, the <a className="link" href="/cloud">Cloud API</a>, is separate, has its own page and its own policy, and exists for people who asked for hosting; the same API can be self-hosted for free.</li>
               <li>Add analytics, advertising or a tracking pixel to this site.</li>
               <li>Ask for an account, or charge for any of it.</li>
               <li>Claim a file is clean when a part of it was not read. The result says what was kept and why.</li>
