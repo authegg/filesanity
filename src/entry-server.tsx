@@ -1,6 +1,7 @@
 import { renderToString } from 'react-dom/server'
 import App from './App'
-import { ROUTES, match } from './routes'
+import { ROUTES, match, SOURCE } from './routes'
+export { SOURCE }
 
 export { posts } from './routes'
 export { FAQ } from './content'

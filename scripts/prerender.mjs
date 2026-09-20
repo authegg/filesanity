@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process'
 
 const SITE = 'https://filesanity.com' // CLIENT: placeholder until the domain is confirmed
 const dist = fileURLToPath(new URL('../dist/', import.meta.url))
-const { render, routes, posts, FAQ } = await import(new URL('server/entry-server.js', `file://${dist}`))
+const { render, routes, posts, FAQ, SOURCE } = await import(new URL('server/entry-server.js', `file://${dist}`))
 const shell = readFileSync(`${dist}index.html`, 'utf8')
 if (!shell.includes('<!--app-html-->')) throw new Error('prerender: <!--app-html--> missing')
 
@@ -87,7 +87,7 @@ writeFileSync(`${dist}robots.txt`, `User-agent: *\nAllow: /\nSitemap: ${SITE}/si
 const lib = fileURLToPath(new URL('../src/lib/', import.meta.url))
 mkdirSync(`${dist}source`, { recursive: true })
 const files = readdirSync(lib).filter((f) => f.endsWith('.ts')).sort()
+const listed = SOURCE.map(([f]) => f).sort()
+if (files.join() !== listed.join()) throw new Error(`prerender: src/lib has ${files.join(', ')} but src/pages/Source.tsx lists ${listed.join(', ')}`)
 for (const f of files) writeFileSync(`${dist}source/${f}.txt`, readFileSync(`${lib}${f}`))
-const list = files.map((f) => `<li><a href="/source/${f}.txt">${f}</a></li>`).join('\n')
-writeFileSync(`${dist}source/index.html`, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FileSanity source: the parsers</title><meta name="description" content="The metadata parsers FileSanity runs in your browser, as plain text."><link rel="icon" href="/favicon.svg"><style>body{font:16px/1.6 system-ui,sans-serif;max-width:60ch;margin:3rem auto;padding:0 1rem;color:#18181b;background:#f1f1ef}a{color:#8c2f2a}</style></head><body><h1>The parsers</h1><p>These are the files that read and remove metadata, exactly as they are compiled into the site. The shipped script also carries a source map, so the browser's developer tools show them under <code>src/lib</code>.</p><ul>${list}</ul><p><a href="/">Back to FileSanity</a></p></body></html>`)
 rmSync(`${dist}server`, { recursive: true, force: true })

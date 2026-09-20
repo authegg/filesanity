@@ -62,7 +62,7 @@ export default function Security() {
           <h2 id="h-check" className="text-[1.75rem] sm:text-[2.25rem] lg:col-span-4">How to check.</h2>
           <div className="prose lg:col-span-8">
             <p>Open the browser's network panel, drop a file, clean it. No request appears. The <a className="link" href="/how-it-works">how it works</a> page has the keystrokes for each browser. Then disconnect from the network and do it again; it still works, because nothing was needed from anywhere.</p>
-            <p>Read the code that does it: <a className="link" href="/source/">the parsers, as plain text</a>. The same files are what the source map points the developer tools at.</p>
+            <p>Read the code that does it: <a className="link" href="/source">the parsers, as plain text</a>. The same files are what the source map points the developer tools at.</p>
             <p>Found something wrong? Write to the address on the <a className="link" href="/contact">contact page</a>. A report about the parsers or the site is answered first.</p>
           </div>
         </div>

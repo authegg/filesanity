@@ -11,6 +11,7 @@ import * as Batch from './pages/Batch'
 import * as Cli from './pages/Cli'
 import * as Api from './pages/Api'
 import * as Extension from './pages/Extension'
+import * as Source from './pages/Source'
 import * as Security from './pages/Security'
 import * as Faq from './pages/Faq'
 import * as About from './pages/About'
@@ -38,6 +39,7 @@ export const ROUTES: Route[] = [
   { path: '/cli', ...Cli },
   { path: '/api', ...Api },
   { path: '/extension', ...Extension },
+  { path: '/source', ...Source },
   { path: '/security', ...Security },
   { path: '/faq', ...Faq },
   { path: '/about', ...About },
@@ -53,6 +55,7 @@ export const ROUTES: Route[] = [
 /** For the feed and the JSON-LD written at prerender. */
 export const posts = POSTS.map((p) => p.meta)
 
+export { SOURCE } from './pages/Source'
 export const match = (pathname: string): Route => {
   const p = pathname.replace(/\/index\.html$/, '').replace(/\/+$/, '') || '/'
   return ROUTES.find((r) => r.path === p) ?? ROUTES[ROUTES.length - 1]
