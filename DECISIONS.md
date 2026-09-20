@@ -735,3 +735,99 @@ announced. Verified in Firefox and Chromium across three files:
 activeElement after a keyboard strip is "Download again"; the result
 text sits in a polite live region. `tests/run.py` asserts both on every
 case.
+
+## PWA (2026-09-20)
+
+Installable and offline after one visit. No library: a hand-written
+worker generated at build, because workbox or vite-plugin-pwa would add
+a dependency for forty lines and the studio's house style is hand-written.
+
+- `scripts/pwa.mjs` walks `dist/` after prerender and writes `dist/sw.js`
+  with the precache list; rejected a static `public/sw.js` with a
+  placeholder, because the hashed asset names exist only after the build
+  and a walk also picks up new routes (the blog's) without being told.
+- Cache version is a hash of every precached URL plus its bytes, not of
+  the list alone; rejected hashing the list, because a copy edit changes
+  a page's bytes but not its name and would never bust the cache.
+- Wired as `&& node scripts/pwa.mjs` in package.json's build script;
+  rejected an import at the end of `scripts/prerender.mjs`, because that
+  file is under concurrent edit by the blog build.
+- Precache excludes source maps, `og.png`, `/source/*`, `sitemap.xml`,
+  `robots.txt` and the `<route>.html` twins; rejected precaching all of
+  `dist/`, because the map alone is 1.2 MB and the crawler files and the
+  social image are never requested by a visitor.
+- Route keys are the browser's own URLs (`/faq`, `/404`), never the
+  `.html` form; rejected `/404.html` after Chrome refused the cached
+  response for a navigation because Wrangler's `auto-trailing-slash`
+  had redirected it and the cache kept the `redirected` flag.
+- Precache requests use `cache: 'no-cache'` so a new worker revalidates
+  HTML against the server instead of the HTTP cache; rejected the default
+  mode, which could re-precache a stale page from the browser cache.
+- Navigations are stale-while-revalidate with the cached `/404` as the
+  last resort; precached files are cache-first; every other request
+  (non-GET, cross-origin, uncached paths) is not intercepted. Rejected
+  network-first for HTML, because a reload mid-page offline would wait
+  for the timeout before falling back.
+- `skipWaiting` on install and `clients.claim` on activate, so a new
+  build takes over on the next load with no toast; rejected the default
+  waiting worker, because a reload does not release the old client and
+  the update would sit until every tab closed.
+- Registration after `load`, `import.meta.env.PROD` only; rejected
+  registering at module evaluation, which would compete with the LCP
+  image and the hydration for bandwidth.
+- Icons rendered from `favicon.svg` with cairosvg; the maskable one
+  paints the glyph at 80% on the favicon's own orange so any mask keeps
+  it whole. Rejected a separate mark for the maskable icon: one glyph,
+  one accent.
+- `tests/run.py` unchanged. Measured: in Chromium the worker's precache
+  fetches never reach `page.on('request')` (they belong to the worker,
+  not the page); in Firefox the two icon fetches land at the load event,
+  inside the test's 500 ms settle. `ALL PASS` with the worker live in
+  both engines. `tools/pwa_check.py` covers the offline path against
+  `wrangler dev`.
+
+## Blog (2026-09-20)
+
+The brief's "No blog" is overridden by the studio owner. Five posts at
+launch, /blog and /blog/<slug>, an RSS feed, Blog in the footer's Product
+column. The nav stays at six.
+
+- Chose a TS/TSX module per post in `src/posts/` (a `meta` export and a
+  body component) over Markdown with a parser: no dependency, the em/en
+  dash guard and the `.prose` styles apply unchanged, and `tsc` checks
+  every post.
+- Chose a build-time list in `src/posts/index.ts` sorted newest first over
+  `import.meta.glob`: five files, one import each, and the SSR entry can
+  export the same list for the feed.
+- Chose the posts inside the one JS bundle (113 kB gz per route, was 104)
+  over a lazy chunk per post: the site's one-bundle decision stands and
+  the budget is 150; revisit at twenty posts.
+- Chose rows on hairlines for the index (date and reading time left,
+  title and description right, the changelog's grid) over cards or a
+  two-column tile grid: are.na, and the site's rows everywhere else.
+- Chose a middle dot between date, reading time and author on the meta
+  line over commas or a stacked list: one line, no dash, reads as a
+  byline. The dots are `aria-hidden`.
+- Chose "FileSanity" as the author over an invented name: About and
+  Contact carry the client's placeholders for real names.
+- Chose the post body in `.prose` with the page's container over a
+  `Section`: `Section` fixes `pt-24`, which is too much under a byline;
+  the body sits `pt-12` below it.
+- Chose to append three `.prose` rules (list markers back on `ul`, a
+  size step down on `code`, a margin between a heading and its first
+  paragraph) over per-post classes: Privacy, Terms and Changelog get the
+  same fix.
+- Chose JSON-LD `BlogPosting` and the feed `<link>` written by
+  `scripts/prerender.mjs` into the head over rendering them in React:
+  nothing reaches the client bundle and the dash guard still runs on the
+  finished HTML.
+- Chose RSS 2.0 at `/blog/feed.xml` with an Atom self link over Atom or
+  JSON Feed: the one every reader accepts.
+- Chose a Closer on the index and a Pill plus "All posts" at the end of a
+  post over a related-posts block: one CTA label everywhere, and five
+  posts are the whole archive one click away.
+- Dates run 16 to 20 September 2026, one per day, so newest-first is a
+  real order at launch; `updated` is optional and shown when set.
+- Tells: the middle-dot byline is a default of blog templates, logged.
+  Post h1s are the page's `PageHead` at 3.25rem; a long title wraps to
+  three lines at 390, which is accepted over a smaller post-only size.

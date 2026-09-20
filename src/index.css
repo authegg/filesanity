@@ -204,3 +204,10 @@
   .menu .menu-item, .burger span, .pill, .pill .orb, .menu { transition-duration: 0.01ms; }
   .spin { animation: none; }
 }
+
+/* Blog bodies: the lists get their markers back (preflight removes them) and code is set a size down. */
+@layer components {
+  .prose ul { list-style: disc; }
+  .prose code { font-size: 0.875em; }
+  .prose h2 + p, .prose h3 + p { margin-top: 0.75rem; }
+}

@@ -1,5 +1,5 @@
 const COLS: [string, [string, string][]][] = [
-  ['Product', [['/how-it-works', 'How it works'], ['/formats', 'Formats'], ['/pricing', 'Pricing'], ['/changelog', 'Changelog']]],
+  ['Product', [['/how-it-works', 'How it works'], ['/formats', 'Formats'], ['/pricing', 'Pricing'], ['/changelog', 'Changelog'], ['/blog', 'Blog']]],
   ['What files carry', [['/photos', 'Photos'], ['/documents', 'Documents'], ['/pdf', 'PDF'], ['/security', 'Security'], ['/faq', 'FAQ']]],
   ['Company', [['/about', 'About'], ['/contact', 'Contact'], ['/privacy', 'Privacy policy'], ['/terms', 'Terms']]],
 ]

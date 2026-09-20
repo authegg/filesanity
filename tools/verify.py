@@ -15,7 +15,7 @@ from playwright.sync_api import sync_playwright
 
 URL = next((a for a in sys.argv[1:] if a.startswith('http')), 'http://127.0.0.1:4184')
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ROUTES = ['/', '/how-it-works', '/photos', '/documents', '/pdf', '/formats', '/pricing', '/security', '/faq', '/about', '/contact', '/privacy', '/terms', '/changelog', '/404.html']
+ROUTES = ['/', '/how-it-works', '/photos', '/documents', '/pdf', '/formats', '/pricing', '/security', '/faq', '/about', '/contact', '/privacy', '/terms', '/changelog', '/blog', '/blog/what-a-jpeg-carries', '/404.html']
 PHOTO = os.path.join(ROOT, 'tests', 'files', 'photo.jpg')
 
 VITALS = """

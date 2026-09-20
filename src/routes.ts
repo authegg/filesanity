@@ -14,6 +14,9 @@ import * as Contact from './pages/Contact'
 import * as Privacy from './pages/Privacy'
 import * as Terms from './pages/Terms'
 import * as Changelog from './pages/Changelog'
+import * as Blog from './pages/Blog'
+import { postPage } from './pages/BlogPost'
+import { POSTS } from './posts'
 import * as NotFound from './pages/NotFound'
 
 export type Route = { path: string; meta: { title: string; description: string }; Page: ComponentType<{ p: PickerApi }> }
@@ -34,8 +37,13 @@ export const ROUTES: Route[] = [
   { path: '/privacy', ...Privacy },
   { path: '/terms', ...Terms },
   { path: '/changelog', ...Changelog },
+  { path: '/blog', ...Blog },
+  ...POSTS.map((post) => ({ path: `/blog/${post.meta.slug}`, meta: { title: post.meta.title, description: post.meta.description }, default: postPage(post) })),
   { path: '/404', ...NotFound },
 ].map((r) => ({ path: r.path, meta: r.meta, Page: r.default as Route['Page'] }))
+
+/** For the feed and the JSON-LD written at prerender. */
+export const posts = POSTS.map((p) => p.meta)
 
 export const match = (pathname: string): Route => {
   const p = pathname.replace(/\/index\.html$/, '').replace(/\/+$/, '') || '/'
