@@ -241,7 +241,7 @@ export function Picker({ p }: { p: PickerApi }) {
                 </span>
                 <span className="block text-[0.8125rem] text-muted">
                   {fields
-                    ? `${report!.segments.filter((s) => s.strip).length} ${report!.segments.filter((s) => s.strip).length === 1 ? 'part' : 'parts'} of the file, ${fmtBytes(Math.max(0, report!.bytes - report!.body.bytes))}${kept ? `. ${kept} ${kept === 1 ? 'field is' : 'fields are'} shown and kept.` : '.'}`
+                    ? `${report!.segments.filter((s) => s.strip).length} ${report!.segments.filter((s) => s.strip).length === 1 ? 'part' : 'parts'} of the file, ${fmtBytes(Math.max(0, report!.bytes - report!.body.bytes))}${kept ? `. ${kept} ${kept === 1 ? 'field is' : 'fields are'} shown and kept.` : '.'}${fields + kept > 10 ? ' The table scrolls.' : ''}`
                     : kept ? `${kept} ${kept === 1 ? 'field is' : 'fields are'} shown and kept.` : 'This file carries no metadata FileSanity reads.'}
                 </span>
               </div>
@@ -292,8 +292,9 @@ export function Picker({ p }: { p: PickerApi }) {
 }
 
 /** Position, names, device identity and dates before exposure settings: the rows a stranger fears sit at the top of the table. */
-const SENSITIVE = /gps|latitude|longitude|altitude|position|artist|author|creator|owner|copyright|by-line|credit|serial|unique|name|city|country|location|date|time|modified|created|software|comment/i
-const bySensitivity = (fields: { name: string; value: string }[]) => [...fields].sort((a, b) => Number(SENSITIVE.test(b.name)) - Number(SENSITIVE.test(a.name)))
+const RANK = [/gps|latitude|longitude|altitude|position|location|city|country/i, /artist|author|creator|owner|copyright|by-line|credit|serial|unique|name|comment/i, /date|time|modified|created|software/i]
+const rank = (n: string) => { const i = RANK.findIndex((re) => re.test(n)); return i < 0 ? RANK.length : i }
+const bySensitivity = (fields: { name: string; value: string }[]) => [...fields].sort((a, b) => rank(a.name) - rank(b.name))
 
 /** Every field read, by the part of the file it sits in. */
 function FieldTable({ report, cleaned }: { report: Report; cleaned: boolean }) {

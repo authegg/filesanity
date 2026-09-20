@@ -68,6 +68,16 @@ critic round 2 and the client's own Firefox pass.
   `?keep=` on `/` too. `tests/run.py` 155 checks, `tools/ext_check.py`.
 - Changelog 1.1, pricing rewritten, FAQ answer updated.
 
+## Done 2026-09-20, launch
+
+- Open source: repo public under MIT, README for strangers, `refs/`
+  untracked. About, Contact, Privacy, Terms rewritten for "authegg, an
+  open-source project"; no client placeholders remain; legal note kept.
+- hello@filesanity.com forwards via Cloudflare Email Routing (API).
+- Blog stills: five Codex stills, post plate and index thumbnails.
+- `/source` is a prerendered page (the bare file was unstyled by CSP).
+- Critic round 3 FAIL 4 (all Q5), round 4 PASS. SHIPPED.md row appended.
+
 ## In progress
 
 Nothing.
@@ -79,7 +89,8 @@ Nothing.
 - Client to supply: names and company details (About), postal address
   and mailbox (Contact), the domain, and a legal review of Privacy and
   Terms.
-- Critic pass on the four tool pages and the blog (none run yet).
+- Client's own Firefox pass at 1917x870 with a reload mid-page; count
+  what it finds for HARVEST.md.
 - Extension store listings and a signed Firefox build; npm publication of
   the CLI; Search Console and Bing verification (client accounts).
 - v3 candidates, logged not built: PDF object streams, MP4/MOV atoms,
