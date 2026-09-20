@@ -1,4 +1,4 @@
-import { ClientNote, Mailbox, PageHead, Section } from '../ui/bits'
+import { Mailbox, PageHead, Section } from '../ui/bits'
 import { LAUNCH, MAKER, REPO } from '../content'
 
 export const meta = {
@@ -10,7 +10,6 @@ export default function Privacy() {
   return (
     <>
       <PageHead eyebrow="Privacy policy" title="We collect nothing." lede={`Effective ${LAUNCH}. This policy is short because the site has no server, no account and no analytics. It describes what does not happen, and the two things that do.`}>
-        <ClientNote>Written for a site that collects nothing; not yet read by a lawyer.</ClientNote>
       </PageHead>
       <Section>
         <div className="prose max-w-[68ch]">

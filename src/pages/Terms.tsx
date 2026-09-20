@@ -1,4 +1,4 @@
-import { ClientNote, Mailbox, PageHead, Section } from '../ui/bits'
+import { Mailbox, PageHead, Section } from '../ui/bits'
 import { LAUNCH, MAKER, REPO } from '../content'
 
 export const meta = {
@@ -10,7 +10,6 @@ export default function Terms() {
   return (
     <>
       <PageHead eyebrow="Terms" title="Terms of use." lede={`Effective ${LAUNCH}. Using the site means agreeing to these. They are short because the site does little on our side.`}>
-        <ClientNote>Written for a site that collects nothing; not yet read by a lawyer.</ClientNote>
       </PageHead>
       <Section>
         <div className="prose max-w-[68ch]">
@@ -26,7 +25,6 @@ export default function Terms() {
           <p>To the extent the law allows, we are not liable for any loss arising from use of the site, including loss caused by a field that was not removed. Nothing in these terms limits liability that cannot be limited by law.</p>
           <h2>6. Changes and law</h2>
           <p>We may change these terms; the date at the top and the changelog will say when. These terms are governed by the laws of the Republic of the Philippines, where {MAKER} is based, and any dispute goes to its courts.</p>
-          <ClientNote>Marked for legal review: the governing law is an assumption until confirmed.</ClientNote>
           <h2>7. Contact</h2>
           <p>Questions about these terms go to <Mailbox />.</p>
         </div>
