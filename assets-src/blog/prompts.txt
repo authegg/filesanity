@@ -1,0 +1,13 @@
+Generate five images, one file each, then reply with only the five paths, one per line.
+
+Shared style for all five: editorial product still, one subject alone on a pale silver-grey matte surface (#f1f1ef) that fills the whole frame, soft diffused daylight from the upper left, faint soft shadow, shallow depth of field, colours limited to silver grey, white, charcoal (#18181b) and at most one small dark red (#8c2f2a) detail. Aspect ratio 3:2. No text, no letters, no numbers, no logos, no UI, no watermark, no people, no hands.
+
+1. A single charcoal SD memory card lying on the surface, its gold contacts hidden, one small dark red tab on its side. Save it as /home/arde/projects/authegg/filesanity/assets-src/blog/jpeg.png
+
+2. A closed white cardboard document folder lying flat, a thin dark red elastic band across one corner. Save it as /home/arde/projects/authegg/filesanity/assets-src/blog/office.png
+
+3. A small sheaf of white paper stapled at one corner with a single dark red staple, seen from a low three-quarter angle. Save it as /home/arde/projects/authegg/filesanity/assets-src/blog/pdf.png
+
+4. A plain white envelope lying flat, sealed, its flap edge facing the camera, one small dark red wax dot at the seal. Save it as /home/arde/projects/authegg/filesanity/assets-src/blog/browser.png
+
+5. A blank white luggage tag on the surface with a thin dark red cord loop, the cord curling once. Save it as /home/arde/projects/authegg/filesanity/assets-src/blog/stranger.png

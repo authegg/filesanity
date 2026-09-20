@@ -1,0 +1,58 @@
+vitals, cold, throttled phone (1.6 Mbps, 150 ms, 4x CPU, 390x844 @2x)
+  ok   /: LCP 888 ms (H1.mt-6 max-w-[20ch] text-[2.25re), CLS 0.0001
+  ok   /pricing: LCP 700 ms (P.mt-5 max-w-[60ch] text-[1.125r), CLS 0.0000
+  ok   /faq: LCP 668 ms (P.mt-5 max-w-[60ch] text-[1.125r), CLS 0.0000
+  ok   desktop /: LCP 116 ms, CLS 0.0000
+widths
+  ok   no horizontal scroll at 320, 390, 768, 1024, 1440 on every route
+keyboard
+    A:Skip to content solid 2
+    A:FileSanity home solid 2
+    A:Home solid 2
+    A:How it works solid 2
+    A:Formats solid 2
+    A:Pricing solid 2
+    A:Security solid 2
+    A:FAQ solid 2
+    BUTTON:Clean a file solid 2
+    BUTTON:Clean a file solid 2
+    A:How it works solid 2
+    BUTTON:Drop a file hereor pre solid 2
+    BUTTON:Try a sample solid 2
+    A:PhotosJPEG and PNG car solid 2
+  ok   every tab stop has a 2px solid ring
+  ok   the file input is never a tab stop
+easing: no default ease-in-out on any transitioned element
+  ok   no cubic-bezier(0.4, 0, 0.2, 1), ease-in-out or linear transition on any route
+phone menu, both engines
+  ok   chromium: menu opens, focus on the first link ('Home')
+  ok   chromium: twelve Tabs stay inside nav and menu ([])
+  ok   chromium: Escape closes the menu and returns focus to the button
+  ok   chromium: inert removed on close
+  ok   firefox: menu opens, focus on the first link ('Home')
+  ok   firefox: twelve Tabs stay inside nav and menu ([])
+  ok   firefox: Escape closes the menu and returns focus to the button
+  ok   firefox: inert removed on close
+reduced motion
+  ok   14 unrevealed elements render at rest (opacity 1)
+  ok   pill transition under reduced motion: 1e-05s
+font fallback: abort the font, compare line counts
+    {'font': ['174:112', '306:83', '497:240'], 'nofont': ['174:112', '306:83', '497:240']}
+  ok   fallback face moves the fold by at most 0px
+contrast of painted glyphs, picker states
+  ok   headline: 17.4:1 ((24, 24, 27) on (253, 253, 252))
+  ok   sub-paragraph: 6.5:1 ((92, 92, 99) on (253, 253, 252))
+  ok   accent pill label: 8.2:1 ((140, 47, 42) on (255, 255, 255))
+  ok   drop surface text: 17.4:1 ((24, 24, 27) on (253, 253, 252))
+  ok   drop help line: 8.1:1 ((140, 47, 42) on (253, 253, 252))
+  ok   table row: 15.7:1 ((24, 24, 27) on (241, 241, 239))
+  ok   table head: 5.9:1 ((92, 92, 99) on (241, 241, 239))
+  ok   struck-through row: 7.3:1 ((140, 47, 42) on (241, 241, 239))
+  ok   ghost pill: 17.4:1 ((24, 24, 27) on (253, 253, 252))
+  ok   JS 122.9 kB gz (one bundle, every route), CSS 7.6 kB gz
+  ok   no em or en dashes in any shipped page
+  ok   404.html, sitemap.xml, robots.txt, /source/ exist
+  ok   the bundle ships a source map
+
+VERIFY OK 0
+EXIT 0

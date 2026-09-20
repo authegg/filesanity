@@ -4,6 +4,7 @@ export const meta = {
   description: 'Which metadata fields matter most for journalists, lawyers, HR and marketplace sellers, and the two-minute routine that catches them before the file goes.',
   date: '2026-09-20',
   readingMinutes: 4,
+  image: { name: 'stranger', alt: 'A blank white luggage tag on a grey surface with a thin dark red cord loop' },
 }
 
 export default function Post() {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowDown, ArrowRight, CircleNotch, FolderOpen, Files, X } from '@phosphor-icons/react'
+import { ArrowDown, ArrowRight, CircleNotch, X } from '@phosphor-icons/react'
 import { applyPolicy, cleanName, fieldCount, fmtBytes, inspect, keptCount, parsePolicy, POLICY, strip, Unsupported, type Report } from '../lib'
 import { zipStore } from '../lib/zip'
 import { Closer, PageHead, Section } from '../ui/bits'
@@ -145,7 +145,7 @@ export default function Batch() {
       <PageHead
         eyebrow="Batch"
         title="A folder in, a clean folder out."
-        lede="Drop a folder, or as many files as you like. Each one is read and cleaned on your own machine, and they come back as one zip in the same shape. Nothing is uploaded."
+        lede="Drop a folder, or as many files as you like. Each one is read and cleaned on your own machine, and they come back as one zip in the same shape."
       />
       <Section>
         <div className={`bezel bezel-lg ${over ? 'is-over' : ''}`} {...dragProps}>
@@ -202,12 +202,12 @@ export default function Batch() {
 
             <div id="batch-help" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.8125rem] text-muted">
               <span>JPEG, PNG, DOCX, XLSX, PPTX, PDF. Anything else is listed and skipped.</span>
-              <button type="button" className="link inline-flex items-center gap-1" onClick={() => filesInput.current?.click()}><Files size={14} weight="light" aria-hidden="true" />Browse files</button>
-              <button type="button" className="link inline-flex items-center gap-1" onClick={() => folderInput.current?.click()}><FolderOpen size={14} weight="light" aria-hidden="true" />Browse a folder</button>
+              <button type="button" className="link" onClick={() => filesInput.current?.click()}>Browse files</button>
+              <button type="button" className="link" onClick={() => folderInput.current?.click()}>Browse a folder</button>
             </div>
 
             <fieldset className="rows border-b border-hair-2">
-              <legend className="eyebrow mb-3">Policy: what stays</legend>
+              <legend className="text-[1.125rem] font-medium">Policy: what stays</legend>
               <p className="pt-3 text-[0.8125rem] text-muted">Everything is removed unless ticked. The choice is written into this page's address and nowhere else; copy the link and the whole desk works to the same rule. It applies on the home page too.</p>
               <div className="grid grid-cols-1 gap-x-6 pt-2 sm:grid-cols-2 lg:grid-cols-3">
                 {POLICY.map((p) => (
@@ -247,8 +247,7 @@ export default function Batch() {
       <Section>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
           <div className="md:col-span-5">
-            <span className="eyebrow">How the zip is made</span>
-            <h2 className="mt-5 text-[1.75rem] sm:text-[2.25rem]">Same shape, clean files.</h2>
+            <h2 className="text-[1.75rem] sm:text-[2.25rem]">Same shape, clean files.</h2>
           </div>
           <div className="prose md:col-span-7">
             <p>Every file is read the way the home page reads one: only the header bytes it needs. The clean copies are assembled from slices of the originals and written into one zip, stored, with the folder's own structure and a "-clean" suffix on the top folder. One file comes back on its own, as it does on the home page.</p>

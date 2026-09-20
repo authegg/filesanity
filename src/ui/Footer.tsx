@@ -1,3 +1,4 @@
+import { REPO } from '../content'
 const COLS: [string, [string, string][]][] = [
   ['Product', [['/how-it-works', 'How it works'], ['/formats', 'Formats'], ['/pricing', 'Pricing'], ['/changelog', 'Changelog'], ['/blog', 'Blog']]],
   ['Tools', [['/batch', 'Batch'], ['/cli', 'Command line'], ['/api', 'API'], ['/extension', 'Extension'], ['/source', 'Source']]],
@@ -32,7 +33,7 @@ export function Footer({ path }: { path: string }) {
           ))}
         </div>
         <p className="mt-10 pt-6 text-[0.8125rem] text-muted">
-          No account, no cookies, no analytics. The sample photograph is generated and its metadata is invented.
+          No account, no cookies, no analytics. Open source under the MIT licence, <a href={REPO} className="link">on GitHub</a>. The sample photograph is generated and its metadata is invented.
         </p>
       </div>
     </footer>

@@ -291,6 +291,10 @@ export function Picker({ p }: { p: PickerApi }) {
   )
 }
 
+/** Position, names, device identity and dates before exposure settings: the rows a stranger fears sit at the top of the table. */
+const SENSITIVE = /gps|latitude|longitude|altitude|position|artist|author|creator|owner|copyright|by-line|credit|serial|unique|name|city|country|location|date|time|modified|created|software|comment/i
+const bySensitivity = (fields: { name: string; value: string }[]) => [...fields].sort((a, b) => Number(SENSITIVE.test(b.name)) - Number(SENSITIVE.test(a.name)))
+
 /** Every field read, by the part of the file it sits in. */
 function FieldTable({ report, cleaned }: { report: Report; cleaned: boolean }) {
   return (
@@ -300,7 +304,7 @@ function FieldTable({ report, cleaned }: { report: Report; cleaned: boolean }) {
       </thead>
       <tbody>
         {report.segments.flatMap((s) =>
-          (s.fields.length ? s.fields : [{ name: 'nothing readable', value: '' }]).map((f, k) => (
+          (s.fields.length ? bySensitivity(s.fields) : [{ name: 'nothing readable', value: '' }]).map((f, k) => (
             <tr key={`${s.id}-${k}`} className={cleaned && s.strip ? 'gone' : ''}>
               <th scope="row">{k === 0 ? s.label : ''}</th>
               <td className="f">{f.name}</td>

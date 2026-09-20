@@ -4,6 +4,7 @@ export const meta = {
   description: 'A .docx, .xlsx or .pptx is a zip of XML parts, and three are about you: core, app and custom properties. Plus a thumbnail, zip timestamps and comment authors.',
   date: '2026-09-17',
   readingMinutes: 4,
+  image: { name: 'office', alt: 'A closed white document folder lying flat on a grey surface, a thin dark red elastic band across one corner' },
 }
 
 export default function Post() {

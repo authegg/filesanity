@@ -36,8 +36,7 @@ export default function Extension() {
       <Section>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
           <div className="md:col-span-5">
-            <span className="eyebrow">What it does and does not</span>
-            <h2 className="mt-5 text-[1.75rem] sm:text-[2.25rem]">Only the picker.</h2>
+            <h2 className="text-[1.75rem] sm:text-[2.25rem]">Only the picker.</h2>
           </div>
           <div className="prose md:col-span-7">
             <p>It watches every file input on every page. When you choose files, each JPEG, PNG, Word, Excel, PowerPoint or PDF is replaced by its clean copy before the page's own code sees the change. Files it cannot read pass through as they are.</p>

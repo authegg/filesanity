@@ -17,6 +17,13 @@ export const postPage = (post: Post): ComponentType => function PostPage() {
           <span>FileSanity</span>
         </p>
       </PageHead>
+      <div className="container-x pt-10 sm:pt-14">
+        <div className="bezel bezel-lg" data-reveal="">
+          <div className="plate overflow-hidden">
+            <img src={`/img/blog/${m.image.name}.avif`} srcSet={`/img/blog/${m.image.name}-768.avif 768w, /img/blog/${m.image.name}.avif 1536w`} sizes="(min-width: 1280px) 1200px, 100vw" width={1536} height={1024} decoding="async" alt={m.image.alt} className="aspect-[2/1] w-full object-cover sm:aspect-[3/1]" />
+          </div>
+        </div>
+      </div>
       <div className="container-x pt-12 sm:pt-16">
         <div className="prose max-w-[68ch]">
           <Body />

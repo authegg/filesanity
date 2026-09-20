@@ -4,6 +4,7 @@ export const meta = {
   description: 'EXIF, XMP, IPTC, Photoshop resources and comments: the five places a JPEG stores metadata, what each says about you, and what FileSanity removes and keeps.',
   date: '2026-09-18',
   readingMinutes: 4,
+  image: { name: 'jpeg', alt: 'A single charcoal SD memory card lying on a grey surface, one small dark red tab on its side' },
 }
 
 export default function Post() {

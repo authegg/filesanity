@@ -39,8 +39,7 @@ export default function Api() {
       <Section>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
           <div className="md:col-span-5">
-            <span className="eyebrow">Contract</span>
-            <h2 className="mt-5 text-[1.75rem] sm:text-[2.25rem]">Bytes in, bytes out.</h2>
+            <h2 className="text-[1.75rem] sm:text-[2.25rem]">Bytes in, bytes out.</h2>
           </div>
           <div className="prose md:col-span-7">
             <p><code>POST /inspect</code> takes the file as the request body, or as a multipart part named <code>file</code>, and returns the same report the page shows: every segment, every field, what would be removed and what kept.</p>

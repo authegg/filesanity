@@ -139,7 +139,7 @@ export default function Home({ p }: { p: PickerApi }) {
 
       <Closer
         title="Send the file, not the story of who made it."
-        text="Free, no account, no upload. Works offline once the page has loaded."
+        text="Free, for anyone, and it works offline once the page has loaded."
         cta={
           <button type="button" className="pill" onClick={p.pick}>
             Clean a file

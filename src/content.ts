@@ -1,8 +1,9 @@
 /** Shared facts. A number or a format that appears on two pages comes from here. */
 
-export const SITE = 'https://filesanity.com' // CLIENT: placeholder until the domain is confirmed
-export const MAIL = 'hello@filesanity.com' // CLIENT: placeholder address; rendered only through <Mailbox /> so the mark travels with it
-export const POSTAL: string[] | null = null // CLIENT: the registered postal address, one line per element; null renders the client note
+export const SITE = 'https://filesanity.com'
+export const MAIL = 'hello@filesanity.com' // forwards through Cloudflare Email Routing
+export const REPO = 'https://github.com/authegg/filesanity'
+export const MAKER = 'authegg'
 export const LAUNCH = '20 September 2026'
 export const VERSION = '1.1'
 

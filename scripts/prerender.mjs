@@ -23,7 +23,7 @@ const ld = (path, title, description) => {
     { '@type': 'SoftwareApplication', name: 'FileSanity', url: SITE, description, applicationCategory: 'UtilitiesApplication', operatingSystem: 'Any (web browser)', browserRequirements: 'Requires JavaScript', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, publisher: { '@id': `${SITE}/#org` } }]
   const p = post(path)
   if (p) return [
-    { '@type': 'BlogPosting', headline: p.title, description: p.description, datePublished: p.date, dateModified: p.updated ?? p.date, url, mainEntityOfPage: url, image: `${SITE}/og.png`, author: org, publisher: org, isPartOf: { '@id': `${SITE}/blog#blog` } },
+    { '@type': 'BlogPosting', headline: p.title, description: p.description, datePublished: p.date, dateModified: p.updated ?? p.date, url, mainEntityOfPage: url, image: `${SITE}/img/blog/${p.image.name}.avif`, author: org, publisher: org, isPartOf: { '@id': `${SITE}/blog#blog` } },
     crumbs([['Home', '/'], ['Blog', '/blog'], [p.title, path]])]
   if (path === '/blog') return [
     { '@type': 'Blog', '@id': `${SITE}/blog#blog`, name: 'FileSanity blog', url, description, publisher: { '@id': `${SITE}/#org` } },

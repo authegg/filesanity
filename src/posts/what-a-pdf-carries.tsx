@@ -4,6 +4,7 @@ export const meta = {
   description: 'Where a PDF keeps its author, software and dates, the Info dictionary and the XMP packet. FileSanity blanks both in place, and says what it cannot reach.',
   date: '2026-09-16',
   readingMinutes: 3,
+  image: { name: 'pdf', alt: 'A small sheaf of white paper stapled at one corner with a single dark red staple, on a grey surface' },
 }
 
 export default function Post() {

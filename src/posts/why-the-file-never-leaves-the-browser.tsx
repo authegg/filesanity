@@ -4,6 +4,7 @@ export const meta = {
   description: 'A page can read bytes from a file and write a new one with no server. How the File API, byte-range reads and Blobs do it, and how the network panel shows it.',
   date: '2026-09-19',
   readingMinutes: 4,
+  image: { name: 'browser', alt: 'A plain white envelope lying sealed on a grey surface, one small dark red wax dot at the seal' },
 }
 
 export default function Post() {

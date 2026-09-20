@@ -16,7 +16,7 @@ const LINES = [
 export default function Cli() {
   return (
     <>
-      <PageHead eyebrow="Command line" title="The same cleaner, in a shell." lede="One JavaScript file bundled from the parsers this site runs. No dependencies, no account, nothing phoned home. Node 20 or newer." />
+      <PageHead eyebrow="Command line" title="The same cleaner, in a shell." lede="One JavaScript file bundled from the parsers this site runs, for Node 20 or newer. It reads and writes on your own disk and speaks to nothing else." />
       <Section>
         <div className="bezel bezel-lg" data-reveal="">
           <div className="plate p-6 sm:p-10">
@@ -38,8 +38,7 @@ export default function Cli() {
       <Section>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12">
           <div className="md:col-span-5">
-            <span className="eyebrow">Options</span>
-            <h2 className="mt-5 text-[1.75rem] sm:text-[2.25rem]">Five switches.</h2>
+            <h2 className="text-[1.75rem] sm:text-[2.25rem]">Five switches.</h2>
           </div>
           <div className="prose md:col-span-7">
             <p><code>--out DIR</code> writes the clean files under a folder, keeping the shape of what came in. Without it each clean file lands beside its original with a "-clean" suffix.</p>
