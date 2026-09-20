@@ -5,3 +5,4 @@ tests/out
 assets-src/codex.log
 assets-src/v2/codex.log*
 *.local
+.wrangler
