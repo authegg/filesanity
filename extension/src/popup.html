@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FileSanity</title>
+<link rel="stylesheet" href="ui.css" />
+<style>
+  body { width: 320px; padding: 14px; display: grid; gap: 12px; }
+  .counts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .counts div { border-top: 1px solid rgb(244 241 230 / .3); padding-top: 6px; }
+  .counts b { display: block; font: 800 1.6rem/1.1 'Archivo', system-ui, sans-serif; font-stretch: 112%; color: var(--accent); }
+  .drop { border: 1.5px dashed #8a8470; text-align: center; justify-items: center; }
+  .drop.over { border-color: var(--bg); background: #e9e6d6; }
+  .switch { display: flex; gap: .6rem; align-items: center; font-weight: 400; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  footer { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); font: 600 .8125rem/1.4 system-ui, sans-serif; text-decoration: underline; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1><svg class="logo" viewBox="12 6 40 52" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M26 6H38L52 20V44A14 14 0 0 1 38 58H26A14 14 0 0 1 12 44V20A14 14 0 0 1 26 6ZM32 21C37 21 40 26.5 40 34S37 47 32 47 24 41.5 24 34 27 21 32 21Z"/><path class="flap" d="M42.2 6H52V15.8Z"/></svg><span>File<span class="s">Sanity</span></span></h1>
+<div class="counts" aria-live="polite">
+  <div><b id="tab">0</b><span class="small">cleaned on this tab</span></div>
+  <div><b id="today">0</b><span class="small">cleaned today</span></div>
+</div>
+<label class="switch"><input type="checkbox" id="on" checked /> <span>Clean uploads on <b id="host">this site</b></span></label>
+<p class="small" id="rule" hidden></p>
+<div class="sheet drop" id="drop">
+  <p>Drop a photo, document or PDF here to clean it and download the copy.</p>
+  <button class="btn" id="pick" type="button">Choose a file</button>
+  <input type="file" id="file" hidden accept=".jpg,.jpeg,.png,.pdf,.docx,.xlsx,.pptx" />
+  <p class="err" id="msg" role="status"></p>
+</div>
+<footer><span class="small" id="plan">Free. Files never leave your browser.</span><button class="link" id="opts" type="button">Options</button></footer>
+<script src="popup.js"></script>
+</body>
+</html>

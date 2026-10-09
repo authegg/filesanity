@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "filesanity",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-20",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+  "kv_namespaces": [{ "binding": "DB", "id": "cfd3fcc823c541c69adc0808d87450ee" }],
+  // Secrets (npx wrangler secret put <NAME>): TURNSTILE_SECRET, LS_WEBHOOK_SECRET,
+  // LS_VARIANT_PRO, LS_VARIANT_TEAM, LS_VARIANT_API, REPORT_PRIVATE_KEY_JWK (node tools/keygen.mjs). Local values: .dev.vars
+  // Sign-in links go out through Cloudflare Email Sending; filesanity.com must be onboarded as a sending domain.
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["signin@filesanity.com"] }],
+  "vars": { "MAIL_FROM": "signin@filesanity.com" },
+  "routes": [
+    { "pattern": "filesanity.com", "custom_domain": true }
+  ]
+}
