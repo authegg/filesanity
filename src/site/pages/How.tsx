@@ -23,7 +23,7 @@ export default function How() {
       </Block>
       <Block id="h-remove" title="3. Remove">
         <p>FileSanity writes a new copy. In photos the metadata segments are left out of the copy. In Office files the property parts are replaced with empty ones and the thumbnail is dropped. In PDFs the text of each field is blanked in place, so the byte offsets the PDF depends on stay valid. The picture, the text, the cells and the slides are copied as they are.</p>
-        <p>One limit, said plainly: when a PDF keeps its XMP inside a compressed stream, FileSanity shows it and keeps it, and the result tells you, instead of calling the file clean.</p>
+        <p>One limit, said plainly: when a PDF is encrypted, FileSanity shows its metadata and keeps it, and the result tells you, instead of calling the file clean.</p>
       </Block>
       <Block id="h-keep" title="Keeping some fields">
         <p>Sometimes you want a field to stay: the copyright line on a photographer's picture, or the title of a contract. With a <a href="/batch">batch</a> you set a policy, the kinds of field to keep, and it applies to every file. Pro and Team accounts save the policy so it is the same next time.</p>

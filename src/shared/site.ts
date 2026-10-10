@@ -8,4 +8,4 @@ export const NAV = [
 ]
 export const CTA = 'Clean a file'
 export const REPO = 'https://github.com/authegg/filesanity'
-export const FORMATS = 'JPEG, PNG, HEIC, MP4, MOV, Word, Excel, PowerPoint and PDF'
+export const FORMATS = 'JPEG, PNG, HEIC, WebP, MP4, MOV, M4A, MP3, Word, Excel, PowerPoint, OpenDocument and PDF'

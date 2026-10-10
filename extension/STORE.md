@@ -17,7 +17,7 @@ Photos, documents and PDFs carry more than you can see: the GPS position where a
 FileSanity removes that metadata the moment you choose, drop or paste a file for upload, on any website, before the site receives it. The cleaning happens inside your browser. Your files are never uploaded to FileSanity.
 
 Free, with no account:
-- Cleans JPEG, PNG, HEIC, MP4, MOV, DOCX, XLSX, PPTX and PDF uploads on every site.
+- Cleans JPEG, PNG, HEIC, WebP, MP4, MOV, M4A, MP3, DOCX, XLSX, PPTX, ODT, ODS, ODP and PDF uploads on every site.
 - The toolbar button shows how many files were cleaned on the current tab and today.
 - Pause it for any site with one switch.
 - Drop a file on the toolbar panel to clean it and download the clean copy.

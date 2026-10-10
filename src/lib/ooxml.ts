@@ -2,11 +2,11 @@ import { ascii, concat, crc32, deflateRaw, inflateRaw, lastIndexOf, read, u16, u
 import type { Field, Report, Segment } from './types'
 import { parseXml, type XEl } from './xml'
 
-type Entry = { name: string; nameBytes: Bytes; flags: number; method: number; crc: number; csize: number; usize: number; offset: number; extAttr: number; madeBy: number; dataStart?: number }
+export type Entry = { name: string; nameBytes: Bytes; flags: number; method: number; crc: number; csize: number; usize: number; offset: number; extAttr: number; madeBy: number; dataStart?: number }
 
 const EOCD = [0x50, 0x4b, 0x05, 0x06]
 
-async function directory(blob: Blob): Promise<Entry[]> {
+export async function directory(blob: Blob): Promise<Entry[]> {
   const tailLen = Math.min(blob.size, 66 * 1024)
   const tail = await read(blob, blob.size - tailLen, tailLen)
   const e = lastIndexOf(tail, new Uint8Array(EOCD))
@@ -30,7 +30,7 @@ async function directory(blob: Blob): Promise<Entry[]> {
   return entries
 }
 
-async function content(blob: Blob, en: Entry): Promise<Uint8Array> {
+export async function content(blob: Blob, en: Entry): Promise<Uint8Array> {
   const raw = await read(blob, en.dataStart!, en.csize)
   if (en.method === 0) return raw
   if (en.method === 8) return inflateRaw(raw)
@@ -109,8 +109,8 @@ export async function readOoxml(blob: Blob, name: string): Promise<Report | null
 }
 
 const unescapeUri = (u: string) => { try { return decodeURI(u) } catch { return u } }
-const count = (s: string, re: RegExp) => (s.match(re) ?? []).length
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+export const count = (s: string, re: RegExp) => (s.match(re) ?? []).length
+export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** What the sender may not know is in the content: hidden sheets, rows and text, speaker notes, deleted text kept as a
  *  tracked change, pivot caches, embedded files, and parts that fetch from the web when opened. Shown, never changed. */
@@ -199,22 +199,30 @@ const le32 = (n: number) => [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >>>
  *  (the zip's own per-part timestamps are reset to 1980-01-01; they are metadata too). */
 export async function stripOoxml(blob: Blob, keep = new Set<string>()): Promise<Blob> {
   const entries = await directory(blob)
+  const plan = new Map<string, Bytes | null>()
+  const dropped = entries.filter((e) => /^docProps\/thumbnail\./i.test(e.name) && !keep.has(e.name))
+  for (const en of dropped) plan.set(en.name, null)
+  for (const en of entries) {
+    if (EMPTY[en.name] && !keep.has(en.name)) plan.set(en.name, ascii(EMPTY[en.name]))
+    else if (en.name === '_rels/.rels' && dropped.length) plan.set(en.name, ascii(utf8(await content(blob, en)).replace(/<Relationship\b[^>]*Target="[^"]*thumbnail\.[^"]*"[^>]*\/>/gi, '')))
+  }
+  return rewriteZip(blob, entries, plan)
+}
+
+/** Copy a zip part by part: a part mapped to bytes is replaced (deflated), mapped to null is dropped, the rest is copied
+ *  as stored, in the same order (OpenDocument needs its stored `mimetype` part first). Part timestamps become 1980-01-01. */
+export async function rewriteZip(blob: Blob, entries: Entry[], plan: Map<string, Bytes | null>): Promise<Blob> {
   const parts: BlobPart[] = []
   const central: Bytes[] = []
   let offset = 0
-  const dropped = entries.filter((e) => /^docProps\/thumbnail\./i.test(e.name) && !keep.has(e.name))
   for (const en of entries) {
-    if (dropped.includes(en)) continue
+    const repl = plan.get(en.name)
+    if (repl === null) continue
     let data: BlobPart, csize = en.csize, usize = en.usize, crc = en.crc, method = en.method
-    if ((EMPTY[en.name] && !keep.has(en.name)) || (en.name === '_rels/.rels' && dropped.length)) {
-      let raw: Bytes
-      if (EMPTY[en.name]) raw = ascii(EMPTY[en.name])
-      else {
-        raw = ascii(utf8(await content(blob, en)).replace(/<Relationship\b[^>]*Target="[^"]*thumbnail\.[^"]*"[^>]*\/>/gi, ''))
-      }
-      usize = raw.length
-      crc = crc32(raw)
-      const z = await deflateRaw(raw)
+    if (repl) {
+      usize = repl.length
+      crc = crc32(repl)
+      const z = await deflateRaw(repl)
       method = 8
       data = z
       csize = z.length

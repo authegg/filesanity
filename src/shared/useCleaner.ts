@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { cleanName, fieldCount, inspect, keptCount, strip, Unsupported, warnCount, type Report } from '../lib'
+import { cleanName, fieldCount, inspect, keptCount, nameRisks, neutralName, strip, Unsupported, warnCount, type Report } from '../lib'
 
 export type State = 'idle' | 'over' | 'reading' | 'ready' | 'cleaned' | 'error'
 
@@ -10,11 +10,14 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
   const [report, setReport] = useState<Report | null>(null)
   const [error, setError] = useState('')
   const [cleanedBytes, setCleanedBytes] = useState(0)
+  // Download under a neutral name; on by default when the name gives something away.
+  const [neutral, setNeutral] = useState(false)
   const input = useRef<HTMLInputElement | null>(null)
   const depth = useRef(0)
 
   const take = useCallback(async (f: File) => {
     setFile(f)
+    setNeutral(nameRisks(f.name).length > 0)
     setReport(null)
     setError('')
     setState('reading')
@@ -26,6 +29,20 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
       setState('error')
     }
   }, [])
+
+  // A file shared from Android's share sheet: the service worker left it in the cache (see scripts/pwa.mjs).
+  useEffect(() => {
+    const shared = new URLSearchParams(location.search).get('shared')
+    if (shared == null) return
+    history.replaceState(null, '', location.pathname + location.hash)
+    if (shared === '0') { setError('The shared file did not arrive. Open FileSanity once, then share the file again.'); setState('error'); return }
+    caches.open('fs-share').then(async (c) => {
+      const res = await c.match('/shared')
+      if (!res) return
+      await c.delete('/shared')
+      take(new File([await res.blob()], decodeURIComponent(res.headers.get('x-name') ?? 'shared'), { type: res.headers.get('content-type') ?? '' }))
+    }).catch(() => {})
+  }, [take])
 
   // Paste a file from the clipboard anywhere on the page.
   useEffect(() => {
@@ -45,11 +62,11 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = cleanName(file.name)
+    a.download = neutral ? neutralName(file.name, report.kind) : cleanName(file.name)
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     setState('cleaned')
-  }, [file, report])
+  }, [file, report, neutral])
 
   const reset = useCallback(() => {
     setFile(null); setReport(null); setError(''); setState('idle')
@@ -82,7 +99,7 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
     hidden: true,
     tabIndex: -1,
     'aria-hidden': true,
-    accept: '.jpg,.jpeg,.png,.heic,.heif,.mp4,.mov,.m4v,.pdf,.docx,.xlsx,.pptx',
+    accept: '.jpg,.jpeg,.png,.heic,.heif,.webp,.mp4,.mov,.m4v,.m4a,.mp3,.pdf,.docx,.xlsx,.pptx,.odt,.ods,.odp',
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) take(f) },
   }
 
@@ -91,6 +108,9 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
     removed: report ? fieldCount(report) : 0,
     kept: report ? keptCount(report) : 0,
     warned: report ? warnCount(report) : 0,
+    risks: file ? nameRisks(file.name) : [],
+    neutral, setNeutral,
+    downloadName: file && report ? (neutral ? neutralName(file.name, report.kind) : cleanName(file.name)) : '',
     open: () => input.current?.click(),
     take, clean, reset, sample, dropProps, inputProps,
   }

@@ -305,6 +305,9 @@ export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url)
     const p = url.pathname
+    // The share sheet's POST normally stops in the service worker. If it arrives here (worker not installed yet), the body
+    // is never read and the page says to try again.
+    if (p === '/share-target') return Response.redirect(new URL('/?shared=0#cleaner', url).href, 303)
     if (!p.startsWith('/api/')) return env.ASSETS.fetch(req)
     try {
       if (p.startsWith('/api/v1/')) return await hosted(req, env, url)

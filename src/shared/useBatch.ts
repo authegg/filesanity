@@ -98,7 +98,7 @@ export function useBatch() {
   }
   const inputProps = {
     ref: input, type: 'file' as const, hidden: true, multiple: true, tabIndex: -1, 'aria-hidden': true,
-    accept: '.jpg,.jpeg,.png,.heic,.heif,.mp4,.mov,.m4v,.pdf,.docx,.xlsx,.pptx',
+    accept: '.jpg,.jpeg,.png,.heic,.heif,.webp,.mp4,.mov,.m4v,.m4a,.mp3,.pdf,.docx,.xlsx,.pptx,.odt,.ods,.odp',
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => { add([...(e.target.files ?? [])]); e.target.value = '' },
   }
 

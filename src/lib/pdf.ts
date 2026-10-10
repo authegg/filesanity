@@ -1,4 +1,4 @@
-import { ascii, indexOf, latin1, read } from './bytes'
+import { ascii, concat, deflateZlib, indexOf, inflateZlib, latin1, read } from './bytes'
 import { parseXmp } from './xmp'
 import type { Field, Report, Segment } from './types'
 
@@ -48,18 +48,26 @@ const STRING = /\/([A-Za-z0-9_.#-]+)\s*(\((?:\\.|[^\\)])*\)|<[0-9A-Fa-f\s]*>)/g
 export async function readPdf(blob: Blob, name: string): Promise<Report> {
   if (blob.size > CAP) return { kind: 'pdf', kindLabel: 'PDF document', name, bytes: blob.size, segments: [], body: { label: 'The document', bytes: blob.size }, note: 'This PDF is over 256 MB, more than FileSanity scans in this version.' }
   const b = await read(blob, 0, blob.size)
-  const { segments, edits } = scan(b)
-  const objStm = indexOf(b, ascii('/ObjStm')) >= 0
-  const zipped = segments.some((s) => !s.strip && !s.warn)
-  let note = 'PDF: the Info dictionary and an uncompressed XMP packet are blanked in place, same length.'
-  if (zipped) note += ' This file also carries a compressed XMP stream, the usual Word or Acrobat case: it is shown and kept, not removed in this version.'
-  if (objStm && !segments.some((s) => s.label === 'Info')) note = 'This PDF keeps its objects in compressed streams. FileSanity cannot read or blank metadata inside them yet, so treat this file as not cleaned.'
+  const { segments, edits } = await scan(b)
+  const encrypted = /\/Encrypt\s/.test(latin1(b, Math.max(0, b.length - 4096)))
+  const kept = segments.some((s) => !s.strip && !s.warn)
+  const lost = /\/Info\s+\d+\s+0\s+R/.test(latin1(b, Math.max(0, b.length - 4096))) && !segments.some((s) => s.label === 'Info')
+  let note = 'PDF: the document information and the XMP are blanked in place, compressed or not, and the file keeps its size.'
+  if (encrypted) note = 'This PDF is encrypted, so its metadata cannot be read or blanked here: treat it as not cleaned.'
+  else if (kept) note += ' Some metadata here is packed in a way FileSanity does not rewrite yet: it is shown and kept, so treat the file as not fully cleaned.'
+  else if (lost) note = 'This PDF keeps its document information where FileSanity cannot reach it, so its metadata may still be inside: treat it as not cleaned.'
   return { kind: 'pdf', kindLabel: 'PDF document', name, bytes: blob.size, segments, body: { label: 'The document', bytes: blob.size - edits.reduce((n, e) => n + e.end - e.start, 0) }, note }
 }
 
-function scan(b: Uint8Array) {
+async function scan(b: Uint8Array) {
   const segments: Segment[] = []
   const edits: Edit[] = []
+  // An encrypted PDF's strings are ciphertext: shown as one kept entry, never blanked into garbage.
+  const encrypted = /\/Encrypt\s/.test(latin1(b, Math.max(0, b.length - 4096)))
+  if (encrypted) {
+    segments.push({ id: 'encrypted', label: 'Info', what: 'author, software, dates (encrypted)', bytes: 0, fields: [{ name: 'Document information', value: 'encrypted with the document, so it cannot be read or blanked here' }], strip: false, why: 'shown and kept: the PDF is encrypted' })
+    return { segments: [...segments, ...risks(b)], edits }
+  }
   // Info dictionaries, by every /Info N 0 R reference in the file.
   const infoNums = new Set<number>()
   let i = 0
@@ -100,14 +108,62 @@ function scan(b: Uint8Array) {
     }
     i = e
   }
-  // Compressed metadata streams we can see but not read.
+  // Compressed XMP streams: inflated, blanked like the plain ones, and deflated back to the very same length.
   const md = ascii('/Type /Metadata'), md2 = ascii('/Type/Metadata')
   for (const pat of [md, md2]) {
     i = 0
     while ((i = indexOf(b, pat, i)) >= 0) {
       const head = latin1(b, Math.max(0, i - 200), Math.min(b.length, i + 200))
-      if (/\/Filter/.test(head)) segments.push({ id: `mdz-${i}`, label: 'XMP', what: 'a compressed metadata stream', bytes: 0, fields: [{ name: 'XMP packet', value: 'compressed stream, kept' }], strip: false, why: 'shown and kept: the packet is a compressed stream and FileSanity does not rewrite PDF streams yet' })
+      const s = /\/Filter/.test(head) && !encrypted ? stream(b, i) : null
+      const xml = s ? await inflateZlib(b.subarray(s.start, s.end)).catch(() => null) : null
+      const fields = xml ? parseXmp(new TextDecoder().decode(xml)) : []
+      // Only the compressed length is fixed, so an empty packet goes in: it packs far smaller than a blanked one.
+      const packed = xml && fields.length ? await refit(EMPTY_XMP, s!.end - s!.start) : null
+      if (s && packed) {
+        segments.push({ id: `xmpz-${s.start}`, label: 'XMP', what: 'software, history, names (compressed)', bytes: s.end - s.start, fields, strip: true })
+        edits.push({ seg: `xmpz-${s.start}`, start: s.start, end: s.end, bytes: packed })
+      } else if (/\/Filter/.test(head)) segments.push({ id: `mdz-${i}`, label: 'XMP', what: 'a compressed metadata stream', bytes: 0, fields: fields.length ? fields : [{ name: 'XMP packet', value: 'compressed stream, kept' }], strip: false, why: encrypted ? 'shown and kept: the PDF is encrypted' : 'shown and kept: this stream is packed in a way FileSanity does not rewrite yet' })
       i += pat.length
+    }
+  }
+  // Info dictionaries saved inside compressed object streams, as Word and Acrobat do.
+  const missing = [...infoNums].filter((n) => !objectRanges(b, n).length)
+  if (missing.length && !encrypted) {
+    i = 0
+    const os = ascii('/Type /ObjStm'), os2 = ascii('/Type/ObjStm')
+    for (const pat of [os, os2]) {
+      i = 0
+      while ((i = indexOf(b, pat, i)) >= 0) {
+        const at = i
+        i += pat.length
+        const s = stream(b, at)
+        const dict = latin1(b, Math.max(0, at - 200), Math.min(b.length, at + 300))
+        const first = +(/\/First\s+(\d+)/.exec(dict)?.[1] ?? NaN), n = +(/\/N\s+(\d+)/.exec(dict)?.[1] ?? NaN)
+        if (!s || !first || !n) continue
+        const data = await inflateZlib(b.subarray(s.start, s.end)).catch(() => null)
+        if (!data) continue
+        const nums = latin1(data, 0, first).trim().split(/\s+/).map(Number)
+        const fields: Field[] = []
+        for (let k = 0; k < n; k++) {
+          if (!missing.includes(nums[2 * k])) continue
+          const from = first + nums[2 * k + 1], to = k + 1 < n ? first + nums[2 * k + 3] : data.length
+          const text = latin1(data, from, to)
+          for (const m of text.matchAll(STRING)) {
+            const key = m[1], lit = m[2]
+            const value = lit.startsWith('(') ? decodeLiteral(lit.slice(1, -1)) : decodeHex(lit.slice(1, -1))
+            if (!value.trim()) continue
+            fields.push({ name: NAMES[key] ?? key, value: /Date$/.test(key) ? pdfDate(value) : value })
+            const p = from + m.index! + m[0].length - lit.length
+            data.fill(0x20, p + 1, p + lit.length - 1)
+          }
+        }
+        if (!fields.length) continue
+        const packed = await refit(data, s.end - s.start)
+        if (packed) {
+          segments.push({ id: `info-${s.start}`, label: 'Info', what: 'author, software, dates (compressed)', bytes: s.end - s.start, fields, strip: true })
+          edits.push({ seg: `info-${s.start}`, start: s.start, end: s.end, bytes: packed })
+        } else segments.push({ id: `infoz-${s.start}`, label: 'Info', what: 'author, software, dates (compressed)', bytes: 0, fields, strip: false, why: 'shown and kept: this stream is packed in a way FileSanity does not rewrite yet' })
+      }
     }
   }
   segments.push(...risks(b))
@@ -133,6 +189,44 @@ function risks(b: Uint8Array): Segment[] {
   return out
 }
 
+/** The data of the stream whose dictionary contains `at`: only a plain /FlateDecode stream with a direct or indirect
+ *  /Length and no predictor, the only kind `refit` can rewrite. */
+function stream(b: Uint8Array, at: number): { start: number; end: number } | null {
+  const objStart = latin1(b, Math.max(0, at - 400), at).lastIndexOf(' 0 obj')
+  if (objStart < 0) return null
+  const kw = indexOf(b, ascii('stream'), at)
+  if (kw < 0 || kw - at > 4000) return null
+  const dict = latin1(b, Math.max(0, at - 400) + objStart, kw)
+  if (!/\/Filter\s*(\/FlateDecode|\[\s*\/FlateDecode\s*\])/.test(dict) || /\/DecodeParms/.test(dict)) return null
+  const direct = /\/Length\s+(\d+)(?!\s+\d+\s+R)/.exec(dict)
+  const ref = /\/Length\s+(\d+)\s+0\s+R/.exec(dict)
+  let len = direct ? +direct[1] : NaN
+  if (ref) {
+    const r = objectRanges(b, +ref[1])[0]
+    len = r ? +(/obj\s+(\d+)/.exec(latin1(b, r[0], r[1]))?.[1] ?? NaN) : NaN
+  }
+  const start = kw + 6 + (b[kw + 6] === 0x0d && b[kw + 7] === 0x0a ? 2 : 1)
+  return Number.isFinite(len) && start + len <= b.length ? { start, end: start + len } : null
+}
+
+const EMPTY_XMP = ascii('<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/></x:xmpmeta><?xpacket end="w"?>')
+
+/** Deflate `data` (zlib) to exactly `size` bytes, so the stream keeps its /Length and nothing after it moves. The gap is
+ *  filled with empty stored deflate blocks (5 bytes each, no data) after the zlib header; trailing spaces in the data
+ *  (harmless in XMP and in object streams) shift the length until the gap divides by five. Null if it cannot fit. */
+async function refit(data: Uint8Array, size: number): Promise<Uint8Array<ArrayBuffer> | null> {
+  for (let pad = 0; pad < 40; pad++) {
+    const z = await deflateZlib(pad ? concat([data, new Uint8Array(pad).fill(0x20)]) : data)
+    const gap = size - z.length
+    if (gap < 0) return null
+    if (gap % 5) continue
+    const empty = new Uint8Array(gap)
+    for (let k = 0; k < gap; k += 5) empty.set([0x00, 0x00, 0x00, 0xff, 0xff], k)
+    return concat([z.subarray(0, 2), empty, z.subarray(2)])
+  }
+  return null
+}
+
 /** Same length, well-formed: attribute values and element text become spaces; namespaces and the xpacket marker stay. */
 function blankXmp(src: Uint8Array): Uint8Array<ArrayBuffer> {
   const s = latin1(src)
@@ -144,7 +238,7 @@ function blankXmp(src: Uint8Array): Uint8Array<ArrayBuffer> {
 
 export async function stripPdf(blob: Blob, keep = new Set<string>()): Promise<Blob> {
   const b = await read(blob, 0, blob.size)
-  const edits = scan(b).edits.filter((e) => !keep.has(e.seg))
+  const edits = (await scan(b)).edits.filter((e) => !keep.has(e.seg))
   edits.sort((x, y) => x.start - y.start)
   const parts: BlobPart[] = []
   let pos = 0

@@ -1,6 +1,7 @@
 import { concat, latin1, read, u16, u32, utf8 } from './bytes'
 import { parseTiff } from './exif'
 import { parseXmp } from './xmp'
+import { c2paFields } from './c2pa'
 import type { Report, Segment } from './types'
 
 /** HEIC (iPhone) and the rest of the HEIF family: an ISO box file whose `meta` box lists items. The Exif and XMP items are
@@ -16,15 +17,37 @@ export const uint = (b: Uint8Array, i: number, n: number) => (n === 0 ? 0 : n ==
 
 /** Child boxes of [from, to) in b: type, start of payload, end. */
 export function boxes(b: Uint8Array, from: number, to: number) {
-  const out: { type: string; at: number; end: number }[] = []
+  const out: { type: string; start: number; at: number; end: number }[] = []
   for (let i = from; i + 8 <= to;) {
     let n = u32(b, i)
     let h = 8
     if (n === 1) { n = uint(b, i + 8, 8); h = 16 }
     if (n === 0) n = to - i
     if (n < h) break
-    out.push({ type: latin1(b, i + 4, i + 8), at: i + h, end: Math.min(i + n, to) })
+    out.push({ type: latin1(b, i + 4, i + 8), start: i, at: i + h, end: Math.min(i + n, to) })
     i += n
+  }
+  return out
+}
+
+/** C2PA Content Credentials in an ISO box file: a top-level uuid box with this id (C2PA spec, "Embedding in BMFF"). */
+const C2PA_UUID = 'd8fec3d61b0e483c92975828877ec481'
+
+/** Top-level C2PA boxes as segments; stripping renames each to `free` and zeroes its contents, the same length, so no
+ *  offset moves and none of the record is left in the bytes. */
+export async function c2paBoxes(blob: Blob): Promise<{ seg: Segment; typeAt: number; body: [number, number] }[]> {
+  const out: { seg: Segment; typeAt: number; body: [number, number] }[] = []
+  for (let pos = 0; pos + 8 <= blob.size;) {
+    const h = await read(blob, pos, 32)
+    let n = u32(h, 0), head = 8
+    if (n === 1) { n = uint(h, 8, 8); head = 16 }
+    if (n === 0) n = blob.size - pos
+    if (n < head) break
+    if (latin1(h, 4, 8) === 'uuid' && Array.from(h.subarray(head, head + 16), (x) => x.toString(16).padStart(2, '0')).join('') === C2PA_UUID && n < 5e7) {
+      const fields = c2paFields(await read(blob, pos + head + 16, n - head - 16))
+      out.push({ seg: { id: `c2pa-${pos}`, label: 'C2PA', what: 'Content Credentials (C2PA): the app, the signer, AI and edit history', bytes: n, fields, strip: true }, typeAt: pos + 4, body: [pos + head, pos + n] })
+    }
+    pos += n
   }
   return out
 }
@@ -113,6 +136,7 @@ export async function readHeic(blob: Blob, name: string): Promise<Report> {
       segments.push({ id: `xmp-heic-${it.id}`, label: 'XMP', what: 'editing software, history, names, keywords', bytes: d.length, fields: parseXmp(utf8(d)), strip: true })
     }
   }
+  segments.push(...(await c2paBoxes(blob)).map((c) => c.seg))
   const stripped = segments.reduce((n, s) => n + s.bytes, 0)
   const brand = latin1(await read(blob, 8, 4))
   return { kind: 'heic', kindLabel: brand.startsWith('avi') ? 'AVIF image' : 'HEIC photo', name, bytes: blob.size, segments, body: { label: 'The picture', bytes: blob.size - stripped }, note: 'HEIC: the metadata is blanked in place, so the file keeps its size and the picture is not touched.' }
@@ -120,7 +144,8 @@ export async function readHeic(blob: Blob, name: string): Promise<Report> {
 
 /** An Exif item with no tags (offset 0, then a TIFF header and an empty IFD), and an XMP packet with nothing in it. */
 const EMPTY_EXIF = Uint8Array.of(0, 0, 0, 0, 0x4d, 0x4d, 0, 0x2a, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0)
-const EMPTY_XMP = new TextEncoder().encode('<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"/><?xpacket end="w"?>')
+const FREE = Uint8Array.of(0x66, 0x72, 0x65, 0x65)
+const EMPTY_XMP = new TextEncoder().encode('<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/></x:xmpmeta><?xpacket end="w"?>')
 
 export async function stripHeic(blob: Blob, keep = new Set<string>()): Promise<Blob> {
   const ranges: [number, number, number][] = [] // file offset, length, fill byte source
@@ -134,6 +159,10 @@ export async function stripHeic(blob: Blob, keep = new Set<string>()): Promise<B
     if (empty.length <= total) fill.set(empty)
     let k = 0
     for (const [at, len] of it.extents) { ranges.push([at, len, fills.length]); fills.push(fill.subarray(k, k + len)); k += len }
+  }
+  for (const c of await c2paBoxes(blob)) if (!keep.has(c.seg.id)) {
+    ranges.push([c.typeAt, 4, fills.length]); fills.push(FREE)
+    ranges.push([c.body[0], c.body[1] - c.body[0], fills.length]); fills.push(new Uint8Array(c.body[1] - c.body[0]))
   }
   ranges.sort((a, b) => a[0] - b[0])
   const parts: BlobPart[] = []

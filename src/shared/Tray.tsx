@@ -1,4 +1,4 @@
-import { fmtBytes } from '../lib'
+import { fmtBytes, neutralName } from '../lib'
 import { GROUPS, ORDER, rows, when } from './reveal'
 import type { Cleaner } from './useCleaner'
 import { useRequests } from './useRequests'
@@ -18,7 +18,7 @@ export function Tray({ c, drop = true }: { c: Cleaner; drop?: boolean }) {
   else if (c.state === 'error') body = <><p className="tr-status tr-err" role="alert">{c.error}</p><button className="tr-ghost" onClick={c.reset}>Try another file</button></>
   else if (c.state === 'cleaned') body = (
     <>
-      <p className="tr-big">Saved a clean copy of {c.file?.name}.</p>
+      <p className="tr-big">Saved a clean copy as {c.downloadName}.</p>
       <p className="tr-status">{c.removed} fields removed, {fmtBytes(c.cleanedBytes)}.{c.kept ? ` ${c.kept} kept, as the note says.` : ''} Nothing was uploaded.</p>
       {c.warned > 0 && <p className="tr-status">{c.warned} {c.warned === 1 ? 'thing' : 'things'} in the content stayed as they were: change {c.warned === 1 ? 'it' : 'them'} in the app that made the file.</p>}
       {r && <ul className="tr-gone" aria-label="Removed, by what it gave away">{ORDER.map((g) => { const k = rows(r).filter((x) => x.group === g && x.strip).length; return k ? <li key={g}><span>{GROUPS[g]}</span><b>{k}</b></li> : null })}</ul>}
@@ -30,7 +30,7 @@ export function Tray({ c, drop = true }: { c: Cleaner; drop?: boolean }) {
     body = (
       <>
         <div className="tr-chip"><b>{c.file?.name}</b><span>{r.kindLabel}, {fmtBytes(r.bytes)}</span></div>
-        <p className="tr-big">{c.removed ? `${c.removed} hidden fields found.` : c.warned ? 'No metadata to remove.' : 'Nothing hidden: this file is already clean.'}</p>
+        <p className="tr-big">{c.removed ? `${c.removed} hidden fields found.` : c.warned ? 'No metadata to remove.' : c.kept ? 'Nothing FileSanity can remove here.' : 'Nothing hidden: this file is already clean.'}</p>
         {c.warned > 0 && <p className="tr-status">{c.warned} {c.warned === 1 ? 'thing' : 'things'} in the content, listed first. Cleaning leaves {c.warned === 1 ? 'it' : 'them'} as {c.warned === 1 ? 'it is' : 'they are'}, because removing {c.warned === 1 ? 'it' : 'them'} would change the document.</p>}
         {r.note && <p className="tr-status">{r.note}</p>}
         {list.length > 0 && (
@@ -45,6 +45,9 @@ export function Tray({ c, drop = true }: { c: Cleaner; drop?: boolean }) {
               )
             })}</table>
           </div>
+        )}
+        {c.risks.length > 0 && (
+          <label className="tr-name"><input type="checkbox" checked={c.neutral} onChange={(e) => c.setNeutral(e.target.checked)} /> <span>Save it as <b>{neutralName(c.file!.name, r.kind)}</b>. The name gives away {c.risks.join(' and ')}, and no cleaner touches a name.</span></label>
         )}
         <div className="tr-acts">
           <button className="tr-primary" onClick={c.clean} disabled={!c.removed}>Remove all and download</button>

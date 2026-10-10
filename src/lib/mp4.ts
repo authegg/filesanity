@@ -1,11 +1,11 @@
 import { latin1, read, u16, u32, utf8 } from './bytes'
-import { boxes, uint } from './heic'
+import { boxes, c2paBoxes, uint } from './heic'
 import type { Field, Report, Segment } from './types'
 
 /** MP4 and QuickTime (MOV) video: the same ISO box format as HEIC. Phones put the GPS position, the camera and the
  *  software in `udta` and `meta` boxes under `moov`, and the recording time in the movie and track headers.
- *  Cleaning is in place and the same length: each metadata box is renamed `free`, which every player skips, and the
- *  header times are zeroed. The video and sound are not touched, and no offset in the file moves. */
+ *  Cleaning is in place and the same length: each metadata box is renamed `free`, which every player skips, and its
+ *  contents zeroed; the header times are zeroed. The video and sound are not touched, and no offset in the file moves. */
 
 const TOP = ['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip', 'uuid', 'pnot']
 export const isMp4 = (head: Uint8Array) => TOP.includes(latin1(head, 4, 8))
@@ -95,7 +95,11 @@ async function scan(blob: Blob): Promise<Found> {
   const segments: Segment[] = []
   const edits: Edit[] = []
   let brand = ''
-  const free = (seg: string, typeAt: number) => edits.push({ seg, at: typeAt, bytes: Uint8Array.from([0x66, 0x72, 0x65, 0x65]) as Uint8Array<ArrayBuffer> })
+  // Renamed `free` so players skip it, and zeroed so nothing it held is left in the bytes.
+  const free = (seg: string, typeAt: number, from: number, to: number) => {
+    edits.push({ seg, at: typeAt, bytes: Uint8Array.from([0x66, 0x72, 0x65, 0x65]) as Uint8Array<ArrayBuffer> })
+    edits.push({ seg, at: from, bytes: new Uint8Array(to - from) })
+  }
   for (let pos = 0; pos + 8 <= blob.size;) {
     const h = await read(blob, pos, 32)
     let n = u32(h, 0), head = 8
@@ -106,7 +110,7 @@ async function scan(blob: Blob): Promise<Found> {
     if (type === 'ftyp') brand = latin1(h, 8, 12)
     if (type === 'uuid' && hex(h.subarray(head, head + 16)) === XMP_UUID) {
       segments.push({ id: `vmeta-${pos}`, label: 'XMP', what: 'editing software, history, names', bytes: n, fields: [{ name: 'XMP packet', value: `${n} bytes` }], strip: true })
-      free(`vmeta-${pos}`, pos + 4)
+      free(`vmeta-${pos}`, pos + 4, pos + head, pos + n)
     }
     if (type === 'moov') {
       if (n > 64e6) throw new Error('the movie header is over 64 MB, more than FileSanity reads in this version')
@@ -115,6 +119,7 @@ async function scan(blob: Blob): Promise<Found> {
     }
     pos += n
   }
+  for (const c of await c2paBoxes(blob)) { segments.push(c.seg); free(c.seg.id, c.typeAt, ...c.body) }
   return { segments, edits, brand }
 
   /** moov and trak: their udta and meta boxes become `free`; their header times become zero. */
@@ -125,7 +130,7 @@ async function scan(blob: Blob): Promise<Found> {
         const fields = k.type === 'udta' ? udtaFields(m, k.at, k.end) : metaFields(m, k.at, k.end)
         if (!fields.length) fields.push({ name: k.type === 'udta' ? 'User data' : 'Metadata', value: `${k.end - k.at} bytes` })
         segments.push({ id, label: k.type, what: 'position, camera, software', bytes: k.end - k.at + 8, fields, strip: true })
-        free(id, base + k.at - 4)
+        free(id, base + k.start + 4, base + k.at, base + k.end)
       } else if (k.type === 'mvhd' || k.type === 'tkhd' || k.type === 'mdhd') {
         const v = m[k.at], w = v === 1 ? 8 : 4
         const created = uint(m, k.at + 4, w)
@@ -143,7 +148,8 @@ async function scan(blob: Blob): Promise<Found> {
 export async function readMp4(blob: Blob, name: string): Promise<Report> {
   const { segments, brand } = await scan(blob)
   const stripped = segments.reduce((n, s) => n + s.bytes, 0)
-  return { kind: 'mp4', kindLabel: brand === 'qt  ' ? 'QuickTime video' : 'MP4 video', name, bytes: blob.size, segments, body: { label: 'The video and sound', bytes: blob.size - stripped }, note: 'Video: the metadata boxes are renamed so players skip them, and the recording times are zeroed. The file keeps its size; the video and sound are not touched.' }
+  const audio = /^M4[AB] $/.test(brand)
+  return { kind: 'mp4', kindLabel: audio ? 'M4A audio' : brand === 'qt  ' ? 'QuickTime video' : 'MP4 video', name, bytes: blob.size, segments, body: { label: audio ? 'The sound' : 'The video and sound', bytes: blob.size - stripped }, note: `${audio ? 'Audio' : 'Video'}: the metadata boxes are renamed so players skip them, and the recording times are zeroed. The file keeps its size; the ${audio ? 'sound is' : 'video and sound are'} not touched.` }
 }
 
 export async function stripMp4(blob: Blob, keep = new Set<string>()): Promise<Blob> {

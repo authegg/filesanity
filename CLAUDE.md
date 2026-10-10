@@ -61,13 +61,14 @@ The nav carries How it works, Batch, API, Pricing, Security and Account. The foo
   - Firefox at 1917x870 is primary, then 1366x650 and a 390x844 phone.
   - The phone matrix is 320x568, 360x780, 390x844, 412x915, 430x932 and 667x375.
   - Verified in Firefox and Chromium.
-- **Hard standards:** the studio's. JS is currently 111 kB gzipped against 150.
+- **Hard standards:** the studio's. JS is currently 117 kB gzipped against 150.
 - **Parser scope:**
-  - JPEG, PNG, HEIC, MP4/MOV, DOCX, XLSX, PPTX and PDF.
+  - JPEG, PNG, HEIC, WebP, MP4/MOV, M4A, MP3, DOCX, XLSX, PPTX, ODT/ODS/ODP and PDF.
+  - File names: dates, emails and draft words are flagged and a neutral name offered (`src/lib/name.ts`).
   - MP4/MOV: `udta` and `meta` boxes renamed `free` and header times zeroed, same length (owner added video 2026-10-10).
   - Content checks, shown and never changed (`Segment.warn`): hidden sheets, rows, columns, pivot caches, hidden text, tracked deletions, comments, speaker notes, hidden slides, embedded files, external parts fetched on opening; PDF earlier saves, JavaScript, launch and on-open web addresses.
   - HEIC Exif and XMP items are blanked in place (same length); C2PA in JPEG APP11 and PNG caBX is removed.
-  - In PDFs, the Info dictionary and uncompressed XMP are blanked in place. Compressed streams are shown and kept, and the page says so.
+  - In PDFs, the Info dictionary and the XMP are blanked in place, plain or compressed: compressed streams (XMP, object streams) are re-deflated to the exact old length with empty stored blocks, so no offset moves. Encrypted PDFs are shown as not cleaned.
 
 ### Open assumptions (owner to confirm; PLACEHOLDERS.md)
 - Prices and limits: Pro $6, Team $24, API $29, plus the API quotas.
@@ -85,7 +86,7 @@ The nav carries How it works, Batch, API, Pricing, Security and Account. The foo
 One saturated forest green on every section of every page, with each tool a cream sheet laid on it. The full block is in DECISIONS.md.
 
 ## Out of scope
-- Formats: audio, legacy binary Office.
+- Formats: GIF, TIFF, audio other than MP3/M4A, legacy binary Office.
 - A blog.
 - Porting the v2 CLI (it is at commit bc9103d). The extension was rebuilt for v3 (DECISIONS.md, "Extension (v3)").
 - Server-side batch processing.

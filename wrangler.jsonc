@@ -8,7 +8,7 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/share-target"]
   },
   "kv_namespaces": [{ "binding": "DB", "id": "cfd3fcc823c541c69adc0808d87450ee" }],
   // Secrets (npx wrangler secret put <NAME>): TURNSTILE_SECRET, LS_WEBHOOK_SECRET,

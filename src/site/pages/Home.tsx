@@ -14,8 +14,8 @@ export const meta = {
 const toCleaner = () => document.getElementById('cleaner')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
 
 const KINDS = [
-  { href: '/photos', name: 'Photos', fmt: 'JPEG, PNG, HEIC, MP4, MOV', says: 'GPS position, camera and serial number, the time to the second, editing app, your name' },
-  { href: '/documents', name: 'Office documents', fmt: 'Word, Excel, PowerPoint', says: 'Author, last editor, company, manager, editing minutes, custom fields, a thumbnail of page one' },
+  { href: '/photos', name: 'Photos', fmt: 'JPEG, PNG, HEIC, WebP, MP4, MOV', says: 'GPS position, camera and serial number, the time to the second, editing app, your name' },
+  { href: '/documents', name: 'Office documents', fmt: 'Word, Excel, PowerPoint, OpenDocument', says: 'Author, last editor, company, manager, editing minutes, custom fields, a thumbnail of page one' },
   { href: '/pdf', name: 'PDF', fmt: 'PDF', says: 'Author, title, subject, the program that made it, created and modified dates, XMP' },
 ]
 

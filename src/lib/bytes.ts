@@ -71,6 +71,7 @@ const pipe = async (data: Uint8Array, stream: GenericTransformStream): Promise<B
 export const inflateRaw = (d: Uint8Array) => pipe(d, new DecompressionStream('deflate-raw'))
 export const inflateZlib = (d: Uint8Array) => pipe(d, new DecompressionStream('deflate'))
 export const deflateRaw = (d: Uint8Array) => pipe(d, new CompressionStream('deflate-raw'))
+export const deflateZlib = (d: Uint8Array) => pipe(d, new CompressionStream('deflate'))
 
 export const fmtBytes = (n: number) => {
   if (n < 1000) return `${n} B`

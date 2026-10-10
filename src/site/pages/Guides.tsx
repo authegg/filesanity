@@ -187,7 +187,7 @@ export const GUIDES: Guide[] = [
           <p>If the PDF will be read by someone with a reason to dig, such as the other side in a dispute, use Acrobat Pro's sanitize or rebuild the PDF from a cleaned source document. Metadata is only one part: hidden layers, form data, attachments and text under a black box are content, and redacting them is a separate job.</p>
         </Block>
         <Here>
-          <p>FileSanity's <a href="/pdf">PDF cleaner</a> shows the document information and XMP in your browser and blanks them in place, including copies left by earlier saves, so the PDF opens exactly as before. Some PDFs, often ones saved from Word or Acrobat, keep the XMP or all their objects in compressed streams. FileSanity cannot rewrite those yet: it shows what it found, keeps it, and says the file is not fully clean instead of calling it done.</p>
+          <p>FileSanity's <a href="/pdf">PDF cleaner</a> shows the document information and XMP in your browser and blanks them in place, including copies left by earlier saves, so the PDF opens exactly as before. PDFs saved from Word or Acrobat keep the XMP, and often the document information, in compressed streams; FileSanity unpacks, blanks and repacks those to the same size. An encrypted PDF is the exception: it shows what it found, keeps it, and says the file is not fully clean instead of calling it done.</p>
         </Here>
         <Checked />
       </>
@@ -375,7 +375,7 @@ export const GUIDES: Guide[] = [
           <p>exiftool keeps the original as <code>file.jpg_original</code>; send the other one. A screenshot or a re-export to a new file also usually drops the record, as <a href={OPENAI_C2PA}>OpenAI notes</a>, but it re-encodes the picture and can carry the screen's own metadata.</p>
         </Block>
         <Here>
-          <p>FileSanity reads Content Credentials in JPEG and PNG files and lists what they say, the app, the signer, whether it is marked as AI and the edits, then removes the record along with the EXIF and XMP. The picture is not re-encoded. Credentials inside HEIC and WebP files are not removed yet. The file stays in your browser.</p>
+          <p>FileSanity reads Content Credentials in JPEG, PNG, WebP, HEIC and video files and lists what they say, the app, the signer, whether it is marked as AI and the edits, then removes the record along with the EXIF and XMP. The picture is not re-encoded. The file stays in your browser.</p>
         </Here>
         <Checked on="10 October 2026" />
       </>

@@ -18,7 +18,7 @@ export type Segment = {
 }
 
 export type Report = {
-  kind: 'jpeg' | 'png' | 'heic' | 'mp4' | 'docx' | 'xlsx' | 'pptx' | 'pdf'
+  kind: 'jpeg' | 'png' | 'heic' | 'webp' | 'mp4' | 'mp3' | 'docx' | 'xlsx' | 'pptx' | 'odf' | 'pdf'
   kindLabel: string
   name: string
   bytes: number

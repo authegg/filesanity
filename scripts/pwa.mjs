@@ -23,9 +23,16 @@ const V = 'fs-${version}', P = ${JSON.stringify(list)}
 const has = new Set(P)
 const key = (u) => u.pathname.replace(/\\/index\\.html$/, '').replace(/\\/+$/, '') || '/'
 addEventListener('install', (e) => e.waitUntil(caches.open(V).then((c) => c.addAll(P.map((u) => new Request(u, { cache: 'no-cache' })))).then(() => skipWaiting())))
-addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== V).map((k) => caches.delete(k)))).then(() => clients.claim())))
+addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== V && k !== 'fs-share').map((k) => caches.delete(k)))).then(() => clients.claim())))
 addEventListener('fetch', (e) => {
   const r = e.request, u = new URL(r.url)
+  // Android's share sheet posts the file here. It is kept in this browser's cache for the page to pick up; it never
+  // reaches the network.
+  if (r.method === 'POST' && u.pathname === '/share-target') return e.respondWith((async () => {
+    const f = (await r.formData()).get('file')
+    if (f && typeof f !== 'string') await (await caches.open('fs-share')).put('/shared', new Response(f, { headers: { 'x-name': encodeURIComponent(f.name), 'content-type': f.type || 'application/octet-stream' } }))
+    return Response.redirect('/?shared=1#cleaner', 303)
+  })())
   if (r.method !== 'GET' || u.origin !== location.origin) return
   const k = key(u)
   if (r.mode === 'navigate') {

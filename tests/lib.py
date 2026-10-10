@@ -5,7 +5,7 @@ import io, json, os, re, subprocess, sys, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'out', 'lib')
-CASES = ['photo.jpg', 'photo.heic', 'video.mp4', 'video.mov', 'shot.png', 'c2pa.jpg', 'c2pa.png', 'offer.docx', 'fees.xlsx', 'pitch.pptx', 'memo.pdf', 'memo-z.pdf']
+CASES = ['photo.jpg', 'photo.heic', 'c2pa.heic', 'photo.webp', 'video.mp4', 'video.mov', 'memo.m4a', 'song.mp3', 'fees.odt', 'fees.ods', 'fees.odp', 'shot.png', 'c2pa.jpg', 'c2pa.png', 'offer.docx', 'fees.xlsx', 'pitch.pptx', 'memo.pdf', 'memo-z.pdf', 'objstm.pdf', 'qpdf.pdf']
 failures = []
 
 
@@ -15,7 +15,7 @@ def check(cond, msg):
         failures.append(msg)
 
 
-LEAKS = [b'Villanueva', b'Priya', b'Delacroix', b'Lightroom', b'GIMP', b'iPhone', b'Quezon', b'Tamarind', b'DEL-2026', b'Byrne', b'confidential', b'c2pa', b'C2PA Test Signing Cert']
+LEAKS = [b'Villanueva', b'Priya', b'Delacroix', b'Lightroom', b'GIMP', b'iPhone', b'Quezon', b'Tamarind', b'DEL-2026', b'Byrne', b'confidential', b'c2pa', b'C2PA Test Signing Cert', b'14.6760', b'Mabini', b'Gate code', b'LaserJet', b'Lavf']
 
 failures = []
 
@@ -40,17 +40,20 @@ def verify(name, data, before, fig=''):
         check(all(not v for v in info.values()), f'pdf: Info values blank ({info})')
         xmp = r.xmp_metadata
         blank = lambda v: not ''.join(v if isinstance(v, list) else [v or '']).strip()
-        if name == 'memo-z.pdf':
-            # The compressed stream is kept, and the page must say so rather than claim a clean file.
-            check(xmp is not None and not blank(xmp.dc_creator), f'pdf-z: compressed XMP kept, creator still present ({xmp and xmp.dc_creator})')
-            check('compressed XMP stream' in fig['note'] and 'shown and kept' in fig['note'], 'pdf-z: the note says the compressed stream is shown and kept')
-            check(fig['removed'] == 8 and fig['kept'] == 1, f'pdf-z: 8 removed, 1 kept ({fig})')
-        else:
-            check(xmp is None or (blank(xmp.dc_creator) and blank(xmp.xmp_creator_tool)), f'pdf: XMP creator and tool blank ({xmp and xmp.dc_creator}, {xmp and xmp.xmp_creator_tool})')
-            check(fig['kept'] == 0, 'pdf: nothing kept')
+        # Compressed XMP and object streams are rewritten to the same compressed length, so nothing moves.
+        check(xmp is None or (blank(xmp.dc_creator) and blank(xmp.xmp_creator_tool)), f'{name}: XMP creator and tool blank ({xmp and xmp.dc_creator}, {xmp and xmp.xmp_creator_tool})')
+        check(fig['kept'] == 0 and 'shown and kept' not in fig['note'] and 'not cleaned' not in fig['note'], f'{name}: nothing kept, the note claims no gap ({fig})')
+        tmp = os.path.join(OUT, 'probe.pdf')
+        open(tmp, 'wb').write(data)
+        gs = subprocess.run(['gs', '-q', '-dNOPAUSE', '-dBATCH', '-sDEVICE=nullpage', tmp], capture_output=True, text=True)
+        check(gs.returncode == 0 and not gs.stdout.strip() and not gs.stderr.strip(), f'{name}: Ghostscript renders it without a warning ({(gs.stdout + gs.stderr)[:200]})')
+        import pikepdf
+        problems = pikepdf.open(tmp).check_pdf_syntax()
+        check(not problems, f'{name}: qpdf finds no syntax problems ({problems})')
         return
-    if ext in ('mp4', 'mov'):
+    if ext in ('mp4', 'mov', 'm4a'):
         check(len(data) == len(before), f'{ext}: same length, cleaned in place')
+        check(not leaks, f'{ext}: no leaked strings anywhere in the bytes ({leaks})')
         tmp = os.path.join(OUT, 'probe.' + ext)
         open(tmp, 'wb').write(data)
         probe = lambda p: subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format_tags:stream_tags', '-of', 'json', p], capture_output=True, text=True).stdout
@@ -59,6 +62,40 @@ def verify(name, data, before, fig=''):
         frames = lambda p: subprocess.run(['ffmpeg', '-v', 'error', '-i', p, '-f', 'framemd5', '-'], capture_output=True, text=True)
         a, b = frames(os.path.join(HERE, 'files', name)), frames(tmp)
         check(not b.stderr and a.stdout == b.stdout, f'{ext}: decodes without errors, frames and sound identical ({b.stderr[:200]})')
+        return
+    if ext == 'mp3':
+        from mutagen.mp3 import MP3
+        check(not leaks, f'mp3: no leaked strings ({leaks})')
+        check(not MP3(io.BytesIO(data)).tags and b'TAG' != data[-128:-125] and not data.startswith(b'ID3'), 'mp3: no ID3v2 or ID3v1 tag left')
+        tmp = os.path.join(OUT, 'probe.mp3')
+        open(tmp, 'wb').write(data)
+        frames = lambda p: subprocess.run(['ffmpeg', '-v', 'error', '-i', p, '-map', '0:a', '-f', 'framemd5', '-'], capture_output=True, text=True)
+        a, b = frames(os.path.join(HERE, 'files', name)), frames(tmp)
+        check(not b.stderr and a.stdout == b.stdout and a.stdout.count('\n') > 20, f'mp3: decodes, sound identical ({b.stderr[:200]})')
+        return
+    if ext == 'webp':
+        from PIL import Image
+        check(not leaks, f'webp: no leaked strings ({leaks})')
+        im, orig = Image.open(io.BytesIO(data)), Image.open(io.BytesIO(before))
+        check(im.tobytes() == orig.tobytes(), f'webp: Pillow opens it, picture identical {im.size}')
+        check('exif' not in im.info and 'xmp' not in im.info, 'webp: no EXIF, no XMP')
+        check(not re.findall(rb'(EXIF|XMP |C2PA)....', data[12:]) and not data[20] & 0x0C and int.from_bytes(data[4:8], 'little') == len(data) - 8, 'webp: no metadata chunks, flags cleared, RIFF size right')
+        return
+    if ext in ('odt', 'ods', 'odp'):
+        import xml.dom.minidom
+        z = zipfile.ZipFile(io.BytesIO(data))
+        check(z.testzip() is None, f'{ext}: zip CRCs pass')
+        first = z.infolist()[0]
+        check(first.filename == 'mimetype' and first.compress_type == zipfile.ZIP_STORED, f'{ext}: mimetype stays first and stored')
+        names = z.namelist()
+        meta = z.read('meta.xml') + z.read('settings.xml') + z.read('META-INF/manifest.xml')
+        leaks = [l for l in LEAKS + [b'Priya', b'Delacroix', b'HP '] if l in meta]
+        check(not leaks, f'{ext}: no leaked strings in meta, settings or manifest ({leaks})')
+        check(not [n for n in names if n.startswith('Thumbnails/')] and b'Thumbnails' not in z.read('META-INF/manifest.xml'), f'{ext}: thumbnail and its manifest entry gone')
+        orig = zipfile.ZipFile(io.BytesIO(before))
+        check(z.read('content.xml') == orig.read('content.xml'), f'{ext}: content.xml byte for byte')
+        for n in ('meta.xml', 'settings.xml', 'META-INF/manifest.xml'):
+            xml.dom.minidom.parseString(z.read(n))
         return
     if ext == 'heic':
         import pillow_heif
@@ -133,6 +170,8 @@ if __name__ == '__main__':
         check(f.get('Made with (Content Credentials)') == 'make_test_images 0.33.1', f'{name}: claim generator read ({f})')
         check(f.get('Signed by') == 'C2PA Test Signing Cert', f'{name}: signer read')
         check('opened' in f.get('Edit history', '') and f.get('Made from') == '1 earlier file', f'{name}: actions and ingredient read')
+    nm = subprocess.run(['node', os.path.join(HERE, 'name.mjs')], capture_output=True, text=True)
+    check(nm.returncode == 0, f'name: dates, emails and draft words in a file name are flagged ({nm.stderr.strip()[-300:]})')
     ai = subprocess.run(['node', os.path.join(HERE, 'c2pa.mjs')], capture_output=True, text=True)
     check(ai.returncode == 0, f'c2pa: an AI generator and source type are named ({ai.stderr.strip()[-200:]})')
     print('content checks: shown, kept')
@@ -157,6 +196,9 @@ if __name__ == '__main__':
     z = zipfile.ZipFile(os.path.join(OUT, 'hidden.xlsx'))
     check(b'state="hidden"' in z.read('xl/workbook.xml') and 'xl/pivotCache/pivotCacheRecords1.xml' in z.namelist(), 'hidden.xlsx: the hidden sheet and pivot cache are left in the file')
     check(b'w:delText' in zipfile.ZipFile(os.path.join(OUT, 'hidden.docx')).read('word/document.xml'), 'hidden.docx: the tracked deletion is left in the document')
+    lk = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), 'locked.pdf'], check=True, capture_output=True, text=True).stdout)['locked.pdf']
+    check(lk['removed'] == 0 and lk['kept'] == 1 and 'encrypted' in lk['note'] and 'not cleaned' in lk['note'], f'locked.pdf: an encrypted PDF is shown as not cleaned, nothing blanked ({lk})')
+    check(open(os.path.join(OUT, 'locked.pdf'), 'rb').read() == open(os.path.join(HERE, 'files', 'locked.pdf'), 'rb').read(), 'locked.pdf: left byte for byte')
     print('refusals')
     check('does not begin like a JPEG' in rep['notajpeg.jpg'].get('error', ''), 'a .jpg that is not a JPEG is refused by its bytes')
     check('cannot read .txt' in rep['notes.txt'].get('error', ''), '.txt is refused in plain words')
