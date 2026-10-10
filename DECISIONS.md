@@ -393,3 +393,4 @@ Product calls from the owner's brief, then build calls; each with what was rejec
 - Hashes are skipped over 512 MB (crypto.subtle has no streaming digest); the record says nothing rather than a wrong hash.
 - A plain zip opens into its files on the batch page and comes back with the same folders; Office and OpenDocument files are never taken for zips. The single cleaner sends a zip to the batch page. Encrypted entries are listed as not read.
 - Batch renames giveaway names to photo-01.jpg style by default, numbered per folder; the record pairs old and new names. Rejected: neutral names for every file, which loses harmless names people rely on.
+- Favicon: added /favicon.ico (16/32/48) and a 48px PNG link beside the SVG (2026-10-10). Search Console showed an old cached icon; Google wants a favicon of 48px multiples and many tools ask /favicon.ico first, which was a 404. Rejected: SVG only.
