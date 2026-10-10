@@ -8,7 +8,9 @@ FileSanity: remove metadata on upload
 
 ## Short description (Chrome summary, 132 characters max; AMO summary, 250 max)
 
-Removes hidden metadata (GPS, names, dates, device) from photos, Word, Excel, PowerPoint and PDF files as you upload them, locally.
+Removes hidden metadata (GPS, names, dates, device) from photos, videos, documents and PDFs as you upload them, in your browser.
+
+Chrome takes the name and this summary from `manifest.json`; keep them in step.
 
 ## Long description
 
