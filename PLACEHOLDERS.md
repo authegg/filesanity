@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Plan prices | /, /pricing, /account (`src/site/plans.ts`) | Pro $6, Team $24, API $29 a month | Owner's prices. Research anchors are in RESEARCH.md: metacleaner EUR 5/30/50, Google Drive cleaner $8, iLovePDF $4 to $7, Acrobat Pro $19.99 |
 | Plan limits | same | API files a month: Free 50, Pro 1,000, Team 5,000, API 50,000. Max file 10/50/50/100 MB. Team 5 seats | Owner confirmation |
-| Lemon Squeezy buy links | `src/site/plans.ts` | empty; /account shows "Opens soon" until set | The store, three subscription variants, their buy links, and the variant IDs as Worker secrets |
+| Lemon Squeezy buy links | `src/site/plans.ts` | done 2026-10-10: products 1427414/1427424/1427428, variants 2229415/2229436/2229440 (test mode) | Live-mode webhook after store activation, then a test purchase and refund |
 | Company facts | /about, /privacy | "authegg, an independent studio based in the Philippines" | DTI registration number and address once issued, if the owner wants them shown |
 | Turnstile site key | `VITE_TURNSTILE_SITEKEY` at build | Cloudflare's always-pass test key | A real widget for filesanity.com, and its secret as `TURNSTILE_SECRET` |
 | Sign-in sender | `wrangler.jsonc` MAIL_FROM, `send_email` | signin@filesanity.com | filesanity.com onboarded as a sending domain in Cloudflare Email Service (SPF/DKIM records) |
