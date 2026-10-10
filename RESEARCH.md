@@ -204,3 +204,56 @@ Position 1. It is the brief's one fixed idea, it is the claim the named competit
 - Acrobat Pro: US$19.99/month annual, US$29.99 month-to-month.
 - BatchPurifier: from US$19 one-off per computer.
 - Metadata Assistant (2010): US$89 per licence; metadata2go: EUR 5 per additional user/month.
+
+---
+
+## Feature research (2026-10-10)
+
+What FileSanity already does that bears on these:
+- It shows tracked-change and comment authors in DOCX without removing them.
+- It notes compressed PDF streams.
+- Its HEIC box walker can read any ISO BMFF file (MP4 and MOV too).
+
+### 1. Hidden content in Office files (strongest evidence)
+
+Regulators and public reports blame hidden spreadsheet content, not metadata, for most real document leaks:
+- **PSNI:** a hidden tab held officers' personal data.
+- **Kensington & Chelsea:** a GBP 120,000 fine. A pivot table's cache still held 943 owners' names, found by double-clicking a cell ([Tripwire](https://www.tripwire.com/state-of-security/excel-pivot-table-data-leak-leads-120000-fine-london-council)).
+- **Islington:** hidden sheets in an FOI reply ([Information Age](https://information-age.com/?p=27325)).
+- **UK MoD Afghan data leak:** a hidden worksheet ([Slashdot](https://tech.slashdot.org/story/26/07/30/1748239/)).
+- **Boeing:** hidden columns, 36,000 staff ([SC World](https://www.scworld.com/news/data-security-incident-affects-36k-boeing-workers)).
+- **Alberta OIPC P2019-ND-042:** a hidden tab sent three years running ([OIPC](https://oipc.ab.ca/library/p2019-nd-042/)).
+
+Bar guidance says tracked changes and comments do the worst damage ([NC Bar](https://www.ncbar.org/2022/01/04/exposed-what-lawyers-need-to-know-about-metadata/), [Florida Bar](https://www.floridabar.org/the-florida-bar-journal/metadata-the-ghosts-haunting-e-documents/)).
+
+**Feature:** a "Hidden in this file" section. It shows the items and does not remove them, the same rule as tracked changes today. Per format:
+- **XLSX:** hidden and very-hidden sheets, hidden rows and columns, pivot caches holding source rows, external links, comments.
+- **DOCX:** hidden text (`w:vanish`) and the count of tracked insertions and deletions.
+- **PPTX:** speaker notes, hidden slides, comments.
+- **All three:** embedded files (`embeddings/`).
+
+### 2. Earlier versions inside a PDF
+
+Incremental saves append changes, so the earlier text, including text later redacted or deleted, can stay recoverable in the same file ([argeliuslabs](https://www.argeliuslabs.com/deep-research-on-pdf-redaction-failures-and-security-risks-exploits-and-best-practices/), [forensicdiscovery](https://forensicdiscovery.expert/blog/document-history-how-pdf-saves-reveal-the-past/)). The sources are vendor blogs, but the mechanism is in the PDF specification.
+
+**Feature:** count the `startxref` sections and warn: "This PDF holds N earlier versions; text removed in a later save may still be inside." This is detection only. Rewriting the PDF would be a larger job.
+
+### 3. Does this file call home?
+
+Canarytokens and Doctrack put tracking into Office files: a remote image, a remote template, or a certificate URL that fires when the file is opened ([Thinkst](https://blog.thinkst.com/2016/05/certified-canarytokens-alerts-from_25.html), [Doctrack](https://cert.bournemouth.ac.uk/doctrack-manipulate-and-insert-tracking-pixels-into-office-open-xml-documents)). This matters to journalists who receive files.
+
+**Feature:** list external relationships and say "opening this file in Word may contact X". This covers `TargetMode="External"` in the rels, `attachedTemplate`, and `INCLUDEPICTURE` fields. For PDF, list `/URI`, `/Launch`, `/JavaScript` and `/OpenAction`.
+
+### 4. Video (MOV, MP4)
+
+- Phones write the GPS position into videos ([Apple](https://support.apple.com/en-ie/guide/personal-safety/ips0d7a5df82/web)).
+- Browser rivals already clean video in the browser: metaremove.com and metaclean.app (claims not tested).
+- The brief puts video out of scope, so this is the owner's call.
+- The HEIC box walker makes it cheaper than starting fresh. The `©xyz` atom and the `com.apple.quicktime.location.ISO6709` key can be blanked in place.
+
+### 5. Smaller gaps
+
+- **WebP.** Common output format of AI tools and the web.
+- **C2PA in HEIC.** Not removed yet.
+- **Rename on download.** Camera names such as `IMG_20261010_…` carry the date, and "draft for client X" travels with the file.
+- **Android share target.** The PWA can appear in Android's share sheet. As far as I could find, iOS Safari does not support Web Share Target ([WebKit bug 194593](https://bugs.webkit.org/show_bug.cgi?id=194593)), and iPhone users are the bigger share of buyers.
