@@ -67,12 +67,10 @@ Set to `required: ["none"]`: the extension collects and transmits no user data. 
 - Support email: hello@filesanity.com
 - Source: https://github.com/authegg/filesanity
 
-## Screenshots to take (1280x800, PNG)
+## Images (made by `python3 tools/store_shots.py`, from the built extension)
 
-1. **Before and after on a real upload form.** A webmail compose window with a photo attached, and the FileSanity toolbar panel open showing "1 cleaned on this tab".
-2. **The toolbar panel.** The counts, the "Clean uploads on mail.example.com" switch and the drop zone, centred on a plain forest background at 2x.
-3. **The popup drop zone in use.** A photo dropped on the panel with "30 fields removed. Saved as photo-clean.jpg." and the download bar visible.
-4. **Options, connected.** A Pro plan connected, the saved policy line, two site rules (always, ask) and several log rows. Use invented site names and file names.
-5. **"Save without metadata".** The right-click menu open on an image in a browser tab with the item highlighted.
+- Store icon 128x128: `extension/icons/icon-128.png`.
+- Screenshots, 1280x800: `screenshot-1.png` (what it does, the panel over a site after an upload), `screenshot-2.png` (a file dropped on the panel), `screenshot-3.png` (options, free).
+- Small promo tile, 440x280: `promo-small-440x280.png`.
 
-Use the sample photo (`public/sample.jpg`) and invented names only. Show no real person's inbox, no ratings and no user counts.
+The site in them is `marketplace.example`, a reserved name; the photo is the site's own sample. No real inbox, ratings or user counts.
