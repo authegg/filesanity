@@ -1,6 +1,6 @@
 # Store listings: Chrome Web Store and Firefox Add-ons (AMO)
 
-Copy for the owner to paste. The owner submits; nothing here has been submitted. Upload `dist-extension/filesanity-chrome-3.0.0.zip` to Chrome and `dist-extension/filesanity-firefox-3.0.0.zip` to AMO (build with `npm run build:ext`). AMO asks for the source as well: upload a zip of the repository at the release commit, with the build steps from `extension/README.md`.
+Copy for the owner to paste. The owner submits; nothing here has been submitted. Upload `dist-extension/filesanity-chrome-1.0.0.zip` to Chrome and `dist-extension/filesanity-firefox-1.0.0.zip` to AMO (build with `npm run build:ext`). AMO asks for the source as well: upload a zip of the repository at the release commit, with the build steps from `extension/README.md`.
 
 ## Name
 

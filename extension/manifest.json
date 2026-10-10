@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FileSanity",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "description": "Removes hidden metadata from photos, documents and PDFs the moment you upload them, on any site, inside your browser.",
   "homepage_url": "https://filesanity.com/extension",
   "permissions": ["storage", "contextMenus", "downloads"],
