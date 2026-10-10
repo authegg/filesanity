@@ -28,7 +28,7 @@ With a FileSanity Pro, Team or API plan:
 - Right-click an image and choose "Save without metadata".
 - A log of your last 100 cleans, kept in your browser only.
 
-What it does not do: it does not clean files a site reads from the clipboard, and compressed metadata inside some PDFs is kept and reported. The source code is open under the MIT licence.
+What it does not do: it does not clean files a site reads from the clipboard, and an encrypted PDF is reported as not cleaned rather than changed. The source code is open under the MIT licence.
 
 Who it is for: people who send files to strangers. Journalists, lawyers, HR staff, freelancers and marketplace sellers.
 
