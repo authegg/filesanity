@@ -21,7 +21,7 @@ export default function Privacy() {
       </Block>
       <Block id="p-account" title="Accounts">
         <p>If you create an account we keep: your email address; your plan, its status and renewal date; your API keys' names and creation dates, with the keys stored only as hashes; the email addresses you add to a team; your saved policy; and a monthly count of API files. We use them to run your account and nothing else.</p>
-        <p>Sign-in emails are sent through Cloudflare Email Sending, which processes your email address for that purpose. Signing in sets one cookie, <code>fs_s</code>, needed to keep you signed in; it lasts 30 days or until you sign out. The sign-in page uses Cloudflare Turnstile to block automated requests.</p>
+        <p>Sign-in emails are sent through Cloudflare Email Sending, which processes your email address for that purpose. Signing in sets one cookie, <code>fs_s</code>, needed to keep you signed in; it lasts 30 days or until you sign out. Your account page also keeps your plan's name in this browser's storage, so the pricing page can mark it without asking our server; signing out removes it. The sign-in page uses Cloudflare Turnstile to block automated requests.</p>
       </Block>
       <Block id="p-pay" title="Payment">
         <p>Lemon Squeezy sells the paid plans as merchant of record. It collects your payment details, billing address and tax information under its own privacy policy and tells us your email address, plan and subscription status. We never see your card.</p>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PAID, PLANS, fmtPrice, type PlanKey } from '../plans'
-import { call, useMe, type Me } from '../useMe'
+import { call, remember, useMe, type Me } from '../useMe'
 
 export const meta = { title: 'Account', description: 'Your FileSanity plan, API keys, team and policy.' }
 export const index = false
@@ -31,7 +31,7 @@ function Skeleton() {
 
 function Signed({ me, reload }: { me: Me; reload: () => void }) {
   const want = new URLSearchParams(location.search).get('plan') as PlanKey | null
-  const signout = async () => { await call('POST', '/api/auth/signout').catch(() => {}); location.href = '/' }
+  const signout = async () => { await call('POST', '/api/auth/signout').catch(() => {}); remember(); location.href = '/' }
   const p = PLANS[me.plan]
   return (
     <section className="head" aria-labelledby="h1">
@@ -43,7 +43,7 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
           {me.via ? <p>You are on <b>{me.via}</b>'s Team plan. They manage billing.</p> : me.plan !== 'free' ? (
             <>
               <p><b>{p.name}</b>, {fmtPrice(p)} a month. {me.status === 'cancelled' ? `Cancelled; runs until ${day(me.ends)}.` : me.status === 'past_due' ? 'The last payment failed; update your card.' : me.renews ? `Renews ${day(me.renews)}.` : ''}</p>
-              {me.portal && <a className="btn" href={me.portal}>Manage billing</a>}
+              {me.portal && <><a className="btn" href={me.portal}>Manage billing</a><p className="small">Change your plan or card, or cancel, on the billing page.</p></>}
             </>
           ) : (
             <>

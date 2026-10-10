@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { FAQ } from '../content'
 import { PAID, PLANS, fmtPrice, type PlanKey } from '../plans'
 import { Head } from '../ui'
+import { knownPlan } from '../useMe'
 
 export const meta = {
   title: 'Pricing: free for one file, paid for batches, teams and the API',
@@ -21,6 +23,8 @@ const ROWS: [string, (k: PlanKey) => string][] = [
 ]
 
 export default function Pricing() {
+  const [mine, setMine] = useState<PlanKey | null>(null)
+  useEffect(() => setMine(knownPlan()), [])
   return (
     <>
       <Head h1="Free for one file. Paid for many." lede="Cleaning a file in your browser is free, with no account, and stays free. You pay for convenience: batches, a saved policy, a team and the hosted API." />
@@ -35,7 +39,9 @@ export default function Pricing() {
                   <p className="plan-note">{p.who}</p>
                   <p className="plan-price"><b>{fmtPrice(p)}</b> a month</p>
                   <ul>{p.items.map((x) => <li key={x}>{x}</li>)}</ul>
-                  {p.price ? <a className="btn plan-btn" href={`/account?plan=${k}`}>Choose {p.name}</a> : <a className="btn ghost plan-btn" data-cta href="/#cleaner">Clean a file</a>}
+                  {mine === k && p.price ? <a className="btn ghost plan-btn" href="/account">Your plan</a>
+                    : p.price ? <a className="btn plan-btn" href={mine && mine !== 'free' ? '/account' : `/account?plan=${k}`}>{mine && mine !== 'free' ? `Switch to ${p.name}` : `Choose ${p.name}`}</a>
+                    : <a className="btn ghost plan-btn" data-cta href="/#cleaner">Clean a file</a>}
                 </div>
               )
             })}
