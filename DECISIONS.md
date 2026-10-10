@@ -367,3 +367,4 @@ Product calls from the owner's brief, then build calls; each with what was rejec
 ## Lemon Squeezy products (2026-10-10)
 - Three products, one default variant each (Pro 2229415, Team 2229436, API 2229440), owner-made in the dashboard since the API cannot create products. Rejected: one product with three variants, because each plan needs its own description and tax category (Pro personal-use SaaS, Team and API business-use).
 - Storefront display off: a purchase from /account carries the signed-in email as custom data; a storefront purchase would only carry whatever email the buyer types.
+- Account loading state is a skeleton of the signed-in layout (real headings, pulsing bars, reduced-motion static) instead of a 'Loading your account' line. Rejected: a spinner, because it still swaps for a different layout. (2026-10-10)

@@ -11,8 +11,22 @@ const checkout = (k: PlanKey, email: string) => `${PLANS[k].checkout}?${new URLS
 export default function Account() {
   const { me, reload } = useMe()
   useEffect(() => { if (me === null) location.replace(`/sign-in`) }, [me])
-  if (!me) return <section className="head"><div className="wrap acct"><h1 id="h1">Account</h1><div className="sheet skel" aria-busy="true"><p>Loading your account…</p></div></div></section>
+  if (!me) return <Skeleton />
   return <Signed me={me} reload={reload} />
+}
+
+/** The signed-in layout with bars where the account's values go, so nothing jumps or flashes when they arrive. */
+function Skeleton() {
+  const bars = (...w: number[]) => w.map((n, i) => <span key={i} className="bar" style={{ width: `${n}%` }} />)
+  return (
+    <section className="head" aria-labelledby="h1" aria-busy="true">
+      <div className="wrap acct skel">
+        <div className="acct-top"><h1 id="h1">Account</h1><p>{bars(100)}<span className="sr">Loading your account</span></p></div>
+        <div className="sheet group"><h2>Plan</h2>{bars(70, 100, 100, 100)}</div>
+        <div className="sheet group"><h2>API keys</h2>{bars(60, 100)}</div>
+      </div>
+    </section>
+  )
 }
 
 function Signed({ me, reload }: { me: Me; reload: () => void }) {
