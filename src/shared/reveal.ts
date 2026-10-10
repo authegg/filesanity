@@ -11,10 +11,11 @@ export function when(v: string) {
   return m[4] ? `${d} at ${m[4]}:${m[5]}` : d
 }
 
-export type Group = 'who' | 'where' | 'when' | 'device' | 'other'
+export type Group = 'hidden' | 'who' | 'where' | 'when' | 'device' | 'other'
 export type Row = { group: Group; name: string; value: string; part: string; strip: boolean }
 
 export const GROUPS: Record<Group, string> = {
+  hidden: 'In the content, not removed',
   who: 'Who made it',
   where: 'Where it was',
   when: 'When',
@@ -27,19 +28,19 @@ const RULES: [Group, RegExp][] = [
   ['device', /created with|produced by|made with|digital source|creatortool|softwareagent/i],
   ['where', /gps|latitude|longitude|altitude|city|country|state|location|sublocation/i],
   ['who', /artist|author|creator(?!tool)|by-line|owner|copyright|rights|last modified by|manager|company|reviewer|signed by/i],
-  ['when', /date|time(?! \()|created|modified|when/i],
+  ['when', /date|time(?! \()|created|modified|recorded|when/i],
   ['device', /make|model|serial|lens|software|creatortool|application|produced|softwareagent|xmptk/i],
 ]
 
 export const groupOf = (name: string): Group => RULES.find(([, re]) => re.test(name))?.[0] ?? 'other'
 
-export const ORDER: Group[] = ['where', 'who', 'when', 'device', 'other']
+export const ORDER: Group[] = ['hidden', 'where', 'who', 'when', 'device', 'other']
 
 /** Every field, flattened and sorted by what it gives away: place, person, time, device, then the rest. */
 export function rows(r: Report): Row[] {
   const order = ORDER
   return r.segments
-    .flatMap((s) => s.fields.map((f) => ({ group: groupOf(f.name), name: f.name, value: f.value, part: s.label, strip: s.strip })))
+    .flatMap((s) => s.fields.map((f) => ({ group: s.warn ? 'hidden' as const : groupOf(f.name), name: f.name, value: f.value, part: s.label, strip: s.strip })))
     .sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group))
 }
 

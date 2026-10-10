@@ -102,9 +102,94 @@ export async function readOoxml(blob: Blob, name: string): Promise<Report | null
       const xml = utf8(await content(blob, en))
       for (const m of xml.matchAll(/w:author="([^"]*)"/g)) authors.set(m[1], (authors.get(m[1]) ?? 0) + 1)
     }
-    if (authors.size) segments.push({ id: 'revisions', label: 'changes', what: 'tracked changes and comments', bytes: 0, fields: Array.from(authors, ([a, n]) => ({ name: 'Tracked change or comment by', value: `${a} (${n})` })), strip: false, why: 'shown, not removed: accepting tracked changes or deleting comments edits the document itself, so that stays your call in Word' })
+    if (authors.size) segments.push({ id: 'revisions', label: 'changes', what: 'tracked changes and comments', bytes: 0, warn: true, fields: Array.from(authors, ([a, n]) => ({ name: 'Tracked change or comment by', value: `${a} (${n})` })), strip: false, why: 'shown, not removed: accepting tracked changes or deleting comments edits the document itself, so that stays your call in Word' })
   }
+  segments.push(...(await risks(blob, entries, kind)))
   return { kind, kindLabel: LABEL[kind], name, bytes: blob.size, segments, body: { label: 'The document', bytes: blob.size - stripped } }
+}
+
+const unescapeUri = (u: string) => { try { return decodeURI(u) } catch { return u } }
+const count = (s: string, re: RegExp) => (s.match(re) ?? []).length
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+/** What the sender may not know is in the content: hidden sheets, rows and text, speaker notes, deleted text kept as a
+ *  tracked change, pivot caches, embedded files, and parts that fetch from the web when opened. Shown, never changed. */
+async function risks(blob: Blob, entries: Entry[], kind: 'docx' | 'xlsx' | 'pptx'): Promise<Segment[]> {
+  const text = async (name: string) => {
+    const en = entries.find((e) => e.name === name)
+    return en && en.usize < 40e6 ? utf8(await content(blob, en)) : ''
+  }
+  const parts = (re: RegExp) => entries.filter((e) => re.test(e.name) && e.usize < 40e6)
+  const hidden: Field[] = []
+  const external: Field[] = []
+
+  if (kind === 'xlsx') {
+    const wb = await text('xl/workbook.xml')
+    const rels = await text('xl/_rels/workbook.xml.rels')
+    const target = (id: string) => new RegExp(`<Relationship\\b[^>]*Id="${id}"[^>]*Target="([^"]*)"`).exec(rels)?.[1] ?? new RegExp(`<Relationship\\b[^>]*Target="([^"]*)"[^>]*Id="${id}"`).exec(rels)?.[1]
+    for (const m of wb.matchAll(/<sheet\b[^>]*>/g)) {
+      const name = /\bname="([^"]*)"/.exec(m[0])?.[1] ?? 'a sheet'
+      const state = /\bstate="(hidden|veryHidden)"/.exec(m[0])?.[1]
+      if (state) hidden.push({ name: state === 'veryHidden' ? 'Very hidden sheet' : 'Hidden sheet', value: `${name}${state === 'veryHidden' ? ' (Excel lists it nowhere; only code can show it)' : ''}` })
+      const t = target(/\br:id="([^"]*)"/.exec(m[0])?.[1] ?? '')
+      if (!t) continue
+      const sheet = await text(t.startsWith('/') ? t.slice(1) : `xl/${t}`)
+      const rows = count(sheet, /<row\b[^>]*\bhidden="(1|true)"/g)
+      let cols = 0
+      for (const c of sheet.matchAll(/<col\b[^>]*\bhidden="(1|true)"[^>]*>/g)) cols += +(/\bmax="(\d+)"/.exec(c[0])?.[1] ?? 1) - +(/\bmin="(\d+)"/.exec(c[0])?.[1] ?? 1) + 1
+      if (rows || cols) hidden.push({ name: 'Hidden rows and columns', value: `${name}: ${[rows && plural(rows, 'row'), cols && plural(cols, 'column')].filter(Boolean).join(', ')}` })
+    }
+    for (const en of parts(/^xl\/pivotCache\/pivotCacheRecords\d*\.xml$/)) {
+      const n = /\bcount="(\d+)"/.exec(utf8(await content(blob, en)).slice(0, 2000))?.[1]
+      hidden.push({ name: 'Pivot table data', value: `${n ? plural(+n, 'source row') : 'source rows'} stored inside the file; double-clicking the table shows them` })
+    }
+    let notes = 0
+    for (const en of parts(/^xl\/(comments[^/]*|comments\/[^/]+|threadedComments\/[^/]+)\.xml$/)) notes += count(utf8(await content(blob, en)), /<(comment|threadedComment)\b/g)
+    if (notes) hidden.push({ name: 'Cell comments', value: plural(notes, 'comment') })
+    for (const en of parts(/^xl\/externalLinks\/_rels\/[^/]+\.rels$/)) for (const m of utf8(await content(blob, en)).matchAll(/Target="([^"]*)"/g)) external.push({ name: 'Linked workbook', value: unescapeUri(m[1]) })
+    for (const m of (await text('xl/connections.xml')).matchAll(/<connection\b[^>]*\bname="([^"]*)"/g)) external.push({ name: 'Data connection', value: m[1] })
+  }
+
+  if (kind === 'docx') {
+    const doc = await text('word/document.xml')
+    const vanish = count(doc, /<w:vanish\s*\/>|<w:vanish\s+w:val="(1|true|on)"/g)
+    if (vanish) hidden.push({ name: 'Hidden text', value: `${plural(vanish, 'passage')} formatted as hidden; Word shows them with Show/Hide` })
+    const del = count(doc, /<w:del\b/g), ins = count(doc, /<w:ins\b/g)
+    if (del) hidden.push({ name: 'Deleted text still inside', value: `${plural(del, 'tracked deletion')}; the words are in the file until the change is accepted` })
+    if (ins) hidden.push({ name: 'Tracked insertions', value: plural(ins, 'insertion') })
+    const notes = count(await text('word/comments.xml'), /<w:comment\b/g)
+    if (notes) hidden.push({ name: 'Comments', value: plural(notes, 'comment') })
+    for (const m of doc.matchAll(/INCLUDE(PICTURE|TEXT)\s+(?:\\d\s+)?"?(https?:\/\/[^"\s<]+)/g)) external.push({ name: 'Fetches on opening', value: m[2] })
+  }
+
+  if (kind === 'pptx') {
+    let noted = 0, off = 0
+    for (const en of parts(/^ppt\/notesSlides\/notesSlide\d+\.xml$/)) if (/<a:t>[^<]*\S/.test(utf8(await content(blob, en)).replace(/<a:fld\b[^]*?<\/a:fld>/g, ''))) noted++
+    for (const en of parts(/^ppt\/slides\/slide\d+\.xml$/)) if (/<p:sld\b[^>]*\bshow="(0|false)"/.test(utf8(await content(blob, en)).slice(0, 2000))) off++
+    let notes = 0
+    for (const en of parts(/^ppt\/comments\/[^/]+\.xml$/)) notes += count(utf8(await content(blob, en)), /<(p:|p188:)cm\b/g)
+    if (noted) hidden.push({ name: 'Speaker notes', value: `on ${plural(noted, 'slide')}; they travel with the deck` })
+    if (off) hidden.push({ name: 'Hidden slides', value: `${plural(off, 'slide')} skipped in the show but in the file` })
+    if (notes) hidden.push({ name: 'Comments', value: plural(notes, 'comment') })
+  }
+
+  // Embedded files: a chart in Word or PowerPoint usually carries its whole workbook.
+  for (const en of entries) if (/\/embeddings\/[^/]+$/.test(en.name)) hidden.push({ name: 'Embedded file', value: `${en.name.split('/').pop()}, ${en.usize.toLocaleString('en')} bytes` })
+  // Relationships that fetch from outside when the file opens; ordinary hyperlinks wait for a click and are left out.
+  for (const en of parts(/\.rels$/)) {
+    if (/externalLinks\/_rels/.test(en.name)) continue
+    for (const m of utf8(await content(blob, en)).matchAll(/<Relationship\b[^>]*>/g)) {
+      const r = m[0]
+      if (!/TargetMode="External"/.test(r) || /\/hyperlink"/.test(r)) continue
+      const target = /Target="([^"]*)"/.exec(r)?.[1] ?? ''
+      external.push({ name: /attachedTemplate/.test(r) ? 'Template fetched on opening' : /\/image"/.test(r) ? 'Image fetched on opening' : 'Fetches on opening', value: target })
+    }
+  }
+
+  const out: Segment[] = []
+  if (hidden.length) out.push({ id: 'hidden', label: 'hidden', what: 'content most readers never see', bytes: 0, warn: true, strip: false, why: 'kept: it is part of the document; remove it in the app that made the file', fields: hidden })
+  if (external.length) out.push({ id: 'external', label: 'links', what: 'addresses contacted or read when the file opens', bytes: 0, warn: true, strip: false, why: 'kept: removing them changes the document; an address can tell its owner when and where the file was opened', fields: external })
+  return out
 }
 
 const le16 = (n: number) => [n & 0xff, (n >> 8) & 0xff]

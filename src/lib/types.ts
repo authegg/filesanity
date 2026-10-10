@@ -12,10 +12,13 @@ export type Segment = {
   /** true: the strip removes or blanks it. false: kept, with `why`. */
   strip: boolean
   why?: string
+  /** Not metadata but something in the content the sender may not know is there (hidden sheets, earlier PDF saves, links
+   *  that fire on opening). Always kept: changing it would change the document. */
+  warn?: boolean
 }
 
 export type Report = {
-  kind: 'jpeg' | 'png' | 'heic' | 'docx' | 'xlsx' | 'pptx' | 'pdf'
+  kind: 'jpeg' | 'png' | 'heic' | 'mp4' | 'docx' | 'xlsx' | 'pptx' | 'pdf'
   kindLabel: string
   name: string
   bytes: number
@@ -27,4 +30,5 @@ export type Report = {
 }
 
 export const fieldCount = (r: Report) => r.segments.filter((s) => s.strip).reduce((n, s) => n + s.fields.length, 0)
-export const keptCount = (r: Report) => r.segments.filter((s) => !s.strip).reduce((n, s) => n + s.fields.length, 0)
+export const keptCount = (r: Report) => r.segments.filter((s) => !s.strip && !s.warn).reduce((n, s) => n + s.fields.length, 0)
+export const warnCount = (r: Report) => r.segments.filter((s) => s.warn).reduce((n, s) => n + s.fields.length, 0)

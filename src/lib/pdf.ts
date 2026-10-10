@@ -50,7 +50,7 @@ export async function readPdf(blob: Blob, name: string): Promise<Report> {
   const b = await read(blob, 0, blob.size)
   const { segments, edits } = scan(b)
   const objStm = indexOf(b, ascii('/ObjStm')) >= 0
-  const zipped = segments.some((s) => !s.strip)
+  const zipped = segments.some((s) => !s.strip && !s.warn)
   let note = 'PDF: the Info dictionary and an uncompressed XMP packet are blanked in place, same length.'
   if (zipped) note += ' This file also carries a compressed XMP stream, the usual Word or Acrobat case: it is shown and kept, not removed in this version.'
   if (objStm && !segments.some((s) => s.label === 'Info')) note = 'This PDF keeps its objects in compressed streams. FileSanity cannot read or blank metadata inside them yet, so treat this file as not cleaned.'
@@ -110,7 +110,27 @@ function scan(b: Uint8Array) {
       i += pat.length
     }
   }
+  segments.push(...risks(b))
   return { segments, edits }
+}
+
+/** Earlier saves and actions that reach out: shown, never changed. Keys inside compressed object streams are not seen. */
+function risks(b: Uint8Array): Segment[] {
+  const out: Segment[] = []
+  const s = latin1(b)
+  // Each save appends a cross-reference section; a linearized ("fast web view") file has one extra by design.
+  const saves = (s.match(/startxref/g) ?? []).length - (/\/Linearized/.test(s.slice(0, 2048)) ? 1 : 0)
+  if (saves > 1) out.push({ id: 'versions', label: 'saves', what: 'earlier versions of the document', bytes: 0, warn: true, strip: false, why: 'kept: they are part of the file. Save it as a new PDF (Print to PDF) to keep only the last version',
+    fields: [{ name: 'Earlier versions inside', value: `${saves - 1}: text deleted or covered in a later save may still be readable` }] })
+  const fields: Field[] = []
+  const js = (s.match(/\/(JavaScript|JS)\b/g) ?? []).length
+  if (js) fields.push({ name: 'Runs JavaScript', value: 'some PDF readers run it when the file opens' })
+  if (/\/Launch\b/.test(s)) fields.push({ name: 'Launches a program', value: 'asks the reader to open another file or program' })
+  if (/\/SubmitForm\b/.test(s)) fields.push({ name: 'Sends form data', value: 'can post the form to a web address' })
+  // A web address in an action that runs on opening (/OpenAction or /AA), not an ordinary link someone has to click.
+  for (const m of s.matchAll(/\/(OpenAction|AA)\b[^]{0,400}?\/URI\s*\(([^)]*)\)/g)) fields.push({ name: 'Contacts on opening', value: m[2] })
+  if (fields.length) out.push({ id: 'actions', label: 'actions', what: 'actions that run or reach out', bytes: 0, warn: true, strip: false, why: 'kept: removing actions changes how the document behaves', fields })
+  return out
 }
 
 /** Same length, well-formed: attribute values and element text become spaces; namespaces and the xpacket marker stay. */

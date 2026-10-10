@@ -34,7 +34,7 @@ async function take(f: File) {
   msg.textContent = `Reading ${f.name}...`
   const s = await load()
   const c = await cleanFile(f, paid(s) ? s.policy : [], true)
-  if (!c) { msg.textContent = `${f.name} is not a file FileSanity reads. It reads JPEG, PNG, HEIC, DOCX, XLSX, PPTX and PDF.`; return }
+  if (!c) { msg.textContent = `${f.name} is not a file FileSanity reads. It reads JPEG, PNG, HEIC, MP4, MOV, DOCX, XLSX, PPTX and PDF.`; return }
   const url = URL.createObjectURL(c.file)
   const a = document.createElement('a')
   a.href = url; a.download = c.file.name; a.click()

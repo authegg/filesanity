@@ -5,7 +5,7 @@ import io, json, os, re, subprocess, sys, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'out', 'lib')
-CASES = ['photo.jpg', 'photo.heic', 'shot.png', 'c2pa.jpg', 'c2pa.png', 'offer.docx', 'fees.xlsx', 'pitch.pptx', 'memo.pdf', 'memo-z.pdf']
+CASES = ['photo.jpg', 'photo.heic', 'video.mp4', 'video.mov', 'shot.png', 'c2pa.jpg', 'c2pa.png', 'offer.docx', 'fees.xlsx', 'pitch.pptx', 'memo.pdf', 'memo-z.pdf']
 failures = []
 
 
@@ -48,6 +48,17 @@ def verify(name, data, before, fig=''):
         else:
             check(xmp is None or (blank(xmp.dc_creator) and blank(xmp.xmp_creator_tool)), f'pdf: XMP creator and tool blank ({xmp and xmp.dc_creator}, {xmp and xmp.xmp_creator_tool})')
             check(fig['kept'] == 0, 'pdf: nothing kept')
+        return
+    if ext in ('mp4', 'mov'):
+        check(len(data) == len(before), f'{ext}: same length, cleaned in place')
+        tmp = os.path.join(OUT, 'probe.' + ext)
+        open(tmp, 'wb').write(data)
+        probe = lambda p: subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format_tags:stream_tags', '-of', 'json', p], capture_output=True, text=True).stdout
+        tags = probe(tmp)
+        check(not any(t in tags for t in ('location', 'ISO6709', 'make', 'model', 'Gate code', '2026-04-11')), f'{ext}: no location, camera, title or date tags ({tags})')
+        frames = lambda p: subprocess.run(['ffmpeg', '-v', 'error', '-i', p, '-f', 'framemd5', '-'], capture_output=True, text=True)
+        a, b = frames(os.path.join(HERE, 'files', name)), frames(tmp)
+        check(not b.stderr and a.stdout == b.stdout, f'{ext}: decodes without errors, frames and sound identical ({b.stderr[:200]})')
         return
     if ext == 'heic':
         import pillow_heif
@@ -124,6 +135,28 @@ if __name__ == '__main__':
         check('opened' in f.get('Edit history', '') and f.get('Made from') == '1 earlier file', f'{name}: actions and ingredient read')
     ai = subprocess.run(['node', os.path.join(HERE, 'c2pa.mjs')], capture_output=True, text=True)
     check(ai.returncode == 0, f'c2pa: an AI generator and source type are named ({ai.stderr.strip()[-200:]})')
+    print('content checks: shown, kept')
+    risk = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), 'hidden.xlsx', 'hidden.docx', 'hidden.pptx', 'saves.pdf'], check=True, capture_output=True, text=True).stdout)
+    want = {
+        'hidden.xlsx': ['Hidden sheet=Salaries', 'Very hidden sheet=Owners', 'Hidden rows and columns=Fees: 1 row, 1 column', 'Pivot table data=943 source rows', 'Cell comments=1 comment', 'Linked workbook=file:///C:/Users/hdelacroix/Clients/Tamarind rates.xlsx'],
+        'hidden.docx': ['Hidden text=1 passage', 'Deleted text still inside=1 tracked deletion', 'Fetches on opening=https://canary.example/t.png', 'Image fetched on opening=https://pixel.example/open?id=7'],
+        'hidden.pptx': ['Speaker notes=on 1 slide', 'Hidden slides=1 slide', 'Embedded file=Microsoft_Excel_Worksheet.xlsx'],
+        'saves.pdf': ['Earlier versions inside=1:', 'Runs JavaScript=', 'Contacts on opening=https://track.example/o?doc=31'],
+    }
+    for name, fields in want.items():
+        got = risk[name].get('fields', [])
+        for w in fields:
+            check(any(g.startswith(w) for g in got), f'{name}: reports {w}')
+        check('filesanity.com' not in ' '.join(got), f'{name}: an ordinary hyperlink is not reported') if name == 'hidden.docx' else None
+        out = open(os.path.join(OUT, name), 'rb').read()
+        if name.endswith('pdf'):
+            check(out.count(b'startxref') == 2 and b'/OpenAction' in out and len(out) == os.path.getsize(os.path.join(HERE, 'files', name)), 'saves.pdf: cleaning leaves the saves and actions as they are')
+        else:
+            z = zipfile.ZipFile(io.BytesIO(out))
+            check(z.testzip() is None, f'{name}: cleaned copy is a sound zip')
+    z = zipfile.ZipFile(os.path.join(OUT, 'hidden.xlsx'))
+    check(b'state="hidden"' in z.read('xl/workbook.xml') and 'xl/pivotCache/pivotCacheRecords1.xml' in z.namelist(), 'hidden.xlsx: the hidden sheet and pivot cache are left in the file')
+    check(b'w:delText' in zipfile.ZipFile(os.path.join(OUT, 'hidden.docx')).read('word/document.xml'), 'hidden.docx: the tracked deletion is left in the document')
     print('refusals')
     check('does not begin like a JPEG' in rep['notajpeg.jpg'].get('error', ''), 'a .jpg that is not a JPEG is refused by its bytes')
     check('cannot read .txt' in rep['notes.txt'].get('error', ''), '.txt is refused in plain words')

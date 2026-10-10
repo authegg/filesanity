@@ -20,6 +20,7 @@ export function Tray({ c, drop = true }: { c: Cleaner; drop?: boolean }) {
     <>
       <p className="tr-big">Saved a clean copy of {c.file?.name}.</p>
       <p className="tr-status">{c.removed} fields removed, {fmtBytes(c.cleanedBytes)}.{c.kept ? ` ${c.kept} kept, as the note says.` : ''} Nothing was uploaded.</p>
+      {c.warned > 0 && <p className="tr-status">{c.warned} {c.warned === 1 ? 'thing' : 'things'} in the content stayed as they were: change {c.warned === 1 ? 'it' : 'them'} in the app that made the file.</p>}
       {r && <ul className="tr-gone" aria-label="Removed, by what it gave away">{ORDER.map((g) => { const k = rows(r).filter((x) => x.group === g && x.strip).length; return k ? <li key={g}><span>{GROUPS[g]}</span><b>{k}</b></li> : null })}</ul>}
       <button className="tr-ghost" onClick={c.reset}>Clean another file</button>
     </>
@@ -29,7 +30,8 @@ export function Tray({ c, drop = true }: { c: Cleaner; drop?: boolean }) {
     body = (
       <>
         <div className="tr-chip"><b>{c.file?.name}</b><span>{r.kindLabel}, {fmtBytes(r.bytes)}</span></div>
-        <p className="tr-big">{c.removed ? `${c.removed} hidden fields found.` : 'Nothing hidden: this file is already clean.'}</p>
+        <p className="tr-big">{c.removed ? `${c.removed} hidden fields found.` : c.warned ? 'No metadata to remove.' : 'Nothing hidden: this file is already clean.'}</p>
+        {c.warned > 0 && <p className="tr-status">{c.warned} {c.warned === 1 ? 'thing' : 'things'} in the content, listed first. Cleaning leaves {c.warned === 1 ? 'it' : 'them'} as {c.warned === 1 ? 'it is' : 'they are'}, because removing {c.warned === 1 ? 'it' : 'them'} would change the document.</p>}
         {r.note && <p className="tr-status">{r.note}</p>}
         {list.length > 0 && (
           <div className="tr-fields" tabIndex={0} role="region" aria-label="Fields found">

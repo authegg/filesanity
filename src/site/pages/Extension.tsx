@@ -21,7 +21,7 @@ export default function Extension() {
       </Head>
       <Block id="h-free" title="Free, no account">
         <ul>
-          <li>Cleans JPEG, PNG, HEIC, Word, Excel, PowerPoint and PDF files the moment you choose, drop or paste them into an upload, on every site.</li>
+          <li>Cleans JPEG, PNG, HEIC, MP4, MOV, Word, Excel, PowerPoint and PDF files the moment you choose, drop or paste them into an upload, on every site.</li>
           <li>The toolbar button shows how many files were cleaned on this tab and today, and pauses cleaning for the site you are on.</li>
           <li>Drop one file on the toolbar panel to clean it and download the copy.</li>
         </ul>

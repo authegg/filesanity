@@ -370,3 +370,10 @@ Product calls from the owner's brief, then build calls; each with what was rejec
 - Account loading state is a skeleton of the signed-in layout (real headings, pulsing bars, reduced-motion static) instead of a 'Loading your account' line. Rejected: a spinner, because it still swaps for a different layout. (2026-10-10)
 - Pricing marks the signed-in plan from a plan name the account page keeps in localStorage, so the marketing page still makes no API call; other paid cards read 'Switch to' and lead to /account billing. Rejected: calling /api/me from /pricing, which breaks the no-API-call rule for marketing pages. (2026-10-10)
 - Guide 'Remove Content Credentials and AI labels from an image' (2026-10-10): framed as privacy (the record carries signer, edits, thumbnails) and says plainly that SynthID, visible watermarks and platform disclosure rules are unchanged. Rejected: a 'make AI images undetectable' angle, which misleads and the tool cannot deliver. Every vendor claim cites its own page.
+
+## Content checks and video (2026-10-10)
+- Owner chose all four from the feature research (RESEARCH.md, "Feature research"): hidden content, PDF earlier versions, calls-home check, video GPS.
+- Content risks are a new `warn` segment: listed first in the tray under "In the content, not removed", never changed. Rejected: removing hidden sheets, tracked deletions or PDF saves, because that edits the document and the brief's promise is that content stays byte for byte.
+- Ordinary hyperlinks are not reported; only parts fetched on opening (remote images, templates, INCLUDEPICTURE, PDF /OpenAction and /AA web addresses). Rejected: listing every link, which buries the one tracking pixel under noise.
+- PDF saves are counted by `startxref`, less one for a linearized file. Rejected: rebuilding the PDF without its history, a rewrite this parser does not do.
+- Video is cleaned in place: metadata boxes renamed `free`, header times zeroed. Rejected: remuxing with a WASM ffmpeg, which is several MB and re-writes the file. Video moves out of the brief's out-of-scope list by the owner's choice.

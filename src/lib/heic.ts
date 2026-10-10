@@ -12,10 +12,10 @@ type Item = { id: number; type: string; extents: [number, number][] }
 const BRANDS = ['heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'mif1', 'msf1', 'avif', 'avis']
 export const isHeif = (head: Uint8Array) => latin1(head, 4, 8) === 'ftyp' && BRANDS.some((b) => latin1(head, 8, Math.min(head.length, 64)).includes(b))
 
-const uint = (b: Uint8Array, i: number, n: number) => (n === 0 ? 0 : n === 2 ? u16(b, i) : n === 4 ? u32(b, i) : u32(b, i) * 2 ** 32 + u32(b, i + 4))
+export const uint = (b: Uint8Array, i: number, n: number) => (n === 0 ? 0 : n === 2 ? u16(b, i) : n === 4 ? u32(b, i) : u32(b, i) * 2 ** 32 + u32(b, i + 4))
 
 /** Child boxes of [from, to) in b: type, start of payload, end. */
-function boxes(b: Uint8Array, from: number, to: number) {
+export function boxes(b: Uint8Array, from: number, to: number) {
   const out: { type: string; at: number; end: number }[] = []
   for (let i = from; i + 8 <= to;) {
     let n = u32(b, i)

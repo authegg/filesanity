@@ -4,6 +4,7 @@ import { readOoxml, stripOoxml } from './ooxml'
 import { readPdf, stripPdf } from './pdf'
 import { readPng, stripPng } from './png'
 import { isHeif, readHeic, stripHeic } from './heic'
+import { isMp4, readMp4, stripMp4 } from './mp4'
 import type { Report } from './types'
 
 export * from './types'
@@ -12,7 +13,7 @@ export { fmtBytes } from './bytes'
 /** Refused, with the reason in plain words. */
 export class Unsupported extends Error {}
 
-const KNOWN: Record<string, string> = { jpg: 'JPEG', jpeg: 'JPEG', png: 'PNG', pdf: 'PDF', docx: 'Word document', xlsx: 'Excel workbook', pptx: 'PowerPoint deck', heic: 'HEIC photo', heif: 'HEIF image' }
+const KNOWN: Record<string, string> = { jpg: 'JPEG', jpeg: 'JPEG', png: 'PNG', pdf: 'PDF', docx: 'Word document', xlsx: 'Excel workbook', pptx: 'PowerPoint deck', heic: 'HEIC photo', heif: 'HEIF image', mp4: 'MP4 video', m4v: 'MP4 video', mov: 'QuickTime video' }
 
 /** Sniff by bytes, never by extension. */
 export async function inspect(file: File): Promise<Report> {
@@ -28,12 +29,13 @@ export async function inspect(file: File): Promise<Report> {
   if (startsWith(head, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return readPng(file, file.name)
   if (startsWith(head, [0x25, 0x50, 0x44, 0x46])) return readPdf(file, file.name)
   if (isHeif(head)) return readHeic(file, file.name)
+  if (isMp4(head)) return readMp4(file, file.name)
   if (startsWith(head, [0x50, 0x4b, 0x03, 0x04])) {
     const r = await readOoxml(file, file.name).catch(() => null)
     if (r) return r
   }
   if (KNOWN[ext]) throw new Unsupported(`This .${ext} does not begin like a ${KNOWN[ext]}. FileSanity reads files by their first bytes, and these are not ones it knows.`)
-  throw new Unsupported(`FileSanity cannot read ${ext ? `.${ext}` : 'this kind of'} files yet. It reads JPEG, PNG, HEIC, DOCX, XLSX, PPTX and PDF.`)
+  throw new Unsupported(`FileSanity cannot read ${ext ? `.${ext}` : 'this kind of'} files yet. It reads JPEG, PNG, HEIC, MP4, MOV, DOCX, XLSX, PPTX and PDF.`)
 }
 
 /** Removes every segment the report marks `strip`; segments flipped to kept (see `applyPolicy`) stay byte for byte. */
@@ -44,6 +46,7 @@ export function strip(file: File, report: Report): Promise<Blob> {
     case 'png': return stripPng(file, keep)
     case 'pdf': return stripPdf(file, keep)
     case 'heic': return stripHeic(file, keep)
+    case 'mp4': return stripMp4(file, keep)
     default: return stripOoxml(file, keep)
   }
 }
@@ -58,6 +61,8 @@ export const POLICY: { key: string; label: string; formats: string }[] = [
   { key: 'exif-png', label: 'EXIF chunk', formats: 'PNG' },
   { key: 'time', label: 'Last-modified time', formats: 'PNG' },
   { key: 'c2pa', label: 'Content Credentials (C2PA)', formats: 'JPEG, PNG' },
+  { key: 'video', label: 'Video tags (position, camera)', formats: 'MP4, MOV' },
+  { key: 'vtime', label: 'Recording times', formats: 'MP4, MOV' },
   { key: 'core', label: 'Core properties', formats: 'Word, Excel, PowerPoint' },
   { key: 'app', label: 'App properties', formats: 'Word, Excel, PowerPoint' },
   { key: 'custom', label: 'Custom properties', formats: 'Word, Excel, PowerPoint' },
@@ -68,7 +73,7 @@ const KEY: [RegExp, string][] = [
   [/^exif-/, 'exif'], [/^xmpx?-/, 'xmp'], [/^iptc-/, 'iptc'], [/^com-/, 'com'],
   [/^(tEXt|zTXt|iTXt)-/, 'text'], [/^eXIf-/, 'exif-png'], [/^tIME-/, 'time'], [/^(c2pa|caBX)-/, 'c2pa'],
   [/^docProps\/core\.xml$/, 'core'], [/^docProps\/app\.xml$/, 'app'], [/^docProps\/custom\.xml$/, 'custom'], [/^docProps\/thumbnail\./i, 'thumbnail'],
-  [/^info-/, 'info'],
+  [/^info-/, 'info'], [/^vmeta-/, 'video'], [/^vtime-/, 'vtime'],
 ]
 export const policyKey = (id: string) => KEY.find(([re]) => re.test(id))?.[1]
 /** Parses `keep=exif,xmp` from a URL hash or query; unknown keys are dropped. */

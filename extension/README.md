@@ -1,6 +1,6 @@
 # FileSanity browser extension (v3)
 
-One Manifest V3 codebase for Chrome and Firefox. It removes metadata from a JPEG, PNG, HEIC, DOCX, XLSX, PPTX or PDF the moment a page receives it from a file input or a drop, using the same parsers as the site (`src/lib`). Files never leave the browser.
+One Manifest V3 codebase for Chrome and Firefox. It removes metadata from a JPEG, PNG, HEIC, MP4, MOV, DOCX, XLSX, PPTX or PDF the moment a page receives it from a file input or a drop, using the same parsers as the site (`src/lib`). Files never leave the browser.
 
 ## Build
 

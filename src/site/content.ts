@@ -4,7 +4,7 @@ export const REPO = 'https://github.com/authegg/filesanity'
 export const MAKER = 'authegg'
 export const MAKER_URL = 'https://authegg.com'
 export const CTA = 'Clean a file'
-export const FORMATS = 'JPEG, PNG, HEIC, Word, Excel, PowerPoint and PDF'
+export const FORMATS = 'JPEG, PNG, HEIC, MP4, MOV, Word, Excel, PowerPoint and PDF'
 export const UPDATED = '8 October 2026'
 
 export const NAV = [
@@ -55,10 +55,10 @@ export const FAQ: { group: string; items: [string, string][] }[] = [
     group: 'The cleaner',
     items: [
       ['Is my file uploaded?', 'No. The page reads and rewrites the file inside your browser tab. Under the cleaner, a counter shows every network request the page makes after your file arrives, taken from the browser\'s own record, and it stays at zero. Only the hosted API, which you call from your own code, sends a file to a server, and its page says so.'],
-      ['What does it remove?', 'From photos: GPS position, camera and serial number, dates, editing software, names, comments, and AI and Content Credentials (C2PA) records. From Word, Excel and PowerPoint: author, last editor, company, manager, editing time, custom properties and the preview thumbnail. From PDFs: the document information and uncompressed XMP.'],
+      ['What does it remove?', 'From photos: GPS position, camera and serial number, dates, editing software, names, comments, and AI and Content Credentials (C2PA) records. From Word, Excel and PowerPoint: author, last editor, company, manager, editing time, custom properties and the preview thumbnail. From videos: GPS position, camera, software and recording time. From PDFs: the document information and uncompressed XMP.'],
       ['Does it remove AI labels and Content Credentials?', 'It shows and removes the metadata ones: C2PA Content Credentials, the IPTC "made by AI" tag, and the prompt and settings AI tools write into PNG files. Pro can keep them with a saved policy, for example when a client asks for provenance. It does not touch watermarks hidden in the pixels, such as SynthID: FileSanity never changes the picture.'],
       ['Does it change what is in my file?', 'No. The picture, the text, the cells and the slides stay as they were. Only the metadata parts are removed or blanked.'],
-      ['What can it not clean yet?', 'Compressed metadata inside some PDFs is shown and kept, and the result says so instead of calling the file clean. Video, audio, GIF, TIFF, WebP, legacy .doc, .xls and .ppt, and OpenDocument files are not read yet.'],
+      ['What can it not clean yet?', 'Compressed metadata inside some PDFs is shown and kept, and the result says so instead of calling the file clean. Audio, GIF, TIFF, WebP, legacy .doc, .xls and .ppt, and OpenDocument files are not read yet.'],
       ['Does it work offline?', 'Yes. After your first visit the site is stored by your browser. Turn off Wi-Fi and clean a file: it still works, because the file never needed the network.'],
       ['Does it remove viruses or macros?', 'No. FileSanity removes metadata. Removing active content from documents is a different job, done by tools sold as content disarm and reconstruction.'],
     ],

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { cleanName, fieldCount, inspect, keptCount, strip, Unsupported, type Report } from '../lib'
+import { cleanName, fieldCount, inspect, keptCount, strip, Unsupported, warnCount, type Report } from '../lib'
 
 export type State = 'idle' | 'over' | 'reading' | 'ready' | 'cleaned' | 'error'
 
@@ -82,7 +82,7 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
     hidden: true,
     tabIndex: -1,
     'aria-hidden': true,
-    accept: '.jpg,.jpeg,.png,.heic,.heif,.pdf,.docx,.xlsx,.pptx',
+    accept: '.jpg,.jpeg,.png,.heic,.heif,.mp4,.mov,.m4v,.pdf,.docx,.xlsx,.pptx',
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) take(f) },
   }
 
@@ -90,6 +90,7 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
     state, file, report, error, cleanedBytes,
     removed: report ? fieldCount(report) : 0,
     kept: report ? keptCount(report) : 0,
+    warned: report ? warnCount(report) : 0,
     open: () => input.current?.click(),
     take, clean, reset, sample, dropProps, inputProps,
   }
