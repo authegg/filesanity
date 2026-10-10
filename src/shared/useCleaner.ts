@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { cleanName, fieldCount, inspect, keptCount, nameRisks, neutralName, strip, Unsupported, warnCount, type Report } from '../lib'
+import { checkClean, cleanName, fieldCount, inspect, keptCount, nameRisks, neutralName, recordEntry, recordHead, sha256, strip, Unsupported, warnCount, type Proof, type Report } from '../lib'
 
 export type State = 'idle' | 'over' | 'reading' | 'ready' | 'cleaned' | 'error'
 
 /** The picker without a look: states, drop, paste, sample, clean and download. Nothing here makes a request except `sample()`. */
+const save = (blob: Blob, name: string) => {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
   const [state, setState] = useState<State>('idle')
   const [file, setFile] = useState<File | null>(null)
@@ -12,6 +21,9 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
   const [cleanedBytes, setCleanedBytes] = useState(0)
   // Download under a neutral name; on by default when the name gives something away.
   const [neutral, setNeutral] = useState(false)
+  // The clean copy read back, with both fingerprints; null while it is being checked.
+  const [proof, setProof] = useState<Proof | null>(null)
+  const [cleanedAt, setCleanedAt] = useState<Date | null>(null)
   const input = useRef<HTMLInputElement | null>(null)
   const depth = useRef(0)
 
@@ -58,15 +70,22 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
   const clean = useCallback(async () => {
     if (!file || !report) return
     const blob = await strip(file, report)
+    const out = neutral ? neutralName(file.name, report.kind) : cleanName(file.name)
     setCleanedBytes(blob.size)
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = neutral ? neutralName(file.name, report.kind) : cleanName(file.name)
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    save(blob, out)
+    setProof(null)
+    setCleanedAt(new Date())
     setState('cleaned')
+    const [before, after, left] = await Promise.all([sha256(file), sha256(blob), checkClean(blob, out)])
+    setProof({ out, before, after, left })
   }, [file, report, neutral])
+
+  /** The receipt for this one file: what went, what stayed, both fingerprints and the read-back check. */
+  const receipt = useCallback(() => {
+    if (!file || !report || !proof || !cleanedAt) return
+    const text = [...recordHead(cleanedAt, []), ...recordEntry(file.name, report, proof)].join('\n')
+    save(new Blob([text], { type: 'text/plain' }), `${proof.out.replace(/\.[^.]+$/, '')}-receipt.txt`)
+  }, [file, report, proof, cleanedAt])
 
   const reset = useCallback(() => {
     setFile(null); setReport(null); setError(''); setState('idle')
@@ -109,7 +128,7 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
     kept: report ? keptCount(report) : 0,
     warned: report ? warnCount(report) : 0,
     risks: file ? nameRisks(file.name) : [],
-    neutral, setNeutral,
+    neutral, setNeutral, proof, receipt,
     downloadName: file && report ? (neutral ? neutralName(file.name, report.kind) : cleanName(file.name)) : '',
     open: () => input.current?.click(),
     take, clean, reset, sample, dropProps, inputProps,

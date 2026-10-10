@@ -20,9 +20,13 @@ export function Tray({ c, drop = true }: { c: Cleaner; drop?: boolean }) {
     <>
       <p className="tr-big">Saved a clean copy as {c.downloadName}.</p>
       <p className="tr-status">{c.removed} fields removed, {fmtBytes(c.cleanedBytes)}.{c.kept ? ` ${c.kept} kept, as the note says.` : ''} Nothing was uploaded.</p>
+      <p className={`tr-status tr-check ${c.proof?.left.length ? 'tr-err' : ''}`} role="status">{!c.proof ? 'Checking the clean copy…' : c.proof.left.length ? `Checked: ${c.proof.left.length} ${c.proof.left.length === 1 ? 'field is' : 'fields are'} still in the clean copy (${c.proof.left.slice(0, 3).map((f) => f.name).join(', ')}). Do not send it; tell us at hello@filesanity.com.` : 'Checked: the clean copy was read again and no metadata is left.'}</p>
       {c.warned > 0 && <p className="tr-status">{c.warned} {c.warned === 1 ? 'thing' : 'things'} in the content stayed as they were: change {c.warned === 1 ? 'it' : 'them'} in the app that made the file.</p>}
       {r && <ul className="tr-gone" aria-label="Removed, by what it gave away">{ORDER.map((g) => { const k = rows(r).filter((x) => x.group === g && x.strip).length; return k ? <li key={g}><span>{GROUPS[g]}</span><b>{k}</b></li> : null })}</ul>}
-      <button className="tr-ghost" onClick={c.reset}>Clean another file</button>
+      <div className="tr-acts">
+        <button className="tr-ghost" onClick={c.reset}>Clean another file</button>
+        <button className="tr-ghost" onClick={c.receipt} disabled={!c.proof}>Download receipt</button>
+      </div>
     </>
   )
   else if (r && c.state !== 'over') {

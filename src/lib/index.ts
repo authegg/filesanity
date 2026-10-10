@@ -1,6 +1,6 @@
 import { read, startsWith } from './bytes'
 import { readJpeg, stripJpeg } from './jpeg'
-import { readOoxml, stripOoxml } from './ooxml'
+import { content, directory, readOoxml, stripOoxml } from './ooxml'
 import { readPdf, stripPdf } from './pdf'
 import { readPng, stripPng } from './png'
 import { isHeif, readHeic, stripHeic } from './heic'
@@ -8,7 +8,7 @@ import { isMp4, readMp4, stripMp4 } from './mp4'
 import { isWebp, readWebp, stripWebp } from './webp'
 import { isId3, isMpegAudio, readMp3, stripMp3 } from './mp3'
 import { readOdf, stripOdf } from './odf'
-import type { Report } from './types'
+import { fieldCount, keptCount, warnCount, type Field, type Report } from './types'
 
 export * from './types'
 export { fmtBytes } from './bytes'
@@ -39,6 +39,7 @@ export async function inspect(file: File): Promise<Report> {
   if (startsWith(head, [0x50, 0x4b, 0x03, 0x04])) {
     const r = (await readOoxml(file, file.name).catch(() => null)) ?? (await readOdf(file, file.name).catch(() => null))
     if (r) return r
+    if (ext === 'zip' || !KNOWN[ext]) throw new Unsupported(`${file.name} is a zip archive. Clean every file inside it on the batch page: you get a cleaned zip back with the same folders.`)
   }
   if (KNOWN[ext]) throw new Unsupported(`This .${ext} does not begin like a ${KNOWN[ext]}. FileSanity reads files by their first bytes, and these are not ones it knows.`)
   throw new Unsupported(`FileSanity cannot read ${ext ? `.${ext}` : 'this kind of'} files yet. It reads JPEG, PNG, HEIC, WebP, MP4, MOV, M4A, MP3, DOCX, XLSX, PPTX, OpenDocument and PDF.`)
@@ -98,4 +99,60 @@ export function applyPolicy(r: Report, keep: string[]): Report {
 export const cleanName = (name: string) => {
   const i = name.lastIndexOf('.')
   return i > 0 ? `${name.slice(0, i)}-clean${name.slice(i)}` : `${name}-clean`
+}
+
+/** SHA-256 of a file as hex, the fingerprint a record cites; '' over 512 MB, where hashing in one piece costs too much memory. */
+export async function sha256(blob: Blob): Promise<string> {
+  if (blob.size > 512e6) return ''
+  const d = new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()))
+  return Array.from(d, (x) => x.toString(16).padStart(2, '0')).join('')
+}
+
+/** Reads the clean copy back under the same policy and returns any metadata still in it; empty means the clean held. */
+export async function checkClean(clean: Blob, name: string, keep: string[] = []): Promise<Field[]> {
+  try {
+    const r = applyPolicy(await inspect(new File([clean], name)), keep)
+    return r.segments.filter((s) => s.strip).flatMap((s) => s.fields)
+  } catch {
+    return [{ name: 'Clean copy', value: 'could not be read back' }]
+  }
+}
+
+export type Proof = { out: string; before: string; after: string; left: Field[] }
+
+/** The lines one file adds to a record: what went, what stayed and why, the fingerprints, and the read-back check. */
+export function recordEntry(name: string, r: Report, proof?: Proof): string[] {
+  const out = [`${name}${proof ? ` -> ${proof.out}` : ''}: ${fieldCount(r)} fields ${proof ? 'removed' : 'to remove'}${keptCount(r) ? `, ${keptCount(r)} kept` : ''}${warnCount(r) ? `, ${warnCount(r)} in the content left as they are` : ''}.`]
+  if (proof) {
+    if (proof.before) out.push(`  SHA-256 before  ${proof.before}`, `  SHA-256 after   ${proof.after}`)
+    out.push(proof.left.length ? `  Read back: ${proof.left.length} fields still there. ${proof.left.map((f) => `${f.name}: ${f.value}`).join('; ')}` : '  Read back: the clean copy was read again and no metadata was left.')
+  }
+  for (const s of r.segments) for (const f of s.fields) out.push(`  ${s.warn ? 'in content' : s.strip ? 'removed   ' : 'kept      '}  ${s.label}  ${f.name}: ${f.value}${!s.strip && s.why ? `  (${s.why})` : ''}`)
+  if (r.note) out.push(`  ${r.note}`)
+  return [...out, '']
+}
+
+export const recordHead = (at: Date, keep: string[]) => [
+  'FileSanity cleaning record',
+  `${at.toISOString().slice(0, 16).replace('T', ' ')} UTC, in the browser. Nothing was uploaded.`,
+  `Policy: ${keep.length ? `kept ${keep.join(', ')}` : 'remove everything FileSanity can remove'}.`,
+  '',
+]
+
+/** A plain zip (not a Word, Excel, PowerPoint or OpenDocument file) as the files inside it, folders kept in their names.
+ *  Null when the file is not such a zip. Entries that cannot be read come back as `skipped`. */
+export async function unzip(file: File): Promise<{ files: File[]; skipped: string[] } | null> {
+  const head = await read(file, 0, 4)
+  if (!startsWith(head, [0x50, 0x4b, 0x03, 0x04])) return null
+  const entries = await directory(file).catch(() => null)
+  if (!entries || entries.some((e) => /^(word|xl|ppt)\//.test(e.name) || e.name === 'mimetype')) return null
+  const files: File[] = [], skipped: string[] = []
+  for (const en of entries) {
+    if (en.name.endsWith('/') || /(^|\/)(__MACOSX|\.DS_Store$|Thumbs\.db$)/.test(en.name)) continue
+    try {
+      if (en.flags & 1) throw new Error('encrypted')
+      files.push(new File([(await content(file, en)) as Uint8Array<ArrayBuffer>], en.name))
+    } catch { skipped.push(en.name) }
+  }
+  return { files, skipped }
 }

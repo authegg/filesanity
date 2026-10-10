@@ -124,8 +124,9 @@ export function AppWindow({ batch, label = 'FileSanity', canBatch = true, hold =
 
       <div className="aw-foot">
         <span className="aw-small" role="status">
-          {b.done ? `Saved, ${fmtBytes(b.done.bytes)}. Nothing was uploaded.` : b.ready.length ? `${b.ready.length} ${b.ready.length === 1 ? 'file' : 'files'} ready.` : 'Files are read and cleaned in this tab.'}
+          {b.done ? (b.done.checking ? 'Cleaning and checking each copy…' : `Saved, ${fmtBytes(b.done.bytes)}. ${b.done.left ? `${b.done.left} ${b.done.left === 1 ? 'file still carries' : 'files still carry'} metadata after cleaning: see the record before sending.` : 'Each clean copy was read again: no metadata left.'} Nothing was uploaded.`) : b.ready.length ? `${b.ready.length} ${b.ready.length === 1 ? 'file' : 'files'} ready.` : 'Files are read and cleaned in this tab.'}
         </span>
+        {b.risky > 0 && <label className="aw-nm"><input type="checkbox" checked={b.neutral} onChange={(e) => b.setNeutral(e.target.checked)} /> Rename {b.risky} {b.risky === 1 ? 'file whose name gives' : 'files whose names give'} something away</label>}
         <div className="aw-acts">
           {b.ready.length > 1 && <button className="aw-ghost" onClick={() => cur && b.cleanOne(cur.id)} disabled={!r}>Clean this one</button>}
           <button className="aw-ghost" onClick={b.saveRecord} disabled={!b.ready.length}>Download report</button>

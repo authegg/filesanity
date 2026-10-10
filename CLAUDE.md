@@ -61,7 +61,7 @@ The nav carries How it works, Batch, API, Pricing, Security and Account. The foo
   - Firefox at 1917x870 is primary, then 1366x650 and a 390x844 phone.
   - The phone matrix is 320x568, 360x780, 390x844, 412x915, 430x932 and 667x375.
   - Verified in Firefox and Chromium.
-- **Hard standards:** the studio's. JS is currently 117 kB gzipped against 150.
+- **Hard standards:** the studio's. JS is currently 119 kB gzipped against 150.
 - **Parser scope:**
   - JPEG, PNG, HEIC, WebP, MP4/MOV, M4A, MP3, DOCX, XLSX, PPTX, ODT/ODS/ODP and PDF.
   - File names: dates, emails and draft words are flagged and a neutral name offered (`src/lib/name.ts`).

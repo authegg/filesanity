@@ -54,3 +54,5 @@
   .aw-table tbody th { white-space: normal; width: 40%; }
   .aw-acts, .aw-acts button { width: 100%; }
 }
+.aw-nm { display: flex; gap: .5rem; align-items: center; font-size: .85rem; color: var(--aw-muted, inherit); }
+.aw-nm input { accent-color: currentColor; width: 1rem; height: 1rem; }

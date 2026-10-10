@@ -22,7 +22,7 @@ export const PLANS: Record<PlanKey, Plan> = {
   pro: {
     name: 'Pro', price: 6, who: 'For one person who sends files often', seats: 1, batch: true, apiFiles: 1000, maxBytes: 50e6,
     checkout: 'https://filesanity.lemonsqueezy.com/checkout/buy/0033aa00-154c-410d-b6ab-7080a6a7158b',
-    items: ['Batches of any size, one zip', 'Saved policy: choose what to keep', 'A record of every batch'],
+    items: ['Batches of any size, zips in and out', 'Saved policy: choose what to keep', 'A record of every batch'],
   },
   team: {
     name: 'Team', price: 24, who: 'For a firm of up to five', seats: 5, batch: true, apiFiles: 5000, maxBytes: 50e6,

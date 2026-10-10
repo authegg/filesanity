@@ -386,3 +386,10 @@ Product calls from the owner's brief, then build calls; each with what was rejec
 - Encrypted PDFs: strings are ciphertext, so they are listed as one kept entry and the file is called not cleaned. Rejected: blanking ciphertext, which turns the title into garbage.
 - Android share target: the POST stops in the service worker and the file waits in the `fs-share` cache for the page. If the worker is not installed the Worker answers 303 without reading the body. iPhone browsers do not offer share targets.
 - MP3 tags cut off (ID3v2, ID3v1, APE); audio frames untouched. OpenDocument: meta.xml emptied, thumbnail and its manifest entry dropped, printer name blanked; `mimetype` stays first and stored.
+
+## Proof and batch sweep (2026-10-10)
+- Every clean copy is read back with the same parsers under the same policy; the result shows in the tray and the batch footer, and goes in the record. Rejected: trusting the strip. The read-back test also runs on all 21 fixtures.
+- Single-file receipt is free: a text file with both SHA-256 fingerprints and the read-back. Rejected: gating it behind Pro, which needs an API call from a marketing page; Pro keeps batches and the batch record.
+- Hashes are skipped over 512 MB (crypto.subtle has no streaming digest); the record says nothing rather than a wrong hash.
+- A plain zip opens into its files on the batch page and comes back with the same folders; Office and OpenDocument files are never taken for zips. The single cleaner sends a zip to the batch page. Encrypted entries are listed as not read.
+- Batch renames giveaway names to photo-01.jpg style by default, numbered per folder; the record pairs old and new names. Rejected: neutral names for every file, which loses harmless names people rely on.
