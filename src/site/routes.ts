@@ -24,7 +24,7 @@ export type Route = { path: string; meta: Mod['meta']; Page: Mod['default']; too
 
 /** Guides are text only: the server renders them inside a static wrapper and the client keeps that HTML instead of
  * shipping the guide text in every page's bundle. The client needs only the paths. */
-const GUIDE_SLUGS = ['remove-location-from-photos', 'remove-author-from-office-files', 'remove-pdf-metadata', 'photo-metadata-explained', 'marketplace-photo-metadata', 'check-a-file-is-clean']
+const GUIDE_SLUGS = ['remove-location-from-photos', 'remove-author-from-office-files', 'remove-pdf-metadata', 'photo-metadata-explained', 'marketplace-photo-metadata', 'check-a-file-is-clean', 'remove-ai-labels-from-images']
 const Static = (Page?: ComponentType<{ c: Cleaner }>, c?: Cleaner) =>
   Page ? createElement('div', { 'data-static': '' }, createElement(Page, { c: c! })) : createElement('div', { 'data-static': '', dangerouslySetInnerHTML: { __html: '' }, suppressHydrationWarning: true })
 const island = (m?: Mod): Mod => ({ meta: m?.meta ?? { title: '', description: '' }, index: m?.index, default: ({ c }) => Static(m?.default, c) })

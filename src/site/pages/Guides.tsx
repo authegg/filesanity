@@ -17,10 +17,10 @@ function Here({ children }: { children: ReactNode }) {
   )
 }
 
-function Checked() {
+function Checked({ on = GUIDES_CHECKED }: { on?: string }) {
   return (
     <Block id="h-checked" title="Checked">
-      <p>Menu paths checked on {GUIDES_CHECKED} against the pages linked above. Menus move between versions; when yours differs, the vendor's page is the authority. Found a mistake? <a href="/contact">Tell us</a>.</p>
+      <p>Menu paths checked on {on} against the pages linked above. Menus move between versions; when yours differs, the vendor's page is the authority. Found a mistake? <a href="/contact">Tell us</a>.</p>
       <p><a href="/guides">All guides</a></p>
     </Block>
   )
@@ -47,6 +47,12 @@ const PREVIEW = 'https://support.apple.com/guide/preview/prvw9c94f0a4/mac'
 const META_POLICY = 'https://www.facebook.com/privacy/policy/'
 const EBAY_POLICY = 'https://www.ebay.com/help/policies/member-behaviour-policies/user-privacy-notice-privacy-policy?id=4260'
 const KASPERSKY = 'https://www.kaspersky.com/blog/exif-privacy/13356/'
+const OPENAI_C2PA = 'https://help.openai.com/en/articles/8912793'
+const PIXEL_C2PA = 'https://blog.google/security/pixel-android-trusted-images-c2pa-content-credentials/'
+const C2PA_SPEC = 'https://spec.c2pa.org/specifications/specifications/2.1/specs/C2PA_Specification.html'
+const CAI_VERIFY = 'https://opensource.contentauthenticity.org/docs/verify'
+const IPTC_AI = 'https://iptc.org/?p=6867'
+const EXIF_JUMBF = 'https://exiftool.org/TagNames/Jpeg2000.html'
 const WIN_DETAILS = 'https://www.floridabar.org/tech-tips/windows-how-to-easily-remove-metadata-from-files-via-file-explorer/'
 
 export const GUIDES: Guide[] = [
@@ -331,6 +337,50 @@ export const GUIDES: Guide[] = [
       </>
     ),
   },
+  {
+    slug: 'remove-ai-labels-from-images',
+    title: 'Remove Content Credentials and AI labels from an image',
+    description: 'What the C2PA Content Credentials in a photo or AI image record, who adds them, how to see them, how to remove them, and what removing them does not change.',
+    h1: 'Remove Content Credentials and AI labels from an image.',
+    lede: 'AI image tools, some cameras and photo editors now sign a record into the file: what made it, who signed it, what was edited and whether AI was involved. Here is what it holds, how to read it, and how to remove it before you send the file.',
+    body: (
+      <>
+        <Block id="h-what" title="What the label is">
+          <p>Content Credentials follow an open standard called <a href={C2PA_SPEC}>C2PA</a>. The record is a signed block inside the file: in a JPEG it sits in APP11 segments, in a PNG in a <code>caBX</code> chunk. It can name the app that made the image, the certificate that signed it, the actions taken (created, edited, cropped), the files it was made from and, through a "digital source type", whether it was made by AI or by a camera. The standard also allows the record to carry a thumbnail of the image and of the files it was made from.</p>
+          <p>A second, older label sits in the photo's XMP metadata: the IPTC digital source type. <a href={IPTC_AI}>IPTC</a> notes that platforms such as Meta read both kinds when deciding whether to show an AI label.</p>
+        </Block>
+        <Block id="h-who" title="Who adds it">
+          <ul>
+            <li><b>OpenAI:</b> images made with ChatGPT, Codex and the API carry C2PA metadata and a SynthID watermark, per <a href={OPENAI_C2PA}>OpenAI's help article</a>.</li>
+            <li><b>Pixel phones:</b> <a href={PIXEL_C2PA}>Google says</a> Pixel Camera on the Pixel 10 attaches Content Credentials to every JPEG it captures, and Google Photos adds them to images edited with AI tools.</li>
+            <li><b>Editing apps:</b> photo editors that support the standard can add a record when you export, listing the edits.</li>
+          </ul>
+          <p>So a label does not only mean "made by AI". A plain photo from a recent phone can carry one too.</p>
+        </Block>
+        <Block id="h-why" title="Why remove it, and what it does not change">
+          <p>The record is about the file's history, and history can be more than you meant to send: the app and version, the signer, the list of edits, the files it was built from, and possibly a thumbnail of the image before it was cropped. Removing it is the same as removing EXIF: the recipient gets the picture and not its paper trail.</p>
+          <p>It does not change what the picture is. OpenAI adds an invisible SynthID watermark to the pixels precisely so a signal survives when the metadata does not, and removing metadata leaves that watermark in place. Visible watermarks stay too. If a platform's rules ask you to say that an image was made with AI, removing the record does not change that.</p>
+        </Block>
+        <Block id="h-check" title="See whether a file has one">
+          <ul>
+            <li><b>Content Credentials Verify:</b> the <a href={CAI_VERIFY}>Verify tool</a> at contentcredentials.org reads the record and shows the signer and the edits. You upload the file to their site to do it.</li>
+            <li><b>OpenAI:</b> openai.com/verify checks for an OpenAI record or a SynthID watermark, per <a href={OPENAI_C2PA}>OpenAI</a>.</li>
+            <li><b>Google Photos:</b> on a JPEG with credentials, the details appear in a section of the About panel, per <a href={PIXEL_C2PA}>Google</a>.</li>
+            <li><b>exiftool:</b> the record is in the <code>JUMBF</code> group. <code>exiftool -a -G1 -s file.jpg</code> lists it with everything else.</li>
+          </ul>
+        </Block>
+        <Block id="h-remove" title="Remove it with the tools you have">
+          <p>exiftool deletes the record from JPEG, PNG, WebP, TIFF-based and QuickTime-based files by deleting the JUMBF group, per its <a href={EXIF_JUMBF}>documentation</a>. Add <code>-xmp:all=</code> to remove the XMP, where the IPTC label sits:</p>
+          <pre><code>exiftool -jumbf:all= -xmp:all= file.jpg</code></pre>
+          <p>exiftool keeps the original as <code>file.jpg_original</code>; send the other one. A screenshot or a re-export to a new file also usually drops the record, as <a href={OPENAI_C2PA}>OpenAI notes</a>, but it re-encodes the picture and can carry the screen's own metadata.</p>
+        </Block>
+        <Here>
+          <p>FileSanity reads Content Credentials in JPEG and PNG files and lists what they say, the app, the signer, whether it is marked as AI and the edits, then removes the record along with the EXIF and XMP. The picture is not re-encoded. Credentials inside HEIC and WebP files are not removed yet. The file stays in your browser.</p>
+        </Here>
+        <Checked on="10 October 2026" />
+      </>
+    ),
+  },
 ]
 
 export function guideModule(g: Guide) {
@@ -353,7 +403,7 @@ export const meta = {
 export default function Guides() {
   return (
     <>
-      <Head h1="Before you send a file." lede="Six guides to the metadata in photos, Office documents and PDFs: where it sits, how to remove it with the tools you already have, and when those are enough." />
+      <Head h1="Before you send a file." lede="Seven guides to the metadata in photos, Office documents and PDFs: where it sits, how to remove it with the tools you already have, and when those are enough." />
       <Block id="h-guides" title="Guides">
         <ul className="guide-list">
           {GUIDES.map((g) => <li key={g.slug}><a href={`/guides/${g.slug}`}>{g.title}</a><p>{g.description}</p></li>)}
