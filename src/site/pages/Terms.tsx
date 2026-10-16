@@ -21,7 +21,7 @@ export default function Terms() {
       </Block>
       <Block id="t-pay" title="Paid plans">
         <p>Paid plans are sold by Paddle as merchant of record, under its terms of sale, billed monthly in advance. You can cancel at any time from your account page; the plan runs to the end of the period paid for.</p>
-        <p>Refunds: if FileSanity is not right for you, write to <a href={`mailto:${MAIL}`}>{MAIL}</a> from your account's address within 14 days of your first payment and we refund it in full. After that, a month already started is not refunded, except where the law where you live says otherwise.</p>
+        <p>Refunds: a full refund within 14 days of your first payment, as set out in the <a href="/refunds">refund policy</a>.</p>
         <p> We will give 30 days' notice of a price change by email.</p>
       </Block>
       <Block id="t-api" title="The API">

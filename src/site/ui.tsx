@@ -62,7 +62,7 @@ export function Footer({ samples = false }: { samples?: boolean }) {
         <div className="foot-brand"><a className="mark" href="/"><Mark /></a><p>Removes hidden metadata from photos, documents and PDFs, in your browser. Made by <a href={MAKER_URL} target="_blank" rel="noopener">{MAKER}</a>. Open source, MIT.</p></div>
         <nav aria-label="Product"><h2>Product</h2><a href="/how-it-works">How it works</a><a href="/batch">Batch</a><a href="/developers">API</a><a href="/extension">Browser extension</a><a href="/pricing">Pricing</a><a href="/account">Account</a></nav>
         <nav aria-label="Files"><h2>Files</h2><a href="/photos">Photos</a><a href="/documents">Office documents</a><a href="/pdf">PDF</a><a href="/guides">Guides</a><a href="/security">Security</a><a href="/faq">FAQ</a></nav>
-        <nav aria-label="Company"><h2>Company</h2><a href="/about">About</a><a href="/contact">Contact</a><a href={REPO}>Source code</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>
+        <nav aria-label="Company"><h2>Company</h2><a href="/about">About</a><a href="/contact">Contact</a><a href={REPO}>Source code</a><a href="/privacy">Privacy</a><a href="/refunds">Refunds</a><a href="/terms">Terms</a></nav>
         {samples && <p className="foot-fine">The sample files are generated and their metadata is invented.</p>}
       </div>
     </footer>

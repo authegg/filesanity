@@ -14,6 +14,7 @@ import * as About from './pages/About'
 import * as Contact from './pages/Contact'
 import * as Privacy from './pages/Privacy'
 import * as Terms from './pages/Terms'
+import * as Refunds from './pages/Refunds'
 import * as SignIn from './pages/SignIn'
 import * as Account from './pages/Account'
 import * as NotFound from './pages/NotFound'
@@ -39,7 +40,7 @@ const TABLE: [string, Mod][] = [
   ['/', Home], ['/how-it-works', How], ['/photos', Photos], ['/documents', Documents], ['/pdf', Pdf],
   ['/batch', Batch], ['/pricing', Pricing], ['/developers', Developers], ['/extension', Extension], ['/security', Security], ['/faq', Faq],
   ...guideRoutes(),
-  ['/about', About], ['/contact', Contact], ['/privacy', Privacy], ['/terms', Terms],
+  ['/about', About], ['/contact', Contact], ['/privacy', Privacy], ['/terms', Terms], ['/refunds', Refunds],
   ['/sign-in', SignIn], ['/account', Account], ['/404', NotFound],
 ]
 export const ROUTES: Route[] = TABLE.map(([path, m]) => ({ path, meta: m.meta, Page: m.default, tool: m.tool, index: m.index }))

@@ -11,7 +11,7 @@ BASE = next((a for a in sys.argv[1:] if not a.startswith('--')), 'http://127.0.0
 SHOTS = '--shots' in sys.argv
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'shots', 'site')
 os.makedirs(OUT, exist_ok=True)
-ROUTES = ['/', '/how-it-works', '/photos', '/documents', '/pdf', '/batch', '/pricing', '/developers', '/extension', '/security', '/faq', '/about', '/contact', '/privacy', '/terms', '/guides', '/guides/remove-location-from-photos', '/guides/remove-author-from-office-files', '/guides/remove-pdf-metadata', '/guides/photo-metadata-explained', '/guides/marketplace-photo-metadata', '/guides/check-a-file-is-clean', '/sign-in', '/account', '/nope']
+ROUTES = ['/', '/how-it-works', '/photos', '/documents', '/pdf', '/batch', '/pricing', '/developers', '/extension', '/security', '/faq', '/about', '/contact', '/privacy', '/terms', '/refunds', '/guides', '/guides/remove-location-from-photos', '/guides/remove-author-from-office-files', '/guides/remove-pdf-metadata', '/guides/photo-metadata-explained', '/guides/marketplace-photo-metadata', '/guides/check-a-file-is-clean', '/sign-in', '/account', '/nope']
 SIZES = [(1917, 870), (1366, 650), (320, 568), (360, 780), (390, 844), (412, 915), (430, 932), (667, 375)]
 fails = []
 def check(ok, msg):
