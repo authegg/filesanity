@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FileSanity options</title>
+<link rel="stylesheet" href="ui.css" />
+<style>
+  body { padding: 24px 16px 48px; }
+  main { max-width: 720px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font-size: 1.4rem; }
+  .lede { color: var(--muted); }
+  #token { flex: 1 1 16rem; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .log { max-height: 26rem; overflow: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1><svg class="logo" viewBox="12 6 40 52" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M26 6H38L52 20V44A14 14 0 0 1 38 58H26A14 14 0 0 1 12 44V20A14 14 0 0 1 26 6ZM32 21C37 21 40 26.5 40 34S37 47 32 47 24 41.5 24 34 27 21 32 21Z"/><path class="flap" d="M42.2 6H52V15.8Z"/></svg><span>File<span class="s">Sanity</span> options</span></h1>
+  <p class="lede">Uploads are cleaned on every site for free. Connecting a Pro, Team or API account adds the policy, site rules, "Save without metadata" on images and the log below. Files and file names never leave this browser.</p>
+
+  <section class="sheet" aria-labelledby="h-conn">
+    <h2 id="h-conn">Account</h2>
+    <p id="status">Not connected.</p>
+    <form class="row" id="connect">
+      <label for="token" class="sr">Connection token</label>
+      <input type="password" id="token" placeholder="fs_ext_..." autocomplete="off" spellcheck="false" />
+      <button class="btn">Connect</button>
+      <button class="btn ghost" type="button" id="disconnect" hidden>Disconnect</button>
+    </form>
+    <p class="small">Create a token under "Connect the browser extension" on your <a href="https://filesanity.com/account" target="_blank" rel="noopener">account page</a>. The extension sends only this token, to read your plan and saved policy.</p>
+    <p class="err" id="err" role="alert"></p>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-pol">
+    <h2 id="h-pol">Saved policy</h2>
+    <p id="policy">Removes everything FileSanity can remove.</p>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-rules">
+    <h2 id="h-rules">Site rules</h2>
+    <p class="small">A rule beats the pause switch in the toolbar panel. With Pro, Team or API.</p>
+    <fieldset id="rules-box">
+      <legend class="sr">Site rules</legend>
+      <table><thead><tr><th scope="col">Site</th><th scope="col">Rule</th><th scope="col"><span class="sr">Remove</span></th></tr></thead><tbody id="rules"></tbody></table>
+      <form class="row" id="add-rule">
+        <label for="rule-host" class="sr">Site</label>
+        <input type="text" id="rule-host" placeholder="mail.example.com" required />
+        <label for="rule-kind" class="sr">Rule</label>
+        <select id="rule-kind"><option value="always">Always clean</option><option value="never">Never clean</option><option value="ask">Ask each time</option></select>
+        <button class="btn">Add rule</button>
+      </form>
+    </fieldset>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-log">
+    <h2 id="h-log">Last 100 cleans</h2>
+    <p class="small">Kept in this browser only and never sent anywhere. With Pro, Team or API.</p>
+    <div class="log" tabindex="0" aria-label="Log of cleans"><table><thead><tr><th scope="col">When</th><th scope="col">Site</th><th scope="col">File</th><th scope="col" class="num">Fields removed</th></tr></thead><tbody id="log"></tbody></table></div>
+    <div><button class="btn ghost" type="button" id="clear-log">Clear the log</button></div>
+  </section>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

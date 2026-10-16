@@ -1,0 +1,10 @@
+name: Format or feature request
+description: A file type or a kind of metadata FileSanity should handle.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should it handle, and why
+    validations:
+      required: true
