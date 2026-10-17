@@ -88,6 +88,7 @@ export async function readPdf(blob: Blob, name: string): Promise<Report> {
   if (blob.size > CAP) return { kind: 'pdf', kindLabel: 'PDF document', name, bytes: blob.size, segments: [], body: { label: 'The document', bytes: blob.size }, note: 'This PDF is over 256 MB, more than FileSanity scans in this version.' }
   const b = await read(blob, 0, blob.size)
   const { segments, edits } = await scan(b)
+  scanned.set(blob, edits)
   const encrypted = segments.some((s) => s.id === 'encrypted')
   const kept = segments.some((s) => !s.strip && !s.warn)
   const lost = /\/Info\s+\d+\s+0\s+R/.test(latin1(b, Math.max(0, b.length - 4096))) && !segments.some((s) => s.label === 'Info')
@@ -233,21 +234,40 @@ async function scan(b: Uint8Array) {
   return { segments, edits }
 }
 
-/** Earlier saves and actions that reach out: shown, never changed. Keys inside compressed object streams are not seen. */
+/** Each start of `word` in `b` that a regex `\b` would end (the next byte is not a word character). */
+function* words(b: Uint8Array, word: string) {
+  const pat = ascii(word)
+  for (let i = 0; (i = indexOf(b, pat, i)) >= 0; i += pat.length) {
+    const c = b[i + pat.length]
+    if (!(c >= 0x30 && c <= 0x39) && !(c >= 0x41 && c <= 0x5a) && !(c >= 0x61 && c <= 0x7a) && c !== 0x5f) yield i
+  }
+}
+const any = (b: Uint8Array, ...ws: string[]) => ws.some((w) => !words(b, w).next().done)
+
+/** Earlier saves and actions that reach out: shown, never changed. Keys inside compressed object streams are not seen.
+ *  The bytes are searched directly: a whole-file string costs many times the file in memory. */
 function risks(b: Uint8Array): Segment[] {
   const out: Segment[] = []
-  const s = latin1(b)
   // Each save appends a cross-reference section; a linearized ("fast web view") file has one extra by design.
-  const saves = (s.match(/startxref/g) ?? []).length - (/\/Linearized/.test(s.slice(0, 2048)) ? 1 : 0)
+  let saves = 0
+  for (let i = 0, x = ascii('startxref'); (i = indexOf(b, x, i)) >= 0; i += x.length) saves++
+  if (latin1(b, 0, Math.min(b.length, 2048)).includes('/Linearized')) saves--
   if (saves > 1) out.push({ id: 'versions', label: 'saves', what: 'earlier versions of the document', bytes: 0, warn: true, strip: false, why: 'kept: they are part of the file. Save it as a new PDF (Print to PDF) to keep only the last version',
     fields: [{ name: 'Earlier versions inside', value: `${saves - 1}: text deleted or covered in a later save may still be readable` }] })
   const fields: Field[] = []
-  const js = (s.match(/\/(JavaScript|JS)\b/g) ?? []).length
-  if (js) fields.push({ name: 'Runs JavaScript', value: 'some PDF readers run it when the file opens' })
-  if (/\/Launch\b/.test(s)) fields.push({ name: 'Launches a program', value: 'asks the reader to open another file or program' })
-  if (/\/SubmitForm\b/.test(s)) fields.push({ name: 'Sends form data', value: 'can post the form to a web address' })
+  if (any(b, '/JavaScript', '/JS')) fields.push({ name: 'Runs JavaScript', value: 'some PDF readers run it when the file opens' })
+  if (any(b, '/Launch')) fields.push({ name: 'Launches a program', value: 'asks the reader to open another file or program' })
+  if (any(b, '/SubmitForm')) fields.push({ name: 'Sends form data', value: 'can post the form to a web address' })
   // A web address in an action that runs on opening (/OpenAction or /AA), not an ordinary link someone has to click.
-  for (const m of s.matchAll(/\/(OpenAction|AA)\b[^]{0,400}?\/URI\s*\(([^)]*)\)/g)) fields.push({ name: 'Contacts on opening', value: m[2] })
+  // shortcut: the address must close within 4 kB of the key; a longer one is not listed.
+  const at = [...words(b, '/OpenAction'), ...words(b, '/AA')].sort((x, y) => x - y)
+  const re = /\/(?:OpenAction|AA)\b[^]{0,400}?\/URI\s*\(([^)]*)\)/y
+  for (let k = 0, done = 0; k < at.length; k++) {
+    if (at[k] < done) continue
+    re.lastIndex = 0
+    const m = re.exec(latin1(b, at[k], Math.min(b.length, at[k] + 4600)))
+    if (m) { fields.push({ name: 'Contacts on opening', value: m[1] }); done = at[k] + m[0].length }
+  }
   if (fields.length) out.push({ id: 'actions', label: 'actions', what: 'actions that run or reach out', bytes: 0, warn: true, strip: false, why: 'kept: removing actions changes how the document behaves', fields })
   return out
 }
@@ -299,9 +319,12 @@ function blankXmp(src: Uint8Array): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(out, (c) => c.charCodeAt(0)) as Uint8Array<ArrayBuffer>
 }
 
+/** The edits readPdf found, by file: strip reuses them instead of holding a second whole copy and scanning again. */
+const scanned = new WeakMap<Blob, Edit[]>()
+
 export async function stripPdf(blob: Blob, keep = new Set<string>()): Promise<Blob> {
-  const b = await read(blob, 0, blob.size)
-  const edits = (await scan(b)).edits.filter((e) => !keep.has(e.seg))
+  const found = scanned.get(blob) ?? (await scan(await read(blob, 0, blob.size))).edits
+  const edits = found.filter((e) => !keep.has(e.seg))
   edits.sort((x, y) => x.start - y.start)
   const parts: BlobPart[] = []
   let pos = 0

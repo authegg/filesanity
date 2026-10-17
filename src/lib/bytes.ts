@@ -11,25 +11,25 @@ export const u32 = (b: Uint8Array, i: number, le = false) =>
 
 export const latin1 = (b: Uint8Array, start = 0, end = b.length) => {
   let s = ''
-  for (let i = start; i < end; i++) s += String.fromCharCode(b[i])
+  for (let i = start; i < end; i += 8192) s += String.fromCharCode(...b.subarray(i, Math.min(end, i + 8192)))
   return s
 }
 export const utf8 = (b: Uint8Array) => new TextDecoder('utf-8', { fatal: false }).decode(b)
 export const ascii = (s: string): Bytes => new TextEncoder().encode(s) as Bytes
 
-/** First index of `pat` in `b` at or after `from`, or -1. Naive; patterns are short. */
+/** First index of `pat` in `b` at or after `from`, or -1. The native byte search finds each candidate first byte. */
 export const indexOf = (b: Uint8Array, pat: Uint8Array, from = 0) => {
   const n = b.length - pat.length
-  outer: for (let i = Math.max(0, from); i <= n; i++) {
-    for (let j = 0; j < pat.length; j++) if (b[i + j] !== pat[j]) continue outer
+  outer: for (let i = Math.max(0, from); i <= n && (i = b.indexOf(pat[0], i)) >= 0 && i <= n; i++) {
+    for (let j = 1; j < pat.length; j++) if (b[i + j] !== pat[j]) continue outer
     return i
   }
   return -1
 }
 
 export const lastIndexOf = (b: Uint8Array, pat: Uint8Array) => {
-  outer: for (let i = b.length - pat.length; i >= 0; i--) {
-    for (let j = 0; j < pat.length; j++) if (b[i + j] !== pat[j]) continue outer
+  outer: for (let i = b.length - pat.length; i >= 0 && (i = b.lastIndexOf(pat[0], i)) >= 0; i--) {
+    for (let j = 1; j < pat.length; j++) if (b[i + j] !== pat[j]) continue outer
     return i
   }
   return -1
