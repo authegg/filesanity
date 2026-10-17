@@ -17,7 +17,7 @@ export default function About() {
       <Block id="h-wont" title="What it will not do">
         <ul>
           <li>Upload a file from this website. The hosted API is the one service that receives files, and it says so.</li>
-          <li>Add analytics, advertising or tracking.</li>
+          <li>Add advertising, a tracking cookie or anything that follows you to other sites.</li>
           <li>Call a file clean when part of it could not be read.</li>
           <li>Put cleaning a single file behind an account or a payment.</li>
         </ul>

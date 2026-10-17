@@ -17,7 +17,7 @@ export default function Privacy() {
         <p>They are read and rewritten inside your browser. We never receive them, so we cannot store, read or share them. This holds for single files and for batches.</p>
       </Block>
       <Block id="p-visit" title="Visiting the website">
-        <p>We run no analytics, advertising or tracking. Our host, Cloudflare, processes the technical data any web request carries (your IP address, browser, the page asked for) to deliver the page and stop attacks, under its own privacy policy. We set no cookie unless you sign in.</p>
+        <p>We run no advertising or cross-site tracking. We count visits with Cloudflare Web Analytics, which sets no cookie and does not identify you: it records the page, the referring site, your country, browser and device type, and how fast the page loaded. Our host, Cloudflare, processes the technical data any web request carries (your IP address, browser, the page asked for) to deliver the page and stop attacks, under its own privacy policy. We set no cookie unless you sign in.</p>
       </Block>
       <Block id="p-account" title="Accounts">
         <p>If you create an account we keep: your email address; your plan, its status and renewal date; your API keys' names and creation dates, with the keys stored only as hashes; the email addresses you add to a team; your saved policy; and a monthly count of API files. We use them to run your account and nothing else.</p>
