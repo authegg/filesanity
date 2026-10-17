@@ -108,14 +108,17 @@ async function sendLink(env: Env, to: string, link: string) {
 }
 
 // Tables and inline styles because mail clients ignore most CSS; no images, so nothing is blocked or tracked. Colours are J1's.
-const signInHtml = (href: string) => `<!doctype html><html><body style="margin:0;padding:0;background:#0d5641">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0d5641"><tr><td align="center" style="padding:40px 16px">
+// Dark-mode readers recolour mail that does not declare a color-scheme (Apple Mail), and Gmail inverts background-color but
+// not background-image, so each fill is also set as a one-colour gradient.
+const fill = (c: string) => `background:${c};background-image:linear-gradient(${c},${c})`
+const signInHtml = (href: string) => `<!doctype html><html><head><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><style>:root{color-scheme:light dark}</style></head><body style="margin:0;padding:0;${fill('#0d5641')}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${fill('#0d5641')}"><tr><td align="center" style="padding:40px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;font-family:Arial,Helvetica,sans-serif">
 <tr><td style="padding:0 4px 20px;font-size:22px;font-weight:800;color:#f4f1e6">File<span style="color:#e3f07a">Sanity</span></td></tr>
-<tr><td style="background:#f4f1e6;border-radius:6px;padding:32px 28px;color:#10261d">
+<tr><td style="${fill('#f4f1e6')};border-radius:6px;padding:32px 28px;color:#10261d">
 <h1 style="margin:0 0 12px;font-size:24px;line-height:1.2;color:#10261d">Sign in to FileSanity</h1>
 <p style="margin:0 0 24px;font-size:16px;line-height:1.5">This link works once, for 15 minutes.</p>
-<a href="${href}" style="display:inline-block;background:#0d5641;color:#f4f1e6;font-size:16px;font-weight:700;text-decoration:none;padding:14px 24px;border-radius:6px">Sign in</a>
+<a href="${href}" style="display:inline-block;${fill('#0d5641')};color:#f4f1e6;font-size:16px;font-weight:700;text-decoration:none;padding:14px 24px;border-radius:6px">Sign in</a>
 <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#4a5a52">If the button does not work, paste this into your browser:<br><a href="${href}" style="color:#0d5641;word-break:break-all">${href}</a></p>
 </td></tr>
 <tr><td style="padding:20px 4px 0;font-size:13px;line-height:1.5;color:#c4d6cc">If you did not ask for this, ignore it; nothing happens without the link.</td></tr>
