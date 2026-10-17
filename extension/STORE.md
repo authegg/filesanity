@@ -57,7 +57,7 @@ FileSanity removes metadata from photos, Office documents and PDFs as the user u
 - Health, financial and payment, authentication, personal communications, location, web history, user activity, website content: not collected.
   - Authentication: the connection token the user pastes is stored locally and sent only to filesanity.com to read the user's own plan. If the reviewer counts this as authentication information, tick it, with "used only to read the user's plan from filesanity.com, never sold or shared".
 - Certifications: data is not sold to third parties; not used or transferred for purposes unrelated to the single purpose; not used to determine creditworthiness or for lending.
-- Privacy policy URL: https://filesanity.com/privacy
+- Privacy policy URL: https://filesanity.com/privacy (section "The browser extension")
 
 ## AMO data collection (manifest `data_collection_permissions`)
 
@@ -66,10 +66,10 @@ Set to `required: ["none"]`: the extension collects and transmits no user data. 
 ## Support and links
 
 - Homepage: https://filesanity.com/extension
-- Support email: hello@filesanity.com
+- Support email: hello@authegg.com (the publisher contact, set 2026-10-17); hello@filesanity.com also reaches the owner
 - Source: https://github.com/authegg/filesanity
 
-## Images (made by `python3 tools/store_shots.py`, from the built extension)
+## Images (made by `python3 tools/store_shots.py` into `dist-extension/store/`, from the built extension)
 
 - Store icon 128x128: `extension/icons/icon-128.png`.
 - Screenshots, 1280x800: `screenshot-1.png` (what it does, the panel over a site after an upload), `screenshot-2.png` (a file dropped on the panel), `screenshot-3.png` (options, free).
