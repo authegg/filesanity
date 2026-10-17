@@ -51,7 +51,7 @@ const ok = await crypto.subtle.verify('Ed25519', key, sig, report)`}</code></pre
         <table className="spec"><tbody>
           {(['free', 'pro', 'team', 'api'] as const).map((k) => <tr key={k}><th scope="row">{PLANS[k].name}</th><td>{PLANS[k].apiFiles.toLocaleString('en')} files a month, up to {PLANS[k].maxBytes / 1e6} MB each</td></tr>)}
         </tbody></table>
-        <p>The count resets on the first of each month, UTC.</p>
+        <p>The count resets on the first of each month, UTC. Larger files clean in the browser, where we set no size limit.</p>
       </Block>
     </>
   )

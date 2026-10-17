@@ -412,7 +412,7 @@ async function hosted(req: Request, env: Env, url: URL): Promise<Response> {
   if (url.pathname === '/api/v1/usage' && req.method === 'GET') return cors(json({ plan, used: await q.used(m), quota: P.apiFiles, maxBytes: P.maxBytes, period: m }))
   if (req.method !== 'POST' || !['/api/v1/inspect', '/api/v1/clean'].includes(url.pathname)) return cors(json({ error: 'POST /api/v1/inspect or /api/v1/clean' }, 404))
   const size = req.headers.get('Content-Length')
-  const big = () => cors(json({ error: `Files over ${P.maxBytes / 1e6} MB need a larger plan.` }, 413))
+  const big = () => cors(json({ error: `Files over ${P.maxBytes / 1e6} MB are over this plan's API limit${plan === 'free' ? `; paid plans take ${PLANS.pro.maxBytes / 1e6} MB` : ''}. The browser cleaner at filesanity.com sets no size limit.` }, 413))
   if (size === null) return cors(json({ error: 'Send the file with a Content-Length header; chunked uploads are not taken.' }, 411))
   if (Number(size) > P.maxBytes) return big()
   const used = await q.take(m, P.apiFiles)
