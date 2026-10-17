@@ -47,7 +47,7 @@ export function Nav({ path, onCta }: { path: string; onCta?: () => void }) {
           <div className="menu-extra"><a href="/faq">FAQ</a><a href="/about">About</a><a href="/contact">Contact</a><a href={`mailto:${MAIL}`}>{MAIL}</a></div>
         </nav>
         <div className={`nav-end ${twin && !open ? 'twin' : ''}`}>
-          {onCta ? <button className="btn sm" onClick={onCta}>{CTA}</button> : <a className="btn sm" href="/#cleaner">{CTA}</a>}
+          {onCta ? <button className="btn sm" onClick={() => { setOpen(false); onCta() }}>{CTA}</button> : <a className="btn sm" href="/#cleaner">{CTA}</a>}
           <button className="menu-btn" aria-expanded={open} aria-controls="menu" aria-label={open ? 'Close menu' : 'Menu'} onClick={() => setOpen(!open)}><i /><i /></button>
         </div>
       </div>
