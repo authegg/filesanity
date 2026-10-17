@@ -6,26 +6,31 @@ export const meta = { title: 'Account', description: 'Your FileSanity plan, API 
 export const index = false
 
 const day = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
-type PaddleJs = { Environment: { set(e: string): void }; Initialize(o: { token: string }): void; Checkout: { open(o: object): void } }
+type PaddleJs = { Environment: { set(e: string): void }; Initialize(o: { token: string; checkout?: object }): void; Checkout: { open(o: object): void } }
 let paddle: Promise<PaddleJs> | undefined
+const DONE = () => `${location.origin}/account?paid=1`
 // Paddle.js loads only here, on a click, so no other page fetches a third-party script.
 const loadPaddle = () => (paddle ??= new Promise<PaddleJs>((ok, no) => {
   const s = Object.assign(document.createElement('script'), { src: 'https://cdn.paddle.com/paddle/v2/paddle.js' })
   s.onload = () => {
     const P = (window as unknown as { Paddle: PaddleJs }).Paddle
     if (PADDLE.env === 'sandbox') P.Environment.set('sandbox')
-    P.Initialize({ token: PADDLE.token })
+    // On a link carrying _ptxn (Paddle's recovery email, a card update from the billing page) Paddle.js opens that checkout itself.
+    P.Initialize({ token: PADDLE.token, checkout: { settings: { variant: 'one-page', allowLogout: false, successUrl: DONE() } } })
     ok(P)
   }
   s.onerror = () => { paddle = undefined; no(new Error('Paddle.js did not load')) }
   document.head.append(s)
 }))
 // The email rides along as custom data: it is how the webhook finds the account.
-const checkout = async (k: PlanKey, email: string) => (await loadPaddle()).Checkout.open({ items: [{ priceId: PLANS[k].checkout, quantity: 1 }], customer: { email }, customData: { email }, settings: { variant: 'one-page', allowLogout: false, successUrl: `${location.origin}/account` } })
+const checkout = async (k: PlanKey, email: string) => (await loadPaddle()).Checkout.open({ items: [{ priceId: PLANS[k].checkout, quantity: 1 }], customer: { email }, customData: { email }, settings: { variant: 'one-page', allowLogout: false, successUrl: DONE() } })
 
 export default function Account() {
   const { me, reload } = useMe()
-  useEffect(() => { if (me === null) location.replace(`/sign-in`) }, [me])
+  // A checkout link (_ptxn) opens without signing in: the buyer may be on another device.
+  const ptxn = typeof location !== 'undefined' && new URLSearchParams(location.search).has('_ptxn')
+  useEffect(() => { if (ptxn) loadPaddle().catch(() => alert('The checkout did not load. Check your connection and try again.')) }, [ptxn])
+  useEffect(() => { if (me === null && !ptxn) location.replace(`/sign-in`) }, [me, ptxn])
   if (!me) return <Skeleton />
   return <Signed me={me} reload={reload} />
 }
@@ -46,6 +51,17 @@ function Skeleton() {
 
 function Signed({ me, reload }: { me: Me; reload: () => void }) {
   const want = new URLSearchParams(location.search).get('plan') as PlanKey | null
+  // Paddle sends a finished checkout back with ?paid=1; the plan lands when the webhook does, so ask again until it shows.
+  const [paid] = useState(() => new URLSearchParams(location.search).has('paid'))
+  const [waited, setWaited] = useState(false)
+  const on = me.plan !== 'free'
+  useEffect(() => { if (paid) history.replaceState(null, '', '/account') }, [paid]) // a later reload shows the plan, not the note
+  useEffect(() => {
+    if (!paid || on) return
+    let n = 0
+    const t = setInterval(() => { if (++n > 30) { clearInterval(t); setWaited(true) } else reload() }, 3000)
+    return () => clearInterval(t)
+  }, [paid, on, reload])
   const signout = async () => { await call('POST', '/api/auth/signout').catch(() => {}); remember(); location.href = '/' }
   const p = PLANS[me.plan]
   return (
@@ -55,6 +71,7 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
 
         <div className="sheet group" aria-labelledby="g-plan">
           <h2 id="g-plan">Plan</h2>
+          {paid && <p className="note" role="status">{on ? <>Checkout complete. You are on <b>{PLANS[me.plan].name}</b>; Paddle emails the receipt.</> : waited ? 'Checkout complete. Your plan is taking longer than usual to show; reload in a minute. The receipt from Paddle confirms the payment.' : 'Checkout complete. Turning on your plan…'}</p>}
           {me.via ? <p>You are on <b>{me.via}</b>'s Team plan. They manage billing.</p> : me.plan !== 'free' ? (
             <>
               <p><b>{p.name}</b>, {fmtPrice(p)} a month. {me.status === 'cancelled' ? `Cancelled; runs until ${day(me.ends)}.` : me.status === 'past_due' ? 'The last payment failed; update your card.' : me.renews ? `Renews ${day(me.renews)}.` : ''}</p>
