@@ -15,7 +15,7 @@
   // PADDLE_PRICE_PRO, PADDLE_PRICE_TEAM, PADDLE_PRICE_API, REPORT_PRIVATE_KEY_JWK (node tools/keygen.mjs). Local values: .dev.vars
   // Sign-in links go out through Cloudflare Email Sending; filesanity.com must be onboarded as a sending domain.
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["signin@filesanity.com"] }],
-  "vars": { "MAIL_FROM": "signin@filesanity.com", "PADDLE_API": "https://sandbox-api.paddle.com" },
+  "vars": { "MAIL_FROM": "signin@filesanity.com", "PADDLE_API": "https://api.paddle.com" },
   "routes": [
     { "pattern": "filesanity.com", "custom_domain": true }
   ]

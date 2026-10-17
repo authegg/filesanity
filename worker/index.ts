@@ -248,8 +248,23 @@ async function extMe(req: Request, env: Env): Promise<Response> {
   return json({ plan, policy }, 200, cors)
 }
 
+// Paddle's sender addresses come from its /ips endpoint, not a pinned list, and are cached per isolate for an hour.
+let senders: { at: number; ips: Set<string> } | undefined
+async function fromPaddle(req: Request, env: Env): Promise<boolean> {
+  if (!env.PADDLE_API.startsWith('https:')) return true // local dev posts from localhost
+  if (!senders || Date.now() - senders.at > 3600e3) {
+    const r = await fetch(`${env.PADDLE_API}/ips`)
+    if (!r.ok) throw new Error(`paddle ips ${r.status}`) // a 500 makes Paddle retry
+    const { data } = (await r.json()) as { data: { ipv4_cidrs: string[] } }
+    // shortcut: matches /32 entries only (all Paddle publishes today); wider CIDRs would need a range check.
+    senders = { at: Date.now(), ips: new Set(data.ipv4_cidrs.map((c) => c.replace(/\/32$/, ''))) }
+  }
+  return senders.ips.has(req.headers.get('CF-Connecting-IP') ?? '')
+}
+
 // Paddle-Signature "ts=<unix>;h1=<hex>": hex HMAC-SHA256 of "ts:body" under the destination's secret.
 async function webhook(req: Request, env: Env): Promise<Response> {
+  if (!(await fromPaddle(req, env))) return json({ error: 'not a Paddle address' }, 403)
   const raw = await req.text()
   const parts = Object.fromEntries((req.headers.get('paddle-signature') ?? '').split(';').map((kv) => kv.split('=')))
   if (!parts.ts || Math.abs(Date.now() / 1000 - Number(parts.ts)) > 300) return json({ error: 'bad signature' }, 401)
