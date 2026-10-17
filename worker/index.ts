@@ -9,7 +9,7 @@
  *   POST /api/keys            { name, scope? } -> the key, shown once; scope 'ext' pairs the browser extension      DELETE /api/keys/:id
  *   POST /api/team            { email }                            DELETE /api/team/:email
  *   GET  /api/billing         redirects to the Paddle customer portal
- *   POST /api/webhooks/paddle subscription events (Paddle-Signature)
+ *   POST /api/webhooks/paddle subscription events, and refunds (a full one cancels) (Paddle-Signature)
  *  Hosted API (bearer key, any origin):
  *   POST /api/v1/inspect, /api/v1/clean (?keep=, ?report=1)       GET /api/v1/usage
  *   GET  /api/report-key      the Ed25519 public key that signs reports
@@ -251,6 +251,23 @@ async function extMe(req: Request, env: Env): Promise<Response> {
   return json({ plan, policy }, 200, cors)
 }
 
+type Adjustment = { action: string; status: string; transaction_id: string; subscription_id?: string | null; totals: { total: string } }
+// A full refund ends the plan now: the refund policy is "within 14 days, in full", and that buyer is leaving. A partial
+// refund is goodwill and leaves it running. The cancel sends subscription.canceled, which drops the account to Free.
+async function refunded(env: Env, d: Adjustment): Promise<Response> {
+  if (d.action !== 'refund' || d.status !== 'approved' || !d.subscription_id) return json({ ok: true })
+  const paddle = async <T>(path: string, body?: object): Promise<T> => {
+    const r = await fetch(`${env.PADDLE_API}${path}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${env.PADDLE_API_KEY}`, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })
+    if (!r.ok) throw new Error(`paddle ${path} ${r.status}`) // a 500 makes Paddle retry the event
+    return ((await r.json()) as { data: T }).data
+  }
+  const txn = await paddle<{ details: { totals: { grand_total: string } } }>(`/transactions/${d.transaction_id}`)
+  if (Number(d.totals.total) < Number(txn.details.totals.grand_total)) return json({ ok: true })
+  const sub = await paddle<{ status: string }>(`/subscriptions/${d.subscription_id}`)
+  if (sub.status !== 'canceled') await paddle(`/subscriptions/${d.subscription_id}/cancel`, { effective_from: 'immediately' })
+  return json({ ok: true })
+}
+
 // Paddle's sender addresses come from its /ips endpoint, not a pinned list, and are cached per isolate for an hour.
 let senders: { at: number; ips: Set<string> } | undefined
 async function fromPaddle(req: Request, env: Env): Promise<boolean> {
@@ -275,6 +292,7 @@ async function webhook(req: Request, env: Env): Promise<Response> {
   const expect = enc.encode(hex(await crypto.subtle.sign('HMAC', key, enc.encode(`${parts.ts}:${raw}`)))), got = enc.encode(parts.h1 ?? '')
   if (got.length !== expect.length || !crypto.subtle.timingSafeEqual(got, expect)) return json({ error: 'bad signature' }, 401)
   const ev = JSON.parse(raw) as { event_type: string; data: { status: string; customer_id: string; next_billed_at?: string | null; scheduled_change?: { action: string; effective_at: string } | null; custom_data?: { email?: string } | null; items: { price: { id: string } }[] } }
+  if (ev.event_type.startsWith('adjustment.')) return await refunded(env, ev.data as unknown as Adjustment)
   if (!ev.event_type.startsWith('subscription.')) return json({ ok: true })
   const d = ev.data
   // The checkout carries the signed-in email as custom data; Paddle's subscription payload has no email of its own.

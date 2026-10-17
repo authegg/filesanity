@@ -31,8 +31,10 @@ async function signIn(email) {
 const me = async (c) => (await fetch(`${B}/api/me`, { headers: { Cookie: c } })).json()
 const acct = (c, method, path, body) => fetch(`${B}${path}`, { method, headers: { Cookie: c, ...O, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })
 // Paddle subscription event, signed the Paddle way (hex HMAC-SHA256 of "ts:body", header "ts=..;h1=..").
-const hook = (event_type, price, email, status = 'active', secret = vars.PADDLE_WEBHOOK_SECRET, extra = {}) => {
-  const raw = JSON.stringify({ event_id: `evt_${Math.random().toString(36).slice(2)}`, event_type, data: { status, customer_id: 'ctm_test', next_billed_at: '2026-11-08T00:00:00Z', scheduled_change: null, custom_data: { email }, items: [{ price: { id: price } }], ...extra } })
+const hook = (event_type, price, email, status = 'active', secret = vars.PADDLE_WEBHOOK_SECRET, extra = {}) =>
+  signed(event_type, { status, customer_id: 'ctm_test', next_billed_at: '2026-11-08T00:00:00Z', scheduled_change: null, custom_data: { email }, items: [{ price: { id: price } }], ...extra }, secret)
+const signed = (event_type, data, secret = vars.PADDLE_WEBHOOK_SECRET) => {
+  const raw = JSON.stringify({ event_id: `evt_${Math.random().toString(36).slice(2)}`, event_type, data })
   const ts = Math.floor(Date.now() / 1000)
   const sig = createHmac('sha256', secret).update(`${ts}:${raw}`).digest('hex')
   return fetch(`${B}/api/webhooks/paddle`, { method: 'POST', headers: { 'Paddle-Signature': `ts=${ts};h1=${sig}` }, body: raw })
@@ -87,6 +89,10 @@ assert.equal((await clean(key)).status, 401); ok('revoked key refused')
 await hook('subscription.updated', vars.PADDLE_PRICE_TEAM, A, 'active', undefined, { next_billed_at: null, scheduled_change: { action: 'cancel', effective_at: '2026-11-08T00:00:00Z' } }); m = await me(a)
 assert.equal(m.plan, 'team'); assert.equal(m.status, 'cancelled'); assert.equal(m.ends, '2026-11-08T00:00:00Z'); ok('cancel at period end keeps the plan until it ends')
 assert.equal((await fetch(`${B}/api/billing`, { headers: { Cookie: a }, redirect: 'manual' })).status, 502); ok('billing portal asks Paddle (unreachable in dev)')
+const refund = (status, subscription_id = 'sub_test') => signed('adjustment.updated', { action: 'refund', status, transaction_id: 'txn_test', subscription_id, totals: { total: '2400' } })
+assert.equal((await refund('pending_approval')).status, 200); ok('refund awaiting approval changes nothing')
+assert.equal((await refund('approved', null)).status, 200); ok('refund of a one-off payment changes nothing')
+assert.equal((await refund('approved')).status, 500); ok('approved refund asks Paddle to compare and cancel (unreachable in dev, so Paddle retries)')
 await hook('subscription.canceled', vars.PADDLE_PRICE_TEAM, A, 'canceled'); m = await me(a); assert.equal(m.plan, 'free'); ok('canceled subscription drops to free')
 
 assert.equal((await acct(a, 'POST', '/api/auth/signout')).status, 200)
