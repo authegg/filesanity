@@ -2,29 +2,34 @@
  *
  *  Accounts (cookie session, same origin):
  *   POST /api/auth/start      { email, turnstile }   emails a sign-in link (15 minutes, one use)
- *   GET  /api/auth/verify?t=  opens a session and redirects to /account
+ *   GET  /api/auth/verify?t=  redirects to /sign-in?t=, which asks to confirm (mail scanners open links; a GET consumes nothing)
+ *   POST /api/auth/verify     { t }   opens a session
  *   POST /api/auth/signout
  *   GET  /api/me              the account: plan, usage, keys, team, policy
  *   PUT  /api/policy          { keep: string[] }
  *   POST /api/keys            { name, scope? } -> the key, shown once; scope 'ext' pairs the browser extension      DELETE /api/keys/:id
  *   POST /api/team            { email }                            DELETE /api/team/:email
  *   GET  /api/billing         redirects to the Paddle customer portal
- *   POST /api/webhooks/paddle subscription events, and refunds (a full one cancels) (Paddle-Signature)
+ *   POST /api/plan            { plan }  switches the own paid subscription, prorated now; the webhook then moves the plan
+ *   POST /api/webhooks/paddle subscription events, and refunds (a full one, or a chargeback, cancels) (Paddle-Signature)
  *  Hosted API (bearer key, any origin):
  *   POST /api/v1/inspect, /api/v1/clean (?keep=, ?report=1)       GET /api/v1/usage
  *   GET  /api/report-key      the Ed25519 public key that signs reports
  *  Browser extension (bearer extension token, any origin):
  *   GET  /api/ext/me          { plan, policy } and nothing else; the extension never sends a file or a file name
  *
- *  Stored in KV: per account the email, plan, subscription state, key hashes and names, team emails, policy and a
- *  monthly API count. Never a file: the hosted API holds the file in memory for one request. */
+ *  Stored in KV: per account the email, plan, subscription state, key hashes and names, team emails and policy. The
+ *  monthly API count is a Durable Object per charged account. Never a file: the hosted API holds the file in memory for
+ *  one request. */
+import { DurableObject } from 'cloudflare:workers'
 import { handle } from './handler'
 import { POLICY } from '../src/lib/index'
-import { PLANS, type PlanKey } from '../src/site/plans'
+import { PAID, PLANS, type PlanKey } from '../src/site/plans'
 
 export type Env = {
   ASSETS: Fetcher
   DB: KVNamespace
+  QUOTA: DurableObjectNamespace<Quota>
   EMAIL?: { send(m: { from: string | { email: string; name?: string }; to: string; subject: string; text: string; html?: string }): Promise<{ messageId: string }> } // Cloudflare Email Sending
   MAIL_FROM?: string // signin@filesanity.com
   TURNSTILE_SECRET: string
@@ -46,6 +51,8 @@ export type Account = {
   renews?: string
   ends?: string
   customer?: string // Paddle customer id, for the billing portal
+  sub?: string // Paddle subscription id the plan comes from
+  at?: string // occurred_at of the last subscription event applied
   team: string[] // emails this account has added (Team plan)
   owner?: string // the Team account this one belongs to
   keys: { id: string; name: string; hint: string; created: string; hash: string; scope?: 'ext' }[]
@@ -68,7 +75,8 @@ const json = (body: unknown, status = 200, extra: Record<string, string> = {}) =
 const get = (env: Env, email: string) => env.DB.get<Account>(`acct:${email}`, 'json')
 const put = (env: Env, a: Account) => env.DB.put(`acct:${a.email}`, JSON.stringify(a))
 const fresh = (email: string): Account => ({ email, created: new Date().toISOString(), plan: 'free', team: [], keys: [], keep: [] })
-const active = (a: Account) => a.plan !== 'free' && ['active', 'on_trial', 'past_due', 'cancelled'].includes(a.status ?? '')
+// Our 'cancelled' is Paddle's scheduled cancel: paid until it ends.
+const active = (a: Account) => a.plan !== 'free' && (['active', 'trialing', 'past_due'].includes(a.status ?? '') || (a.status === 'cancelled' && Date.parse(a.ends ?? '') > Date.now()))
 
 /** The plan an account works under: its own if paid and running, else its Team owner's, else free. */
 async function effective(env: Env, a: Account): Promise<{ plan: PlanKey; via?: string }> {
@@ -79,6 +87,19 @@ async function effective(env: Env, a: Account): Promise<{ plan: PlanKey; via?: s
   }
   return { plan: 'free' }
 }
+
+/** A month's hosted-API count, one object per charged account (a Team member's owner), so parallel calls queue on it. */
+export class Quota extends DurableObject<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env)
+    ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS months (month TEXT PRIMARY KEY, n INTEGER NOT NULL)')
+  }
+  used(month: string) { return this.ctx.storage.sql.exec<{ n: number }>('SELECT n FROM months WHERE month = ?', month).toArray()[0]?.n ?? 0 }
+  /** Counts one file if the month is under the limit: the new count, or null when it is used up. */
+  take(month: string, limit: number) { return this.ctx.storage.sql.exec<{ n: number }>('INSERT INTO months VALUES (?, 1) ON CONFLICT(month) DO UPDATE SET n = n + 1 WHERE n < ? RETURNING n', month, limit).toArray()[0]?.n ?? null }
+  give(month: string) { this.ctx.storage.sql.exec('UPDATE months SET n = n - 1 WHERE month = ? AND n > 0', month) }
+}
+const quota = (env: Env, a: Account, via?: string) => env.QUOTA.get(env.QUOTA.idFromName(via ?? a.email))
 
 // ---- sessions ----
 const COOKIE = 'fs_s'
@@ -146,16 +167,22 @@ async function auth(req: Request, env: Env, url: URL): Promise<Response> {
     try { await sendLink(env, email, link) } catch { return json({ error: 'The email could not be sent. Try again in a minute.' }, 502) }
     return json({ ok: true })
   }
+  // Mail scanners (Safe Links, Mimecast) open every link in a message, so the link only leads to a page that asks.
   if (url.pathname === '/api/auth/verify' && req.method === 'GET') {
     const t = url.searchParams.get('t') ?? ''
+    return Response.redirect(`${url.origin}/sign-in?${/^[a-f0-9]{48}$/.test(t) ? `t=${t}` : 'expired=1'}`, 303)
+  }
+  if (url.pathname === '/api/auth/verify' && req.method === 'POST') {
+    if (!sameOrigin(req, url)) return json({ error: 'cross-origin' }, 403)
+    const t = norm(((await req.json().catch(() => ({}))) as { t?: unknown }).t)
     const k = `login:${await sha(t)}`
     const email = /^[a-f0-9]{48}$/.test(t) ? await env.DB.get(k) : null
-    if (!email) return Response.redirect(`${url.origin}/sign-in?expired=1`, 303)
+    if (!email) return json({ error: 'expired' }, 400)
     await env.DB.delete(k)
     if (!(await get(env, email))) await put(env, fresh(email))
     const id = rand()
     await env.DB.put(`sess:${await sha(id)}`, email, { expirationTtl: 30 * 86400 })
-    return new Response(null, { status: 303, headers: { Location: '/account', 'Set-Cookie': `${COOKIE}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 86400}`, ...NOSTORE } })
+    return json({ ok: true }, 200, { 'Set-Cookie': `${COOKIE}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 86400}` })
   }
   if (url.pathname === '/api/auth/signout' && req.method === 'POST') {
     if (!sameOrigin(req, url)) return json({ error: 'cross-origin' }, 403)
@@ -174,16 +201,30 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
   const p = url.pathname
 
   if (p === '/api/me' && req.method === 'GET') {
-    const used = Number((await env.DB.get(`use:${a.email}:${month()}`)) ?? 0)
+    const used = await quota(env, a, via).used(month()) // the count the API charges, the owner's for a Team member
     // A Team member works under the owner's policy.
     const keep = via ? ((await get(env, via))?.keep ?? []) : a.keep
     return json({ email: a.email, plan, via, own: a.plan, status: a.status, renews: a.renews, ends: a.ends, portal: a.customer ? '/api/billing' : undefined, team: a.team, keys: a.keys.map(({ hash: _, ...k }) => k), keep, used, quota: PLANS[plan].apiFiles, period: month() })
   }
   if (p === '/api/billing' && req.method === 'GET') {
     if (!a.customer) return Response.redirect(new URL('/account', url).href, 303)
-    const r = await fetch(`${env.PADDLE_API}/customers/${a.customer}/portal-sessions`, { method: 'POST', headers: { Authorization: `Bearer ${env.PADDLE_API_KEY}`, 'Content-Type': 'application/json' }, body: '{}' }).catch(() => null)
-    if (!r?.ok) return json({ error: 'The billing page is not available right now. Try again in a minute.' }, 502)
-    return Response.redirect(((await r.json()) as { data: { urls: { general: { overview: string } } } }).data.urls.general.overview, 303)
+    const r = await paddle<{ urls: { general: { overview: string } } }>(env, `/customers/${a.customer}/portal-sessions`, 'POST', {}).catch(() => null)
+    if (!r || r.status >= 300) return json({ error: 'The billing page is not available right now. Try again in a minute.' }, 502)
+    return Response.redirect(r.data.urls.general.overview, 303)
+  }
+  if (p === '/api/plan' && req.method === 'POST') {
+    const to = ((await req.json().catch(() => ({}))) as { plan?: PlanKey }).plan
+    if (via || !active(a)) return json({ error: 'Switching needs your own paid plan.' }, 403)
+    if (!to || !PAID.includes(to) || to === a.plan) return json({ error: 'Choose another paid plan.' }, 400)
+    if (a.status === 'cancelled' || a.status === 'past_due') return json({ error: a.status === 'past_due' ? 'Update your card on the billing page first.' : 'Your plan is cancelled. Resume it on the billing page first.' }, 409)
+    // Accounts from before the subscription id was stored find it by customer.
+    const sub = a.sub ?? (await paddle<Sub[]>(env, `/subscriptions?customer_id=${a.customer}&status=active,trialing`)).data?.[0]?.id
+    if (!sub) return json({ error: 'Your subscription was not found. Use the billing page.' }, 409)
+    const price = ({ pro: env.PADDLE_PRICE_PRO, team: env.PADDLE_PRICE_TEAM, api: env.PADDLE_PRICE_API } as Record<PlanKey, string>)[to]
+    const r = await paddle(env, `/subscriptions/${sub}`, 'PATCH', { items: [{ price_id: price, quantity: 1 }], proration_billing_mode: 'prorated_immediately' })
+    if (r.status >= 500) return json({ error: 'Paddle did not answer. Try again in a minute.' }, 502)
+    if (r.status >= 300) { console.warn('plan switch refused', sub, r.status, r.code); return json({ error: r.code === 'subscription_locked_renewal' ? 'Your plan renews within the half hour. Try again after.' : 'Paddle refused the switch. Use the billing page or write to us.' }, 409) }
+    return json({ ok: true, plan: to })
   }
   if (p === '/api/policy' && req.method === 'PUT') {
     if (via) return json({ error: 'Your team owner sets the policy.' }, 403)
@@ -251,20 +292,55 @@ async function extMe(req: Request, env: Env): Promise<Response> {
   return json({ plan, policy }, 200, cors)
 }
 
-type Adjustment = { action: string; status: string; transaction_id: string; subscription_id?: string | null; totals: { total: string } }
-// A full refund ends the plan now: the refund policy is "within 14 days, in full", and that buyer is leaving. A partial
-// refund is goodwill and leaves it running. The cancel sends subscription.canceled, which drops the account to Free.
-async function refunded(env: Env, d: Adjustment): Promise<Response> {
-  if (d.action !== 'refund' || d.status !== 'approved' || !d.subscription_id) return json({ ok: true })
-  const paddle = async <T>(path: string, body?: object): Promise<T> => {
-    const r = await fetch(`${env.PADDLE_API}${path}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${env.PADDLE_API_KEY}`, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })
-    if (!r.ok) throw new Error(`paddle ${path} ${r.status}`) // a 500 makes Paddle retry the event
-    return ((await r.json()) as { data: T }).data
+// ---- Paddle ----
+class PaddleError extends Error {
+  constructor(readonly status: number, readonly code: string, what: string) { super(`paddle ${what} ${status} ${code}`) }
+}
+/** One authenticated Paddle call. A network failure throws; an HTTP error comes back as its status and error code. */
+async function paddle<T>(env: Env, path: string, method = 'GET', body?: object): Promise<{ status: number; code: string; data: T }> {
+  const r = await fetch(`${env.PADDLE_API}${path}`, { method, headers: { Authorization: `Bearer ${env.PADDLE_API_KEY}`, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })
+  const j = (await r.json().catch(() => ({}))) as { data: T; error?: { code?: string } }
+  return { status: r.status, code: j.error?.code ?? '', data: j.data }
+}
+const must = <T>(r: { status: number; code: string; data: T }, what: string) => { if (r.status >= 300) throw new PaddleError(r.status, r.code, what); return r.data }
+// Paddle retries a webhook answered 5xx for three days; these will not get better by asking again.
+const permanent = (e: unknown) => e instanceof PaddleError && [403, 404, 422].includes(e.status)
+
+type Sub = { id: string; status: string; customer_id: string; next_billed_at?: string | null; scheduled_change?: { action: string; effective_at: string } | null; custom_data?: { email?: string } | null; items: { price: { id: string } }[] }
+
+/** Cancels now. Cancelling is not read-then-act: an "already canceled" refusal is success, and a pending scheduled change
+ *  (a cancel at period end) is removed first if Paddle refuses on it (subscription_locked_pending_changes). */
+async function cancelNow(env: Env, id: string) {
+  for (let i = 0; i < 2; i++) {
+    const r = await paddle(env, `/subscriptions/${id}/cancel`, 'POST', { effective_from: 'immediately' })
+    if (r.status < 300) return
+    if (r.status >= 500 || [403, 404, 422].includes(r.status)) throw new PaddleError(r.status, r.code, 'cancel')
+    const sub = must(await paddle<Sub>(env, `/subscriptions/${id}`), 'subscription')
+    if (sub.status === 'canceled') return
+    if (!sub.scheduled_change || i) throw new PaddleError(r.status, r.code, 'cancel') // e.g. the renewal lock: a 500 has Paddle retry
+    must(await paddle(env, `/subscriptions/${id}`, 'PATCH', { scheduled_change: null }), 'drop scheduled change')
   }
-  const txn = await paddle<{ details: { totals: { grand_total: string } } }>(`/transactions/${d.transaction_id}`)
-  if (Number(d.totals.total) < Number(txn.details.totals.grand_total)) return json({ ok: true })
-  const sub = await paddle<{ status: string }>(`/subscriptions/${d.subscription_id}`)
-  if (sub.status !== 'canceled') await paddle(`/subscriptions/${d.subscription_id}/cancel`, { effective_from: 'immediately' })
+}
+
+type Adjustment = { id: string; action: string; status: string; transaction_id: string; subscription_id?: string | null; totals: { total: string } }
+// A full refund ends the plan now: the refund policy is "within 14 days, in full", and that buyer is leaving. A partial
+// refund is goodwill and leaves it running; refunds that add up to the whole payment are full. A chargeback is the
+// money taken back, so it ends the plan too. The cancel sends subscription.canceled, which drops the account to Free.
+async function refunded(env: Env, d: Adjustment): Promise<Response> {
+  if (!['refund', 'chargeback'].includes(d.action) || d.status !== 'approved' || !d.subscription_id) return json({ ok: true })
+  try {
+    if (d.action === 'refund') {
+      const txn = must(await paddle<{ details: { totals: { grand_total: string } } }>(env, `/transactions/${d.transaction_id}`), 'transaction')
+      const list = must(await paddle<Adjustment[]>(env, `/adjustments?transaction_id=${d.transaction_id}&action=refund&status=approved&per_page=50`), 'adjustments')
+      const all = new Map([...list, d].map((x) => [x.id, x])) // the list may not show this event's adjustment yet
+      const sum = [...all.values()].reduce((n, x) => n + Number(x.totals.total), 0)
+      if (sum < Number(txn.details.totals.grand_total)) return json({ ok: true })
+    }
+    await cancelNow(env, d.subscription_id)
+  } catch (e) {
+    if (!permanent(e)) throw e
+    console.error('refund cancel gave up', d.id, e)
+  }
   return json({ ok: true })
 }
 
@@ -291,7 +367,7 @@ async function webhook(req: Request, env: Env): Promise<Response> {
   const key = await crypto.subtle.importKey('raw', enc.encode(env.PADDLE_WEBHOOK_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const expect = enc.encode(hex(await crypto.subtle.sign('HMAC', key, enc.encode(`${parts.ts}:${raw}`)))), got = enc.encode(parts.h1 ?? '')
   if (got.length !== expect.length || !crypto.subtle.timingSafeEqual(got, expect)) return json({ error: 'bad signature' }, 401)
-  const ev = JSON.parse(raw) as { event_type: string; data: { status: string; customer_id: string; next_billed_at?: string | null; scheduled_change?: { action: string; effective_at: string } | null; custom_data?: { email?: string } | null; items: { price: { id: string } }[] } }
+  const ev = JSON.parse(raw) as { event_type: string; occurred_at: string; data: Sub }
   if (ev.event_type.startsWith('adjustment.')) return await refunded(env, ev.data as unknown as Adjustment)
   if (!ev.event_type.startsWith('subscription.')) return json({ ok: true })
   const d = ev.data
@@ -301,10 +377,19 @@ async function webhook(req: Request, env: Env): Promise<Response> {
   const price = d.items[0]?.price.id
   const plan: PlanKey | null = price === env.PADDLE_PRICE_PRO ? 'pro' : price === env.PADDLE_PRICE_TEAM ? 'team' : price === env.PADDLE_PRICE_API ? 'api' : null
   if (!plan) return json({ error: 'unknown price' }, 400)
-  // Payloads carry the subscription's state at delivery, so out-of-order events still land on the latest state.
-  const live = ['active', 'trialing', 'past_due'].includes(d.status), ending = live && d.scheduled_change?.action === 'cancel'
   const a = (await get(env, email)) ?? fresh(email)
-  Object.assign(a, { plan: live ? plan : 'free', status: ending ? 'cancelled' : d.status, renews: ending ? undefined : (d.next_billed_at ?? undefined), ends: ending ? d.scheduled_change!.effective_at : undefined, customer: d.customer_id })
+  // Paddle does not promise order; a payload is the subscription as it was when the event occurred.
+  if (a.at && Date.parse(ev.occurred_at) < Date.parse(a.at)) return json({ ok: true })
+  if (a.sub !== d.id) {
+    // Custom data is the buyer's to write (Paddle.js runs in their browser), so a new subscription binds to an account
+    // only when its Paddle customer has that email, and never replaces one that is still running.
+    if (a.sub && active(a)) { console.warn(`webhook: ${d.id} ignored, ${email} runs on ${a.sub}`); return json({ ok: true }) }
+    const c = await paddle<{ email: string }>(env, `/customers/${d.customer_id}`)
+    if (c.status >= 300 && c.status !== 404) throw new PaddleError(c.status, c.code, 'customer') // a 500 has Paddle retry
+    if (norm(c.data?.email) !== email) { console.warn(`webhook: ${d.id} ignored, customer ${d.customer_id} is not ${email}`); return json({ ok: true }) }
+  }
+  const live = ['active', 'trialing', 'past_due'].includes(d.status), ending = live && d.scheduled_change?.action === 'cancel'
+  Object.assign(a, { plan: live ? plan : 'free', status: ending ? 'cancelled' : d.status, renews: ending ? undefined : (d.next_billed_at ?? undefined), ends: ending ? d.scheduled_change!.effective_at : undefined, customer: d.customer_id, sub: d.id, at: ev.occurred_at })
   await put(env, a)
   return json({ ok: true })
 }
@@ -322,22 +407,25 @@ async function hosted(req: Request, env: Env, url: URL): Promise<Response> {
   const email = token.startsWith('fs_live_') ? await env.DB.get(`key:${await sha(token)}`) : null
   const a = email ? await get(env, email) : null
   if (!a) return cors(json({ error: 'unknown key' }, 401))
-  const { plan } = await effective(env, a)
-  const P = PLANS[plan]
-  // Team members count against the owner's quota.
-  const counter = `use:${a.owner && plan === 'team' ? a.owner : a.email}:${month()}`
-  const used = Number((await env.DB.get(counter)) ?? 0)
-  if (url.pathname === '/api/v1/usage' && req.method === 'GET') return cors(json({ plan, used, quota: P.apiFiles, maxBytes: P.maxBytes, period: month() }))
+  const { plan, via } = await effective(env, a)
+  const P = PLANS[plan], q = quota(env, a, via), m = month()
+  if (url.pathname === '/api/v1/usage' && req.method === 'GET') return cors(json({ plan, used: await q.used(m), quota: P.apiFiles, maxBytes: P.maxBytes, period: m }))
   if (req.method !== 'POST' || !['/api/v1/inspect', '/api/v1/clean'].includes(url.pathname)) return cors(json({ error: 'POST /api/v1/inspect or /api/v1/clean' }, 404))
-  if (used >= P.apiFiles) return cors(json({ error: 'This month\'s files are used up. A larger plan is at https://filesanity.com/pricing' }, 402))
-  if (Number(req.headers.get('Content-Length') ?? 0) > P.maxBytes) return cors(json({ error: `Files over ${P.maxBytes / 1e6} MB need a larger plan.` }, 413))
+  const size = req.headers.get('Content-Length')
+  const big = () => cors(json({ error: `Files over ${P.maxBytes / 1e6} MB need a larger plan.` }, 413))
+  if (size === null) return cors(json({ error: 'Send the file with a Content-Length header; chunked uploads are not taken.' }, 411))
+  if (Number(size) > P.maxBytes) return big()
+  const used = await q.take(m, P.apiFiles)
+  if (used === null) return cors(json({ error: 'This month\'s files are used up. A larger plan is at https://filesanity.com/pricing' }, 402))
 
+  // The header is the client's word; the bytes are counted too, and the read stops past the limit.
+  let seen = 0
+  const body = req.body?.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({ transform(c, ctl) { if ((seen += c.byteLength) > P.maxBytes) ctl.error(new Error('too large')); else ctl.enqueue(c) } }))
   const inner = new URL(url); inner.pathname = url.pathname.slice('/api/v1'.length)
-  const res = await handle(new Request(inner, req), {})
-  if (res.status >= 400) return cors(res)
-  await env.DB.put(counter, String(used + 1), { expirationTtl: 40 * 86400 })
+  const res = await handle(new Request(inner, { method: 'POST', headers: req.headers, body }), {})
+  if (res.status >= 400 || seen > P.maxBytes) { await q.give(m); return seen > P.maxBytes ? big() : cors(res) }
   const h = new Headers(res.headers)
-  h.set('X-FileSanity-Used', `${used + 1}/${P.apiFiles}`)
+  h.set('X-FileSanity-Used', `${used}/${P.apiFiles}`)
   if (url.pathname === '/api/v1/clean' && url.searchParams.get('report') === '1' && plan !== 'free' && plan !== 'pro') {
     const out = await res.arrayBuffer()
     const report = JSON.stringify({ at: new Date().toISOString(), removed: Number(res.headers.get('X-FileSanity-Removed')), kept: Number(res.headers.get('X-FileSanity-Kept')), note: res.headers.get('X-FileSanity-Note') ?? undefined, sha256_out: hex(await crypto.subtle.digest('SHA-256', out)), bytes_out: out.byteLength })

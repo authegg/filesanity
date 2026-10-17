@@ -40,7 +40,7 @@ export default function Pricing() {
                   <p className="plan-price"><b>{fmtPrice(p)}</b> a month</p>
                   <ul>{p.items.map((x) => <li key={x}>{x}</li>)}</ul>
                   {mine === k && p.price ? <a className="btn ghost plan-btn" href="/account">Your plan</a>
-                    : p.price ? <a className="btn plan-btn" href={mine && mine !== 'free' ? '/account' : `/account?plan=${k}`}>{mine && mine !== 'free' ? `Switch to ${p.name}` : `Choose ${p.name}`}</a>
+                    : p.price ? <a className="btn plan-btn" href={`/account?plan=${k}`}>{mine && mine !== 'free' ? `Switch to ${p.name}` : `Choose ${p.name}`}</a>
                     : <a className="btn ghost plan-btn" data-cta href="/#cleaner">Clean a file</a>}
                 </div>
               )

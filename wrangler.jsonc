@@ -11,6 +11,9 @@
     "run_worker_first": ["/api/*", "/share-target"]
   },
   "kv_namespaces": [{ "binding": "DB", "id": "cfd3fcc823c541c69adc0808d87450ee" }],
+  // The hosted API's monthly count, one object per charged account: atomic where a KV read-then-write is not.
+  "durable_objects": { "bindings": [{ "name": "QUOTA", "class_name": "Quota" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Quota"] }],
   // Secrets (npx wrangler secret put <NAME>): TURNSTILE_SECRET, PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET,
   // PADDLE_PRICE_PRO, PADDLE_PRICE_TEAM, PADDLE_PRICE_API, REPORT_PRIVATE_KEY_JWK (node tools/keygen.mjs). Local values: .dev.vars
   // Sign-in links go out through Cloudflare Email Sending; filesanity.com must be onboarded as a sending domain.

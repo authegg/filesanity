@@ -9,7 +9,7 @@ pages, so there the background is read over that protocol instead of through the
 Needs `npx wrangler dev --port 8787` (DEV_LINKS=1, .dev.vars). Shots go to shots/ext/.
 Run: python3 tools/ext_check.py [base]
 """
-import base64, hashlib, hmac, io, json, os, socket, sys, tempfile, time, urllib.request
+import base64, hashlib, hmac, io, json, os, socket, subprocess, sys, tempfile, time, urllib.request
 from PIL import Image
 from playwright.sync_api import sync_playwright
 
@@ -91,13 +91,17 @@ def call(method, path, body=None, headers=None):
 
 email = f'ext-{int(time.time())}@example.com'
 link = json.load(call('POST', '/api/auth/start', {'email': email, 'turnstile': 'XXXX.DUMMY.TOKEN.XXXX'}))['link']
-cookie = call('GET', '/' + link.split('/', 3)[3]).headers['set-cookie'].split(';')[0]
+cookie = call('POST', '/api/auth/verify', {'t': link.split('t=')[1]}).headers['set-cookie'].split(';')[0]
 token = json.load(call('POST', '/api/keys', {'scope': 'ext'}, {'Cookie': cookie}))['key']
 # A Paddle subscription event, signed the Paddle way, moves the account to Pro.
-raw = json.dumps({'event_id': f'evt_{int(time.time())}', 'event_type': 'subscription.created', 'data': {'status': 'active', 'customer_id': 'ctm_test', 'next_billed_at': '2026-11-08T00:00:00Z', 'scheduled_change': None, 'custom_data': {'email': email}, 'items': [{'price': {'id': VARS['PADDLE_PRICE_PRO']}}]}}).encode()
+# The webhook looks the customer up in Paddle; saas_check.mjs --stub answers ctm_<hex of the email> with that email.
+stub = subprocess.Popen(['node', os.path.join(ROOT, 'tools', 'saas_check.mjs'), '--stub'], cwd=ROOT, stdout=subprocess.PIPE)
+stub.stdout.readline()
+raw = json.dumps({'event_id': f'evt_{int(time.time())}', 'event_type': 'subscription.created', 'occurred_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'data': {'id': 'sub_' + email.encode().hex()[:20], 'status': 'active', 'customer_id': 'ctm_' + email.encode().hex(), 'next_billed_at': '2026-11-08T00:00:00Z', 'scheduled_change': None, 'custom_data': {'email': email}, 'items': [{'price': {'id': VARS['PADDLE_PRICE_PRO']}}]}}).encode()
 ts = str(int(time.time()))
 sig = hmac.new(VARS['PADDLE_WEBHOOK_SECRET'].encode(), f'{ts}:'.encode() + raw, hashlib.sha256).hexdigest()
 call('POST', '/api/webhooks/paddle', raw, {'Paddle-Signature': f'ts={ts};h1={sig}'})
+stub.terminate()
 call('PUT', '/api/policy', {'keep': ['exif']}, {'Cookie': cookie})
 check(token.startswith('fs_ext_'), f'local account {email} on Pro, policy keeps EXIF, token {token[:10]}...')
 

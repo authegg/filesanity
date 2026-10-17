@@ -17,17 +17,23 @@ export default function SignIn() {
   const box = useRef<HTMLDivElement>(null)
   const wid = useRef('')
   const [expired, setExpired] = useState(false)
+  // The emailed link lands here with ?t=; signing in takes a click, so a mail scanner that opens the link uses nothing up.
+  const [link, setLink] = useState('')
 
   useEffect(() => {
-    setExpired(location.search.includes('expired=1'))
+    const q = new URLSearchParams(location.search)
+    setExpired(q.has('expired'))
+    setLink(q.get('t') ?? '')
     const w = window as unknown as { turnstile?: TS; onTs?: () => void }
-    w.onTs = () => { if (box.current && w.turnstile) wid.current = w.turnstile.render(box.current, { sitekey: SITEKEY, callback: setToken, 'expired-callback': () => setToken(''), theme: 'light', size: box.current.clientWidth < 300 ? 'compact' : 'normal' }) }
+    w.onTs = () => { if (box.current && w.turnstile && !wid.current) wid.current = w.turnstile.render(box.current, { sitekey: SITEKEY, callback: setToken, 'expired-callback': () => setToken(''), theme: 'light', size: box.current.clientWidth < 300 ? 'compact' : 'normal' }) }
     const s = document.createElement('script')
     s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTs'
     s.async = true
     document.head.append(s)
     return () => s.remove()
   }, [])
+  // The form (and its check) mounts late when a confirm link turns out expired.
+  useEffect(() => { if (!link) (window as unknown as { onTs?: () => void }).onTs?.() }, [link])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,11 +50,24 @@ export default function SignIn() {
     }
   }
 
+  const confirm = async () => {
+    setState('sending')
+    try { await call('POST', '/api/auth/verify', { t: link }); location.replace('/account') } catch {
+      setState('idle'); setLink(''); setExpired(true); history.replaceState(null, '', '/sign-in?expired=1')
+    }
+  }
+
   return (
     <section className="head" aria-labelledby="h1">
       <div className="wrap signin-in">
         <h1 id="h1">Sign in</h1>
-        {state === 'sent' ? (
+        {link ? (
+          <div className="sheet">
+            <p className="sheet-lede">Your link is good. Confirm to sign in on this device.</p>
+            <button className="btn" onClick={confirm} disabled={state === 'sending'}>{state === 'sending' ? 'Signing in…' : 'Confirm sign-in'}</button>
+            <p className="small">Did not ask to sign in? Close this tab; nothing happens without the click.</p>
+          </div>
+        ) : state === 'sent' ? (
           <div className="sheet" role="status">
             <p className="sheet-big">Check your inbox.</p>
             <p>We sent a sign-in link to <b>{email.trim()}</b>. It works once, for 15 minutes. You can close this tab.</p>

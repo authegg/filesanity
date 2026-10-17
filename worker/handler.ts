@@ -26,6 +26,10 @@ async function fileFrom(req: Request, url: URL): Promise<File> {
   return new File([await req.arrayBuffer()], name, { type })
 }
 
+// Header values are bytes: an ASCII name for old clients, the real one as RFC 5987 UTF-8.
+const disposition = (name: string) =>
+  `attachment; filename="${name.replace(/[^\x20-\x7e]|["\\]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`
+
 export async function handle(req: Request, env: Env = {}): Promise<Response> {
   const url = new URL(req.url)
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
@@ -44,7 +48,7 @@ export async function handle(req: Request, env: Env = {}): Promise<Response> {
       headers: {
         ...CORS,
         'Content-Type': out.type || 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${cleanName(file.name).replace(/["\\\r\n]/g, '_')}"`,
+        'Content-Disposition': disposition(cleanName(file.name)),
         'X-FileSanity-Removed': String(fieldCount(report)),
         'X-FileSanity-Kept': String(keptCount(report)),
         ...(report.note ? { 'X-FileSanity-Note': report.note.replace(/[^\x20-\x7e]/g, ' ') } : {}),

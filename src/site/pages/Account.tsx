@@ -75,7 +75,8 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
           {me.via ? <p>You are on <b>{me.via}</b>'s Team plan. They manage billing.</p> : me.plan !== 'free' ? (
             <>
               <p><b>{p.name}</b>, {fmtPrice(p)} a month. {me.status === 'cancelled' ? `Cancelled; runs until ${day(me.ends)}.` : me.status === 'past_due' ? 'The last payment failed; update your card.' : me.renews ? `Renews ${day(me.renews)}.` : ''}</p>
-              {me.portal && <><a className="btn" href={me.portal}>Manage billing</a><p className="small">Change your plan or card, or cancel, on the billing page.</p></>}
+              {(me.status === 'active' || me.status === 'trialing') && <Switch me={me} want={want} reload={reload} />}
+              {me.portal && <><a className="btn" href={me.portal}>Manage billing</a><p className="small">Change your card, see receipts, or cancel, on the billing page.</p></>}
             </>
           ) : (
             <>
@@ -103,6 +104,39 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
         </div>
       </div>
     </section>
+  )
+}
+
+/** The other paid plans, for an owner whose subscription runs. Paddle charges or credits the difference now; the plan
+ *  shows when its webhook lands, so ask again until it does. */
+function Switch({ me, want, reload }: { me: Me; want: PlanKey | null; reload: () => void }) {
+  const [to, setTo] = useState<PlanKey | null>(null)
+  const [err, setErr] = useState('')
+  useEffect(() => {
+    if (!to) return
+    if (me.plan === to) { setTo(null); return }
+    let n = 0
+    const t = setInterval(() => { if (++n > 30) clearInterval(t); else reload() }, 3000)
+    return () => clearInterval(t)
+  }, [to, me.plan, reload])
+  const go = async (k: PlanKey) => {
+    if (!confirm(`Switch to ${PLANS[k].name}, ${fmtPrice(PLANS[k])} a month? The difference is charged or credited now, prorated.`)) return
+    setErr('')
+    try { await call('POST', '/api/plan', { plan: k }); setTo(k) } catch (x) { setErr((x as Error).message) }
+  }
+  return (
+    <>
+      <div className="up">
+        {PAID.filter((k) => k !== me.plan).map((k) => (
+          <div key={k} className={`up-row ${want === k ? 'want' : ''}`}>
+            <div><b>{PLANS[k].name}</b> {fmtPrice(PLANS[k])} a month<span>{PLANS[k].items[0]}</span></div>
+            <button className={`btn sm ${want === k ? '' : 'ghost'}`} disabled={!!to} onClick={() => go(k)}>{to === k ? 'Switching…' : `Switch to ${PLANS[k].name}`}</button>
+          </div>
+        ))}
+      </div>
+      <p className="small">Switching charges or credits the difference now, prorated to the day.</p>
+      <p className="err" role="alert">{err}</p>
+    </>
   )
 }
 
