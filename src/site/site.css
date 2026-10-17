@@ -160,6 +160,8 @@ code, pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fo
 .sheet a:not(.btn), .sheet .link-btn { color: var(--sheet-ink); font-weight: 600; }
 .sheet .small { color: var(--sheet-muted); }
 .sheet .err { color: #9c2a1c; }
+/* An empty error line at the foot of a sheet leaves the grid (no track, no gap) but stays in the DOM so role="alert" announces. */
+.sheet .err:empty { position: absolute; }
 .sheet .btn { --accent: var(--bg); --accent-hover: #0a4433; --on-accent: #f4f1e6; justify-self: start; }
 .sheet .btn.ghost { color: var(--sheet-ink) !important; border-color: var(--sheet-ink); }
 .sheet label { font-weight: 600; color: var(--sheet-ink); }
@@ -199,7 +201,15 @@ code, pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fo
 .inline { display: grid; gap: .4rem; }
 .inline > div { display: flex; gap: .5rem; }
 .inline .btn { height: 46px; flex: none; }
-@media (max-width: 520px) { .keys tr { display: grid; grid-template-columns: 1fr auto; } .keys td:nth-child(3) { display: none; } .inline > div { flex-wrap: wrap; } }
+/* Phones: name over hint on the left, the action on the right of both, one rule per row (as the team list). */
+@media (max-width: 520px) {
+  .keys, .keys tbody { display: block; } /* a row border only draws in a table layout */
+  .keys tr { display: grid; grid-template-columns: 1fr auto; column-gap: 1rem; border-top: 1px solid var(--sheet-line); padding-block: .6rem; }
+  .keys th, .keys td { border-top: 0; padding: 0; }
+  .keys td:nth-child(3) { display: none; }
+  .keys tr > :last-child { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+  .inline > div { flex-wrap: wrap; }
+}
 
 /* Batch. */
 .batch { padding-bottom: clamp(48px, 6vw, 80px); }
