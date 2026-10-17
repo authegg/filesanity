@@ -18,6 +18,7 @@ export default function Refunds() {
       </Block>
       <Block id="r-how" title="How the refund is paid">
         <p>Paid plans are sold by Paddle as merchant of record, so the refund goes back through Paddle to the card or account you paid with. You can also ask Paddle directly through the link in your receipt email.</p>
+        <p>On your card statement the charge shows as AUTHEGG, the studio that makes FileSanity, through Paddle.</p>
       </Block>
     </>
   )

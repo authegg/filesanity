@@ -70,7 +70,7 @@ export const FAQ: { group: string; items: [string, string][] }[] = [
     items: [
       ['Do I need an account?', 'Not to clean files one at a time. An account is for batches, a saved policy, a team and API keys.'],
       ['How do I sign in?', 'With your email address. We send a link that works once, for 15 minutes. There is no password to leak.'],
-      ['Who handles payment?', 'Paddle, as merchant of record: it takes the payment, charges the right sales tax or VAT, and sends the receipt. We never see your card.'],
+      ['Who handles payment?', 'Paddle, as merchant of record: it takes the payment, charges the right sales tax or VAT, and sends the receipt. We never see your card. Your statement shows the charge as AUTHEGG, the studio that makes FileSanity.'],
       ['How do I cancel?', 'From your account page, at any time. The plan runs to the end of the period you paid for, and a first payment can be refunded in full within 14 days.'],
     ],
   },
