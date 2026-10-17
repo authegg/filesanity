@@ -186,6 +186,8 @@ code, pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fo
 .up-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-block: .8rem; border-top: 1px solid var(--sheet-line); flex-wrap: wrap; }
 .up-row span { display: block; color: var(--sheet-muted); font-size: .9375rem; }
 .up-row.want { background: #e9f1c4; margin-inline: -.75rem; padding-inline: .75rem; border-radius: var(--radius); }
+/* Phones: every plan stacks its button under the text, so rows do not mix layouts by description length. */
+@media (max-width: 600px) { .up-row { flex-direction: column; align-items: flex-start; gap: .6rem; } }
 .meter { height: 8px; background: var(--sheet-line); border-radius: 4px; overflow: hidden; }
 .meter span { display: block; height: 100%; background: var(--bg); }
 .fresh { display: grid; gap: .5rem; border: 2px solid var(--bg); border-radius: var(--radius); padding: 1rem; }
