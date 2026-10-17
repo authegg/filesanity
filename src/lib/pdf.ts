@@ -43,13 +43,52 @@ function objectRanges(b: Uint8Array, num: number) {
   return out
 }
 
-const STRING = /\/([A-Za-z0-9_.#-]+)\s*(\((?:\\.|[^\\)])*\)|<[0-9A-Fa-f\s]*>)/g
+/** End (exclusive) of the literal string opening at `i`: balanced parens nest, a backslash escapes the next byte. -1 if unclosed. */
+function literalEnd(t: string, i: number) {
+  for (let d = 0; i < t.length; i++) {
+    if (t[i] === '\\') i++
+    else if (t[i] === '(') d++
+    else if (t[i] === ')' && !--d) return i + 1
+  }
+  return -1
+}
+
+/** The `/Key (literal)`, `/Key <hex>` and `/Key N 0 R` entries in a dictionary's text; [at, end) spans the whole string. */
+function strings(t: string) {
+  const out: ({ key: string; at: number; end: number } | { key: string; ref: number })[] = []
+  const re = /\/([A-Za-z0-9_.#-]+)\s*(?:(\()|(<[0-9A-Fa-f\s]*>)|(\d+)\s+\d+\s+R\b)/g
+  for (let m; (m = re.exec(t)); ) {
+    if (m[4]) out.push({ key: m[1], ref: +m[4] })
+    else {
+      const at = m.index + m[0].length - (m[2] ? 1 : m[3].length)
+      const end = m[2] ? literalEnd(t, at) : at + m[3].length
+      if (end < 0) break
+      re.lastIndex = end
+      out.push({ key: m[1], at, end })
+    }
+  }
+  return out
+}
+
+/** Adds the decoded string as a field; false when it is empty and there is nothing to report or blank. */
+const field = (fields: Field[], key: string, lit: string) => {
+  const v = lit[0] === '(' ? decodeLiteral(lit.slice(1, -1)) : decodeHex(lit.slice(1, -1))
+  if (v.trim()) fields.push({ name: NAMES[key] ?? key, value: /Date$/.test(key) ? pdfDate(v) : v })
+  return !!v.trim()
+}
+
+const ENCRYPT = ascii('/Encrypt')
+/** /Encrypt in any trailer or cross-reference stream: a linearized file has its first trailer at the start, not the end. */
+function isEncrypted(b: Uint8Array) {
+  for (let i = 0; (i = indexOf(b, ENCRYPT, i)) >= 0; i += ENCRYPT.length) if (/^\/Encrypt\s*(\d+\s+\d+\s+R|<<)/.test(latin1(b, i, Math.min(b.length, i + 32)))) return true
+  return false
+}
 
 export async function readPdf(blob: Blob, name: string): Promise<Report> {
   if (blob.size > CAP) return { kind: 'pdf', kindLabel: 'PDF document', name, bytes: blob.size, segments: [], body: { label: 'The document', bytes: blob.size }, note: 'This PDF is over 256 MB, more than FileSanity scans in this version.' }
   const b = await read(blob, 0, blob.size)
   const { segments, edits } = await scan(b)
-  const encrypted = /\/Encrypt\s/.test(latin1(b, Math.max(0, b.length - 4096)))
+  const encrypted = segments.some((s) => s.id === 'encrypted')
   const kept = segments.some((s) => !s.strip && !s.warn)
   const lost = /\/Info\s+\d+\s+0\s+R/.test(latin1(b, Math.max(0, b.length - 4096))) && !segments.some((s) => s.label === 'Info')
   let note = 'PDF: the document information and the XMP are blanked in place, compressed or not, and the file keeps its size.'
@@ -63,7 +102,7 @@ async function scan(b: Uint8Array) {
   const segments: Segment[] = []
   const edits: Edit[] = []
   // An encrypted PDF's strings are ciphertext: shown as one kept entry, never blanked into garbage.
-  const encrypted = /\/Encrypt\s/.test(latin1(b, Math.max(0, b.length - 4096)))
+  const encrypted = isEncrypted(b)
   if (encrypted) {
     segments.push({ id: 'encrypted', label: 'Info', what: 'author, software, dates (encrypted)', bytes: 0, fields: [{ name: 'Document information', value: 'encrypted with the document, so it cannot be read or blanked here' }], strip: false, why: 'shown and kept: the PDF is encrypted' })
     return { segments: [...segments, ...risks(b)], edits }
@@ -77,22 +116,44 @@ async function scan(b: Uint8Array) {
     if (m) infoNums.add(+m[1])
     i += 5
   }
+  // An Info value held in its own object (`/Author 5 0 R`) is blanked there, as its own segment. False if it is not a plain string object.
+  const indirect = (key: string, num: number) => {
+    let found = false
+    for (const [s, e] of objectRanges(b, num)) {
+      const t = latin1(b, s, e)
+      const at = /^\d+\s+0\s+obj\s*/.exec(t)?.[0].length ?? -1
+      const end = t[at] === '(' ? literalEnd(t, at) : t[at] === '<' && t[at + 1] !== '<' ? t.indexOf('>', at) + 1 : -1
+      if (end <= 0) return false
+      found = true
+      const fields: Field[] = []
+      if (!field(fields, key, t.slice(at, end))) continue
+      segments.push({ id: `info-${s}`, label: 'Info', what: 'author, software, dates', bytes: e - s, fields, strip: true })
+      edits.push({ seg: `info-${s}`, start: s + at + 1, end: s + end - 1, bytes: new Uint8Array(end - at - 2).fill(0x20) })
+    }
+    return found
+  }
+  const unreached = (id: string, key: string) => segments.push({ id, label: 'Info', what: 'author, software, dates', bytes: 0, fields: [{ name: NAMES[key] ?? key, value: 'held in another object' }], strip: false, why: 'shown and kept: this value is stored in a way FileSanity does not rewrite yet' })
   for (const num of infoNums) {
     for (const [s, e] of objectRanges(b, num)) {
       const text = latin1(b, s, e)
       const fields: Field[] = []
-      for (const m of text.matchAll(STRING)) {
-        const key = m[1], lit = m[2]
-        const value = lit.startsWith('(') ? decodeLiteral(lit.slice(1, -1)) : decodeHex(lit.slice(1, -1))
-        if (!value.trim()) continue
-        fields.push({ name: NAMES[key] ?? key, value: /Date$/.test(key) ? pdfDate(value) : value })
-        const at = s + m.index! + m[0].length - lit.length
-        edits.push({ seg: `info-${s}`, start: at + 1, end: at + lit.length - 1, bytes: new Uint8Array(lit.length - 2).fill(0x20) })
+      for (const x of strings(text)) {
+        if ('ref' in x) {
+          if (!indirect(x.key, x.ref)) unreached(`infor-${s}-${x.key}`, x.key)
+        } else if (field(fields, x.key, text.slice(x.at, x.end))) edits.push({ seg: `info-${s}`, start: s + x.at + 1, end: s + x.end - 1, bytes: new Uint8Array(x.end - x.at - 2).fill(0x20) })
       }
       if (fields.length) segments.push({ id: `info-${s}`, label: 'Info', what: 'author, software, dates', bytes: e - s, fields, strip: true })
     }
   }
-  // XMP packets, wherever they sit uncompressed.
+  // XMP packets, wherever they sit uncompressed: in an xpacket wrapper, or bare.
+  const covered: [number, number][] = []
+  const xmp = (i: number, e: number) => {
+    covered.push([i, e])
+    const fields = parseXmp(new TextDecoder().decode(b.subarray(i, e)))
+    if (!fields.length) return
+    segments.push({ id: `xmp-${i}`, label: 'XMP', what: 'software, history, names', bytes: e - i, fields, strip: true })
+    edits.push({ seg: `xmp-${i}`, start: i, end: e, bytes: blankXmp(b.subarray(i, e)) })
+  }
   const begin = ascii('<?xpacket begin'), end = ascii('<?xpacket end')
   i = 0
   while ((i = indexOf(b, begin, i)) >= 0) {
@@ -100,13 +161,17 @@ async function scan(b: Uint8Array) {
     if (e < 0) break
     e = indexOf(b, ascii('?>'), e)
     e = e < 0 ? b.length : e + 2
-    const xml = new TextDecoder().decode(b.subarray(i, e))
-    const fields = parseXmp(xml)
-    if (fields.length) {
-      segments.push({ id: `xmp-${i}`, label: 'XMP', what: 'software, history, names', bytes: e - i, fields, strip: true })
-      edits.push({ seg: `xmp-${i}`, start: i, end: e, bytes: blankXmp(b.subarray(i, e)) })
-    }
+    xmp(i, e)
     i = e
+  }
+  for (const [open, close] of [['<x:xmpmeta', '</x:xmpmeta>'], ['<rdf:RDF', '</rdf:RDF>']]) {
+    i = 0
+    while ((i = indexOf(b, ascii(open), i)) >= 0) {
+      const e = indexOf(b, ascii(close), i)
+      if (e < 0) break
+      if (!covered.some(([s, t]) => i >= s && i < t)) xmp(i, e + close.length)
+      i = e + close.length
+    }
   }
   // Compressed XMP streams: inflated, blanked like the plain ones, and deflated back to the very same length.
   const md = ascii('/Type /Metadata'), md2 = ascii('/Type/Metadata')
@@ -148,13 +213,11 @@ async function scan(b: Uint8Array) {
           if (!missing.includes(nums[2 * k])) continue
           const from = first + nums[2 * k + 1], to = k + 1 < n ? first + nums[2 * k + 3] : data.length
           const text = latin1(data, from, to)
-          for (const m of text.matchAll(STRING)) {
-            const key = m[1], lit = m[2]
-            const value = lit.startsWith('(') ? decodeLiteral(lit.slice(1, -1)) : decodeHex(lit.slice(1, -1))
-            if (!value.trim()) continue
-            fields.push({ name: NAMES[key] ?? key, value: /Date$/.test(key) ? pdfDate(value) : value })
-            const p = from + m.index! + m[0].length - lit.length
-            data.fill(0x20, p + 1, p + lit.length - 1)
+          for (const x of strings(text)) {
+            if ('ref' in x) {
+              // shortcut: a value in a plain object is blanked; one packed in an object stream is shown as kept, until a file needs it.
+              if (!indirect(x.key, x.ref)) unreached(`infor-${s.start}-${x.key}`, x.key)
+            } else if (field(fields, x.key, text.slice(x.at, x.end))) data.fill(0x20, from + x.at + 1, from + x.end - 1)
           }
         }
         if (!fields.length) continue
@@ -231,7 +294,7 @@ async function refit(data: Uint8Array, size: number): Promise<Uint8Array<ArrayBu
 function blankXmp(src: Uint8Array): Uint8Array<ArrayBuffer> {
   const s = latin1(src)
   const out = s
-    .replace(/(<\?xpacket[^>]*\?>)|(\s[\w:.-]+=)(["'])([^"']*)\3/g, (m, pi: string, attr: string, q: string, v: string) => (pi ? pi : attr.trim().startsWith('xmlns') || attr.trim() === 'rdf:about=' ? m : attr + q + ' '.repeat(v.length) + q))
+    .replace(/(<\?[^>]*\?>)|(\s[\w:.-]+=)("[^"]*"|'[^']*')/g, (m, pi: string, attr: string, v: string) => (pi ? pi : attr.trim().startsWith('xmlns') || attr.trim() === 'rdf:about=' ? m : attr + v[0] + ' '.repeat(v.length - 2) + v[0]))
     .replace(/>([^<]*)</g, (_, t: string) => '>' + t.replace(/\S/g, ' ') + '<')
   return Uint8Array.from(out, (c) => c.charCodeAt(0)) as Uint8Array<ArrayBuffer>
 }

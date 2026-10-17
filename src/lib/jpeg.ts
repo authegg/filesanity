@@ -4,7 +4,7 @@ import { parseIrb, parseXmp } from './xmp'
 import { c2paFields, isC2pa } from './c2pa'
 import type { Report, Segment } from './types'
 
-type Seg = { marker: number; start: number; end: number; strip: boolean; seg?: Segment }
+type Seg = { marker: number; start: number; end: number; strip: boolean; seg?: Segment; mpf?: boolean }
 
 const EXIF = [0x45, 0x78, 0x69, 0x66, 0, 0]
 const XMP = 'http://ns.adobe.com/xap/1.0/\0'
@@ -20,8 +20,19 @@ async function walk(blob: Blob) {
   let orientation: number | undefined
   while (pos + 4 <= blob.size) {
     const h = await read(blob, pos, 4)
-    if (h[0] !== 0xff) break
+    if (h[0] !== 0xff) {
+      // Stray bytes between segments are skipped to the next marker, as libjpeg does, and not copied.
+      const c = await read(blob, pos, 65536)
+      let k = 1
+      while (k < c.length && !(c[k - 1] === 0xff && c[k] !== 0 && c[k] !== 0xff)) k++
+      pos += k < c.length ? k - 1 : c.length - 1
+      continue
+    }
     const marker = h[1]
+    if (marker === 0xff) {
+      pos++ // fill byte: any number of 0xFF may pad a marker
+      continue
+    }
     if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
       pos += 2
       continue
@@ -38,8 +49,10 @@ async function walk(blob: Blob) {
       if (marker === 0xe1 && startsWith(body, EXIF)) {
         const ex = parseTiff(body.subarray(6))
         orientation = ex.orientation
-        s.strip = true
-        s.seg = { id: `exif-${pos}`, label: 'EXIF', what: 'camera, lens, dates, position, owner', bytes: len + 2, fields: ex.fields, strip: true }
+        // A small EXIF holding only the orientation (the one a clean copy is given) is kept, so the read-back finds nothing left.
+        const only = len <= 34 && ex.fields.length === 1 && ex.fields[0].name === 'Orientation'
+        s.strip = !only
+        s.seg = { id: `exif-${pos}`, label: 'EXIF', what: 'camera, lens, dates, position, owner', bytes: len + 2, fields: ex.fields, strip: !only, ...(only && { why: 'kept: only the orientation flag, so the photo displays the right way up' }) }
         if (ex.thumbnailBytes) s.seg.fields.push({ name: 'Embedded thumbnail', value: `${ex.thumbnailBytes} bytes, a small copy of the original picture` })
       } else if (marker === 0xe1 && latin1(body, 0, XMP.length) === XMP) {
         s.strip = true
@@ -64,7 +77,8 @@ async function walk(blob: Blob) {
       }
     } else if (marker === 0xe2) {
       const body = await read(blob, pos + 4, 12)
-      if (latin1(body, 0, 11) === 'ICC_PROFILE') s.seg = { id: `icc-${pos}`, label: 'ICC', what: 'colour profile', bytes: len + 2, fields: [{ name: 'ICC profile', value: `${len - 2} bytes` }], strip: false, why: 'kept: the profile is how the colours are meant to look, not who took the picture' }
+      if (latin1(body, 0, 4) === 'MPF\0') s.mpf = true
+      else if (latin1(body, 0, 11) === 'ICC_PROFILE') s.seg = { id: `icc-${pos}`, label: 'ICC', what: 'colour profile', bytes: len + 2, fields: [{ name: 'ICC profile', value: `${len - 2} bytes` }], strip: false, why: 'kept: the profile is how the colours are meant to look, not who took the picture' }
     }
     segs.push(s)
     pos = end
@@ -72,7 +86,30 @@ async function walk(blob: Blob) {
   // The store's fields are read once, from all its segments together, and listed on the first.
   const first = segs.find((x) => x.seg?.label === 'C2PA')
   if (first) first.seg!.fields = c2paFields(concat(c2pa))
+  const [eoi, padding] = sos < 0 ? [-1, true] : await imageEnd(blob, sos)
+  if (eoi > 0 && eoi < blob.size) {
+    // The index of those extra images points past the end of the clean copy, so it goes with them.
+    for (const s of segs) if (s.mpf) s.strip = true
+    segs.push({ marker: 0xd9, start: eoi, end: blob.size, strip: true, seg: padding ? undefined : { id: `trailer-${eoi}`, label: 'Trailer', what: 'extra images or a motion-photo video', bytes: blob.size - eoi, fields: [{ name: 'Data after the image', value: `${blob.size - eoi} bytes: extra images or a motion-photo video. The clean copy is the still alone` }], strip: true } })
+  }
   return { segs, sos, orientation }
+}
+
+/** The byte after the EOI that ends the last scan, walking scans and the segments between them; and whether all after it is padding.
+ *  -1 when the scans run to the end of the file (truncated) or the layout is not understood: then everything is copied. */
+async function imageEnd(blob: Blob, sos: number): Promise<[number, boolean]> {
+  const b = await read(blob, sos, blob.size - sos)
+  let i = 0
+  while (i + 1 < b.length && b[i] === 0xff) {
+    const m = b[i + 1]
+    if (m === 0xff) { i++; continue }
+    if (m === 0xd9) return [sos + i + 2, b.subarray(i + 2).every((x) => x === 0 || x === 0xff)]
+    if (i + 4 > b.length) break
+    i += 2 + u16(b, i + 2)
+    // Entropy-coded data: 0xFF is only ever followed by a stuffed 0x00 or a restart marker until the next real marker.
+    if (m === 0xda) while (i + 1 < b.length && !(b[i] === 0xff && b[i + 1] !== 0 && (b[i + 1] < 0xd0 || b[i + 1] > 0xd7))) i++
+  }
+  return [-1, true]
 }
 
 export async function readJpeg(blob: Blob, name: string): Promise<Report> {
@@ -93,7 +130,8 @@ export async function stripJpeg(blob: Blob, keep = new Set<string>()): Promise<B
     const ex = orientationOnlyExif(orientation)
     parts.push(new Uint8Array([0xff, 0xe1, (ex.length + 2) >> 8, (ex.length + 2) & 0xff]), ex)
   }
-  for (const s of segs) if (!s.strip) parts.push(blob.slice(s.start, s.end))
-  parts.push(blob.slice(sos < 0 ? segs[segs.length - 1]?.end ?? 2 : sos))
+  const tail = segs.find((s) => s.marker === 0xd9)
+  for (const s of segs) if (!s.strip && s !== tail) parts.push(blob.slice(s.start, s.end))
+  parts.push(blob.slice(sos < 0 ? segs[segs.length - 1]?.end ?? 2 : sos, tail?.strip ? tail.start : blob.size))
   return new Blob(parts, { type: 'image/jpeg' })
 }

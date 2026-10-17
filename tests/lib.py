@@ -15,7 +15,7 @@ def check(cond, msg):
         failures.append(msg)
 
 
-LEAKS = [b'Villanueva', b'Priya', b'Delacroix', b'Lightroom', b'GIMP', b'iPhone', b'Quezon', b'Tamarind', b'DEL-2026', b'Byrne', b'confidential', b'c2pa', b'C2PA Test Signing Cert', b'14.6760', b'Mabini', b'Gate code', b'LaserJet', b'Lavf']
+LEAKS = [b'Villanueva', b'Priya', b'Delacroix', b'Lightroom', b'GIMP', b'iPhone', b'Quezon', b'Tamarind', b'DEL-2026', b'Byrne', b'confidential', b'c2pa', b'C2PA Test Signing Cert', b'14.6760', b'Mabini', b'Gate code', b'LaserJet', b'Lavf', b'Jane Secret', b'004A0061006E0065', b'Brien', b'Okafor', b'Leeds']
 
 failures = []
 
@@ -202,6 +202,35 @@ if __name__ == '__main__':
     lk = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), 'locked.pdf'], check=True, capture_output=True, text=True).stdout)['locked.pdf']
     check(lk['removed'] == 0 and lk['kept'] == 1 and 'encrypted' in lk['note'] and 'not cleaned' in lk['note'], f'locked.pdf: an encrypted PDF is shown as not cleaned, nothing blanked ({lk})')
     check(open(os.path.join(OUT, 'locked.pdf'), 'rb').read() == open(os.path.join(HERE, 'files', 'locked.pdf'), 'rb').read(), 'locked.pdf: left byte for byte')
+    print('edge cases')
+    EDGE = ['rotated.jpg', 'fill.jpg', 'motion.jpg', 'multi.jpg', 'info-ref.pdf', 'nested.pdf', 'quote-xmp.pdf', 'bare-xmp.pdf', 'locked-lin.pdf', 'memo-z.pdf']
+    ed = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), *EDGE], check=True, capture_output=True, text=True).stdout)
+    got = lambda n: open(os.path.join(OUT, n), 'rb').read()
+    for name in EDGE[:-2]:
+        check(ed[name].get('left') == [], f"{name}: read back, nothing left ({ed[name].get('left', ed[name])})")
+    from PIL import Image
+    ex = Image.open(io.BytesIO(got('rotated.jpg'))).getexif()
+    check(dict(ex) == {0x0112: 6} and not [l for l in LEAKS if l in got('rotated.jpg')], f'rotated.jpg: Orientation=6 kept, Artist and GPS gone ({dict(ex)})')
+    check('Artist=Jane Secret' in ed['rotated.jpg']['fields'] and ed['rotated.jpg']['removed'] > 1, 'rotated.jpg: Artist and GPS reported')
+    for name in ('fill.jpg', 'motion.jpg', 'multi.jpg'):
+        data = got(name)
+        im = Image.open(io.BytesIO(data))
+        im.load()
+        leaks = [l for l in LEAKS + [b'ftyp', b'MPF'] if l in data]
+        check(not leaks and not dict(im.getexif()) and data.endswith(b'\xff\xd9') and data.count(b'\xff\xd9') == 1, f'{name}: opens, one image, no EXIF, nothing after EOI, no leaks ({leaks})')
+    check('Artist=Jane Secret' in ed['fill.jpg']['fields'] and any(f.startswith('GPS latitude=') for f in ed['fill.jpg']['fields']), f"fill.jpg: EXIF behind fill bytes reported ({ed['fill.jpg']['fields']})")
+    for name in ('motion.jpg', 'multi.jpg'):
+        check(any(f.startswith('Data after the image=') for f in ed[name]['fields']), f"{name}: data after the image reported as removed ({ed[name]['fields']})")
+    want = {'info-ref.pdf': ['Author=Jane Secret', 'Title=Jane Secret CV'], 'nested.pdf': ['Title=Report (draft (v2)) for Jane Secret', 'Author=Ann ) Byrne-Ortiz \\'],
+            'quote-xmp.pdf': ["pdf:Author=Sean O'Brien"], 'bare-xmp.pdf': ['pdf:Author=Jane Secret']}
+    for name, fields in want.items():
+        print(name)
+        for w in fields:
+            check(w in ed[name]['fields'], f"{name}: reports {w} ({ed[name]['fields']})")
+        verify(name, got(name), open(os.path.join(HERE, 'files', name), 'rb').read(), ed[name])
+    ll = ed['locked-lin.pdf']
+    check(ll['removed'] == 0 and ll['kept'] == 1 and 'not cleaned' in ll['note'] and got('locked-lin.pdf') == open(os.path.join(HERE, 'files', 'locked-lin.pdf'), 'rb').read(), f'locked-lin.pdf: a linearized encrypted PDF is shown as not cleaned, left byte for byte ({ll})')
+    check(any(k.startswith('xmpz-') and k.endswith('=xmp') for k in ed['memo-z.pdf']['keys']), f"memo-z.pdf: compressed XMP answers to the xmp policy key ({ed['memo-z.pdf']['keys']})")
     print('refusals')
     check('does not begin like a JPEG' in rep['notajpeg.jpg'].get('error', ''), 'a .jpg that is not a JPEG is refused by its bytes')
     check('cannot read .txt' in rep['notes.txt'].get('error', ''), '.txt is refused in plain words')

@@ -82,7 +82,7 @@ export const POLICY: { key: string; label: string; formats: string }[] = [
   { key: 'info', label: 'Info dictionary', formats: 'PDF' },
 ]
 const KEY: [RegExp, string][] = [
-  [/^(exif|EXIF)-/, 'exif'], [/^(xmpx?|XMP)-/, 'xmp'], [/^iptc-/, 'iptc'], [/^com-/, 'com'],
+  [/^(exif|EXIF)-/, 'exif'], [/^(xmp[xz]?|XMP)-/, 'xmp'], [/^iptc-/, 'iptc'], [/^com-/, 'com'],
   [/^(tEXt|zTXt|iTXt)-/, 'text'], [/^eXIf-/, 'exif-png'], [/^tIME-/, 'time'], [/^(c2pa|caBX|C2PA)-/, 'c2pa'],
   [/^(docProps\/core|meta)\.xml$/, 'core'], [/^settings\.xml$/, 'printer'], [/^docProps\/app\.xml$/, 'app'], [/^docProps\/custom\.xml$/, 'custom'], [/^(docProps\/thumbnail\.|Thumbnails\/)/i, 'thumbnail'],
   [/^info-/, 'info'], [/^vmeta-/, 'video'], [/^vtime-/, 'vtime'], [/^(id3v[12]|ape)$/, 'audio'],
