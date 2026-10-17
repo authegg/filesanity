@@ -26,17 +26,24 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
   const [cleanedAt, setCleanedAt] = useState<Date | null>(null)
   const input = useRef<HTMLInputElement | null>(null)
   const depth = useRef(0)
+  // Bumped by each new file and by reset: an inspect or clean that finishes after it is dropped, not attached to the newer file.
+  const gen = useRef(0)
 
   const take = useCallback(async (f: File) => {
+    const g = ++gen.current
     setFile(f)
     setNeutral(nameRisks(f.name).length > 0)
     setReport(null)
+    setProof(null)
     setError('')
     setState('reading')
     try {
-      setReport(await inspect(f))
+      const r = await inspect(f)
+      if (g !== gen.current) return
+      setReport(r)
       setState('ready')
     } catch (e) {
+      if (g !== gen.current) return
       setError(e instanceof Unsupported ? e.message : `${f.name} could not be read. It may be damaged.`)
       setState('error')
     }
@@ -69,7 +76,9 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
 
   const clean = useCallback(async () => {
     if (!file || !report) return
+    const g = gen.current
     const blob = await strip(file, report)
+    if (g !== gen.current) return
     const out = neutral ? neutralName(file.name, report.kind) : cleanName(file.name)
     setCleanedBytes(blob.size)
     save(blob, out)
@@ -77,6 +86,7 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
     setCleanedAt(new Date())
     setState('cleaned')
     const [before, after, left] = await Promise.all([sha256(file), sha256(blob), checkClean(blob, out)])
+    if (g !== gen.current) return
     setProof({ out, before, after, left })
   }, [file, report, neutral])
 
@@ -88,7 +98,8 @@ export function useCleaner(sampleUrl = '/sample.jpg', paste = true) {
   }, [file, report, proof, cleanedAt])
 
   const reset = useCallback(() => {
-    setFile(null); setReport(null); setError(''); setState('idle')
+    gen.current++
+    setFile(null); setReport(null); setProof(null); setError(''); setState('idle')
     if (input.current) input.current.value = ''
   }, [])
 

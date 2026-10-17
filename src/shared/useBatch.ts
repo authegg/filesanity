@@ -17,28 +17,40 @@ export function useBatch() {
   const input = useRef<HTMLInputElement | null>(null)
   const seq = useRef(0)
   const depth = useRef(0)
+  // Samples arrive late (after paint, a delay and three fetches): they never land on your files or restart their counter.
+  const now = useRef(items)
+  now.current = items
+  const yours = useRef(0) // your adds still unzipping or reading
+  const taken = () => yours.current > 0 || now.current.some((x) => !x.sample)
 
   const add = useCallback(async (dropped: File[], sample = false) => {
-    setDone(null)
-    setSince(performance.now())
-    // A plain zip opens into its files, folders kept in their names; the clean zip keeps the same folders.
-    const files: File[] = [], bad: Item[] = []
-    for (const f of dropped) {
-      const z = await unzip(f).catch(() => null)
-      if (!z) { files.push(f); continue }
-      files.push(...z.files)
-      for (const s of z.skipped) bad.push({ id: ++seq.current, file: new File([], s), error: `${s} could not be taken out of ${f.name}: it is encrypted or packed in a way FileSanity does not read.` })
-    }
-    const fresh = files.map((file) => ({ id: ++seq.current, file, sample }))
-    setItems((xs) => [...xs, ...bad])
-    // Your own files replace the samples.
-    setItems((xs) => [...(sample ? [] : xs.filter((x) => !x.sample)), ...fresh])
-    for (const it of fresh) {
-      let patch: Partial<Item>
-      try { patch = { report: await inspect(it.file) } } catch (e) {
-        patch = { error: e instanceof Unsupported ? e.message : `${it.file.name} could not be read.` }
+    if (sample && taken()) return
+    if (!sample) yours.current++
+    try {
+      // A plain zip opens into its files, folders kept in their names; the clean zip keeps the same folders.
+      const files: File[] = [], bad: Item[] = []
+      for (const f of dropped) {
+        const z = await unzip(f).catch(() => null)
+        if (!z) { files.push(f); continue }
+        files.push(...z.files)
+        for (const s of z.skipped) bad.push({ id: ++seq.current, file: new File([], s), error: `${s} could not be taken out of ${f.name}: it is encrypted or packed in a way FileSanity does not read.` })
       }
-      setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, ...patch } : x)))
+      if (sample && taken()) return
+      setDone(null)
+      setSince(performance.now())
+      const fresh = files.map((file) => ({ id: ++seq.current, file, sample }))
+      setItems((xs) => [...xs, ...bad])
+      // Your own files replace the samples.
+      setItems((xs) => [...(sample ? [] : xs.filter((x) => !x.sample)), ...fresh])
+      for (const it of fresh) {
+        let patch: Partial<Item>
+        try { patch = { report: await inspect(it.file) } } catch (e) {
+          patch = { error: e instanceof Unsupported ? e.message : `${it.file.name} could not be read.` }
+        }
+        setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, ...patch } : x)))
+      }
+    } finally {
+      if (!sample) yours.current--
     }
   }, [])
 

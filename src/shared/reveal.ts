@@ -43,20 +43,3 @@ export function rows(r: Report): Row[] {
     .flatMap((s) => s.fields.map((f) => ({ group: s.warn ? 'hidden' as const : groupOf(f.name), name: f.name, value: f.value, part: s.label, strip: s.strip })))
     .sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group))
 }
-
-/** The one-line story a report tells, built only from fields actually present. */
-export function headline(r: Report): string[] {
-  const all = rows(r)
-  const pick = (re: RegExp) => all.find((x) => re.test(x.name))?.value
-  const out: string[] = []
-  const who = pick(/^(artist|author|by-line|dc:creator)$/i)
-  const city = pick(/city/i)
-  const date = pick(/original/i) ?? pick(/^created$|createdate/i)
-  const dev = [pick(/camera model/i), pick(/^application$|created with/i)].find(Boolean)
-  if (who) out.push(who)
-  if (city) out.push(city)
-  else if (pick(/gps latitude/i)) out.push('GPS position')
-  if (date) out.push(when(date))
-  if (dev) out.push(dev)
-  return out
-}

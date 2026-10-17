@@ -55,11 +55,23 @@ const redispatch = (t: EventTarget, types: string[], init: (type: string) => Eve
   try { for (const type of types) t.dispatchEvent(init(type)) } finally { replaying = false }
 }
 
+// The real target: e.target at the window is retargeted to the shadow host for anything inside a web component.
+// shortcut: a closed shadow root hides its nodes from composedPath too, so those uploaders still get the original.
+const real = (e: Event) => e.composedPath()[0] ?? e.target
+const roots = new WeakSet<ShadowRoot>()
+
 // File inputs: hold the page's input/change events, swap the files, then let the page hear them.
 const onPick = (e: Event) => {
-  const t = e.target
+  const t = real(e)
   if (!(t instanceof HTMLInputElement) || t.type !== 'file' || !t.files?.length || replaying) return
   e.stopImmediatePropagation()
+  // change is not composed, so inside a shadow root it never reaches the window: hold it at the root, which hears it
+  // before the page's own listeners (it follows this input event in the same task).
+  const root = t.getRootNode()
+  if (root instanceof ShadowRoot && !roots.has(root)) {
+    roots.add(root)
+    for (const type of ['input', 'change']) root.addEventListener(type, onPick, true)
+  }
   if (busy.has(t)) return
   busy.add(t)
   cleanList(Array.from(t.files)).then((files) => { t.files = toList(files).files }).catch(() => {}).finally(() => {
@@ -72,10 +84,10 @@ for (const type of ['input', 'change']) window.addEventListener(type, onPick, tr
 // Drops: hold the drop, then replay it at the same spot with the clean files. A drop on a file input fills the input.
 window.addEventListener('drop', (e) => {
   const files = Array.from(e.dataTransfer?.files ?? [])
-  if (!files.length || replaying || !e.target) return
+  const t = real(e)
+  if (!files.length || replaying || !t) return
   e.preventDefault()
   e.stopImmediatePropagation()
-  const t = e.target
   const { clientX, clientY, screenX, screenY } = e
   cleanList(files).catch(() => files).then((clean) => {
     const dt = toList(clean)
@@ -95,10 +107,10 @@ window.addEventListener('drop', (e) => {
 if (!FIREFOX) window.addEventListener('paste', (e) => {
   const cd = e.clipboardData
   const files = Array.from(cd?.files ?? [])
-  if (!files.length || replaying || !e.target) return
+  const t = real(e)
+  if (!files.length || replaying || !t) return
   e.preventDefault()
   e.stopImmediatePropagation()
-  const t = e.target
   const text = cd!.types.filter((type) => type !== 'Files').map((type) => [type, cd!.getData(type)] as const)
   cleanList(files).catch(() => files).then((clean) => {
     const dt = toList(clean)
