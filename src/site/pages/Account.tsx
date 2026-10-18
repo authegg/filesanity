@@ -8,6 +8,19 @@ export const index = false
 const day = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
 type PaddleJs = { Environment: { set(e: string): void }; Initialize(o: { token: string; checkout?: object }): void; Checkout: { open(o: object): void } }
 let paddle: Promise<PaddleJs> | undefined
+
+/** The site's own confirm: a cream sheet in a modal <dialog> (focus trap, Escape), resolving true on the action button only. */
+const ask = (text: string, yes: string) => new Promise<boolean>((done) => {
+  const d = document.createElement('dialog')
+  d.className = 'sheet ask'
+  d.innerHTML = '<form method="dialog"><p></p><div><button class="btn sm" value="y"></button><button class="btn sm ghost" value="" autofocus>Cancel</button></div></form>'
+  d.querySelector('p')!.textContent = text
+  d.querySelector('button')!.textContent = yes
+  d.onclick = (e) => { if (e.target === d) d.close() } // a tap on the backdrop cancels
+  d.onclose = () => { done(d.returnValue === 'y'); d.remove() }
+  ;(document.querySelector('.page') ?? document.body).append(d)
+  d.showModal()
+})
 const DONE = () => `${location.origin}/account?paid=1`
 // Paddle.js loads only here, on a click, so no other page fetches a third-party script.
 const loadPaddle = () => (paddle ??= new Promise<PaddleJs>((ok, no) => {
@@ -121,7 +134,7 @@ function Switch({ me, want, reload }: { me: Me; want: PlanKey | null; reload: ()
     return () => clearInterval(t)
   }, [to, me.plan, reload])
   const go = async (k: PlanKey) => {
-    if (!confirm(`Switch to ${PLANS[k].name}, ${fmtPrice(PLANS[k])} a month? The difference is charged or credited now, prorated.`)) return
+    if (!await ask(`Switch to ${PLANS[k].name}, ${fmtPrice(PLANS[k])} a month? The difference is charged or credited now, prorated.`, `Switch to ${PLANS[k].name}`)) return
     setErr('')
     try { await call('POST', '/api/plan', { plan: k }); setTo(k) } catch (x) { setErr((x as Error).message) }
   }
@@ -150,7 +163,7 @@ function Keys({ me, reload }: { me: Me; reload: () => void }) {
     try { const r = await call<{ key: string }>('POST', '/api/keys', { name }); setFresh(r.key); setName(''); reload() } catch (x) { setErr((x as Error).message) }
   }
   const revoke = async (id: string, n: string) => {
-    if (!confirm(`Revoke "${n}"? Anything using it stops working.`)) return
+    if (!await ask(`Revoke "${n}"? Anything using it stops working.`, 'Revoke key')) return
     try { await call('DELETE', `/api/keys/${id}`); reload() } catch (x) { setErr((x as Error).message) }
   }
   const api = me.keys.filter((k) => k.scope !== 'ext')
@@ -175,7 +188,7 @@ function Keys({ me, reload }: { me: Me; reload: () => void }) {
   )
 }
 
-const leave = async (reload: () => void) => { if (confirm('Leave this team? You go back to your own plan.')) { await call('POST', '/api/team/leave').catch(() => {}); reload() } }
+const leave = async (reload: () => void) => { if (await ask('Leave this team? You go back to your own plan.', 'Leave team')) { await call('POST', '/api/team/leave').catch(() => {}); reload() } }
 
 /** A Team owner's invitation: joining puts this account under their plan and their policy, so it takes the person's own click. */
 function Invite({ by, reload }: { by: string; reload: () => void }) {
@@ -224,7 +237,7 @@ function Extension({ me, reload }: { me: Me; reload: () => void }) {
     try { const r = await call<{ key: string }>('POST', '/api/keys', { scope: 'ext', name: 'Browser extension' }); setFresh(r.key); reload() } catch (x) { setErr((x as Error).message) }
   }
   const revoke = async (id: string) => {
-    if (!confirm('Disconnect this extension? It goes back to the free features.')) return
+    if (!await ask('Disconnect this extension? It goes back to the free features.', 'Disconnect')) return
     try { await call('DELETE', `/api/keys/${id}`); reload() } catch (x) { setErr((x as Error).message) }
   }
   return (
