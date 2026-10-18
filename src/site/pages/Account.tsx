@@ -6,8 +6,10 @@ export const meta = { title: 'Account', description: 'Your FileSanity plan, API 
 export const index = false
 
 const day = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
-type PaddleJs = { Environment: { set(e: string): void }; Initialize(o: { token: string; checkout?: object }): void; Checkout: { open(o: object): void } }
+type PaddleJs = { Environment: { set(e: string): void }; Initialize(o: { token: string; checkout?: object; eventCallback?: (e: { name?: string }) => void }): void; Checkout: { open(o: object): void } }
 let paddle: Promise<PaddleJs> | undefined
+// The open plan row listens here for checkout.loaded / .closed / .error.
+let onPaddle: ((name: string) => void) | undefined
 
 /** The site's own confirm: a cream sheet in a modal <dialog> (focus trap, Escape), resolving true on the action button only. */
 const ask = (text: string, yes: string) => new Promise<boolean>((done) => {
@@ -29,7 +31,7 @@ const loadPaddle = () => (paddle ??= new Promise<PaddleJs>((ok, no) => {
     const P = (window as unknown as { Paddle: PaddleJs }).Paddle
     if (PADDLE.env === 'sandbox') P.Environment.set('sandbox')
     // On a link carrying _ptxn (Paddle's recovery email, a card update from the billing page) Paddle.js opens that checkout itself.
-    P.Initialize({ token: PADDLE.token, checkout: { settings: { variant: 'one-page', allowLogout: false, successUrl: DONE() } } })
+    P.Initialize({ token: PADDLE.token, eventCallback: (e) => onPaddle?.(e.name ?? ''), checkout: { settings: { variant: 'one-page', allowLogout: false, successUrl: DONE() } } })
     ok(P)
   }
   s.onerror = () => { paddle = undefined; no(new Error('Paddle.js did not load')) }
@@ -66,9 +68,17 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
   // The plan picked on /pricing, then the last one opened here: a closed checkout leaves that row marked.
   const [want, setWant] = useState(() => new URLSearchParams(location.search).get('plan') as PlanKey | null)
   const [err, setErr] = useState('')
+  const [opening, setOpening] = useState<PlanKey | null>(null)
+  const failed = () => { setOpening(null); setErr('The checkout did not load. Check your connection and try again.') }
+  // The row is marked only once Paddle shows the checkout, so the label never runs ahead of it.
   const pick = (k: PlanKey) => {
-    setWant(k); setErr(''); history.replaceState(null, '', `/account?plan=${k}`)
-    checkout(k, me.email).catch(() => setErr('The checkout did not load. Check your connection and try again.'))
+    setOpening(k); setErr('')
+    onPaddle = (n) => {
+      if (n === 'checkout.loaded') { setOpening(null); setWant(k); history.replaceState(null, '', `/account?plan=${k}`) }
+      else if (n === 'checkout.closed') setOpening(null)
+      else if (n === 'checkout.error') failed()
+    }
+    checkout(k, me.email).catch(failed)
   }
   // Paddle sends a finished checkout back with ?paid=1; the plan lands when the webhook does, so ask again until it shows.
   const [paid] = useState(() => new URLSearchParams(location.search).has('paid'))
@@ -105,7 +115,7 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
                 {PAID.map((k) => (
                   <div key={k} className={`up-row ${want === k ? 'want' : ''}`}>
                     <div><b>{PLANS[k].name}</b> {fmtPrice(PLANS[k])} a month<span>{PLANS[k].items[0]}</span></div>
-                    {PLANS[k].checkout ? <button className={`btn sm ${want === k ? '' : 'ghost'}`} onClick={() => pick(k)}>{want === k ? 'Continue to checkout' : `Choose ${PLANS[k].name}`}</button> : <span className="small">Opens soon</span>}
+                    {PLANS[k].checkout ? <button className={`btn sm ${want === k ? '' : 'ghost'}`} disabled={!!opening} aria-busy={opening === k} onClick={() => pick(k)}>{opening === k ? 'Opening checkout…' : want === k ? 'Continue to checkout' : `Choose ${PLANS[k].name}`}</button> : <span className="small">Opens soon</span>}
                   </div>
                 ))}
               </div>
