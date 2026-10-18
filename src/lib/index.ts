@@ -79,12 +79,15 @@ export const POLICY: { key: string; label: string; formats: string }[] = [
   { key: 'custom', label: 'Custom properties', formats: 'Word, Excel, PowerPoint' },
   { key: 'thumbnail', label: 'Thumbnail', formats: 'Word, Excel, PowerPoint, OpenDocument' },
   { key: 'printer', label: 'Printer name', formats: 'OpenDocument' },
+  { key: 'comments', label: 'Comments and their authors', formats: 'Word, Excel, PowerPoint, OpenDocument' },
+  { key: 'changes', label: 'Tracked changes (accepted)', formats: 'Word, Excel, OpenDocument' },
   { key: 'info', label: 'Info dictionary', formats: 'PDF' },
 ]
 const KEY: [RegExp, string][] = [
   [/^(exif|EXIF)-/, 'exif'], [/^(xmp[xz]?|XMP)-/, 'xmp'], [/^iptc-/, 'iptc'], [/^com-/, 'com'],
   [/^(tEXt|zTXt|iTXt)-/, 'text'], [/^eXIf-/, 'exif-png'], [/^tIME-/, 'time'], [/^(c2pa|caBX|C2PA)-/, 'c2pa'],
   [/^(docProps\/core|meta)\.xml$/, 'core'], [/^settings\.xml$/, 'printer'], [/^docProps\/app\.xml$/, 'app'], [/^docProps\/custom\.xml$/, 'custom'], [/^(docProps\/thumbnail\.|Thumbnails\/)/i, 'thumbnail'],
+  [/^comments$/, 'comments'], [/^changes$/, 'changes'],
   [/^info-/, 'info'], [/^vmeta-/, 'video'], [/^vtime-/, 'vtime'], [/^(id3v[12]|ape)$/, 'audio'],
 ]
 export const policyKey = (id: string) => KEY.find(([re]) => re.test(id))?.[1]

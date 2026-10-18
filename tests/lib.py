@@ -93,7 +93,9 @@ def verify(name, data, before, fig=''):
         check(not leaks, f'{ext}: no leaked strings in meta, settings or manifest ({leaks})')
         check(not [n for n in names if n.startswith('Thumbnails/')] and b'Thumbnails' not in z.read('META-INF/manifest.xml'), f'{ext}: thumbnail and its manifest entry gone')
         orig = zipfile.ZipFile(io.BytesIO(before))
-        check(z.read('content.xml') == orig.read('content.xml'), f'{ext}: content.xml byte for byte')
+        # Comments and the change log go (changes accepted); every other byte of content.xml stays.
+        review = rb'<(office:annotation|text:tracked-changes)\b[^>]*>.*?<\/\1>|<(office:annotation-end|text:change|text:change-start|text:change-end)\b[^>]*\/>'
+        check(z.read('content.xml') == re.sub(review, b'', orig.read('content.xml'), flags=re.S) and b'Delacroix' not in z.read('content.xml'), f'{ext}: content.xml byte for byte, less comments and the change log')
         for n in ('meta.xml', 'settings.xml', 'META-INF/manifest.xml'):
             xml.dom.minidom.parseString(z.read(n))
         return
@@ -156,6 +158,109 @@ def verify(name, data, before, fig=''):
 
 
 
+def rel_target(rels, target):
+    """A relationship's target as a part name."""
+    if target.startswith('/'):
+        return target[1:]
+    parts = [p for p in re.sub(r'(^|/)_rels/[^/]+$', '', rels).split('/') if p]
+    for s in target.split('/'):
+        if s == '..':
+            parts.pop()
+        elif s and s != '.':
+            parts.append(s)
+    return '/'.join(parts)
+
+
+def sound(name, data):
+    """The rewritten package opens: CRCs pass, every XML part parses, and every relationship, content-type override and
+    r:id points at something that exists."""
+    import xml.dom.minidom
+    z = zipfile.ZipFile(io.BytesIO(data))
+    check(z.testzip() is None, f'{name}: zip CRCs and central directory pass')
+    names = set(z.namelist())
+    bad, dangling = [], []
+    for n in sorted(names):
+        if not n.endswith(('.xml', '.rels', '.vml')):
+            continue
+        try:
+            xml.dom.minidom.parseString(z.read(n))
+        except Exception as e:
+            bad.append(f'{n}: {e}')
+        if n.endswith('.rels'):
+            rels = z.read(n).decode()
+            for r in re.findall(r'<Relationship\b[^>]*>', rels):
+                t = re.search(r'Target="([^"]*)"', r).group(1)
+                if 'External' not in r and rel_target(n, t) not in names:
+                    dangling.append(f'{n} -> {t}')
+            owner = re.sub(r'(^|/)_rels/([^/]+)\.rels$', r'\1\2', n)
+            if owner in names:
+                ids = set(re.findall(r'\bId="([^"]*)"', rels))
+                dangling += [f'{owner} r:id={i}' for i in re.findall(r'\sr:id="([^"]*)"', z.read(owner).decode()) if i not in ids]
+    if '[Content_Types].xml' in names:
+        dangling += [p for p in re.findall(r'PartName="/([^"]*)"', z.read('[Content_Types].xml').decode()) if p not in names]
+    check(not bad, f'{name}: every XML part is well-formed ({bad})')
+    check(not dangling, f'{name}: no relationship, content type or r:id points at a removed part ({dangling})')
+    return z
+
+
+def review():
+    print('comments and tracked changes: removed, changes accepted')
+    files = ['review.docx', 'review.xlsx', 'review.pptx', 'review.odt', 'review.ods']
+    rv = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), *files, *[f'{n}@comments,changes' for n in files], 'review.docx@comments', 'review.docx@changes', 'review.xlsx@comments'], check=True, capture_output=True, text=True).stdout)
+    got = lambda n: open(os.path.join(OUT, n), 'rb').read()
+    GONE = [b'Okonkwo', b'Teodoro', b'Rask', b'mokonkwo', b'push this to June', b'Check with finance', b'Too optimistic', b'Second opinion', b'88,000', b'<v>4800', b'value="4800"']
+    for name in files:
+        r = rv[name]
+        check('error' not in r and r.get('left') == [], f'{name}: read, and the clean copy read back has no comments or changes left ({r})')
+        check('comments=comments' in r['keys'] and ('changes=changes' in r['keys']) != name.endswith('pptx'), f"{name}: comments{'' if name.endswith('pptx') else ' and changes'} are removable segments ({r['keys']})")
+        check('Written by=Marguerite Okonkwo-Hale' in r['fields'], f'{name}: the comment author is named in the report')
+        if not name.endswith('pptx'):
+            check('Changed by=Teodoro Rask' in r['fields'], f'{name}: the author of the changes is named in the report')
+        data = got(name)
+        z = sound(name, data)
+        inside = data + b''.join(z.read(n) for n in z.namelist())
+        leaks = [g for g in GONE if g in inside]
+        check(not leaks, f'{name}: comment text, deleted words and every comment or change author gone from all the bytes ({leaks})')
+    import docx, openpyxl
+    from pptx import Presentation
+    z = zipfile.ZipFile(os.path.join(OUT, 'review.docx'))
+    d = docx.Document(io.BytesIO(got('review.docx')))
+    text = '\n'.join(p.text for p in d.paragraphs)
+    check('The salary is 92,000 per year.' in text and 'Start date is May.' in text and 'Closing line.' in text and text.count('Moved sentence.') == 1, f'review.docx: python-docx opens it; insertion kept, deletion gone, moved text once ({text!r})')
+    check([c.text for row in d.tables[0].rows for c in row.cells] == ['Row that stays'], 'review.docx: the deleted table row is gone, the other row kept')
+    check(any(r.bold and r.text == 'Bold now.' for p in d.paragraphs for r in p.runs), 'review.docx: the formatting change is accepted (bold stays, the old formatting record goes)')
+    body = z.read('word/document.xml')
+    check(not re.findall(rb'<w:(ins|del|moveFrom|moveTo|rPrChange|commentRangeStart|commentReference)\b', body) and b'trackRevisions' not in z.read('word/settings.xml'), 'review.docx: no change or comment marks left, track changes switched off')
+    x = zipfile.ZipFile(os.path.join(OUT, 'review.xlsx'))
+    wb = openpyxl.load_workbook(io.BytesIO(got('review.xlsx')))
+    check(wb.active['B2'].value == 5100 and wb.active['B2'].comment is None, 'review.xlsx: openpyxl opens it, the value stays, the comment is gone')
+    vml = x.read('xl/drawings/commentsDrawing1.vml')
+    check(b'ObjectType="Button"' in vml and b'ObjectType="Note"' not in vml and b'legacyDrawing' in x.read('xl/worksheets/sheet1.xml'), 'review.xlsx: the comment box leaves the VML, the form button in it stays')
+    check(not [n for n in x.namelist() if re.match(r'xl/(revisions|persons|threadedComments|comments)', n)], 'review.xlsx: revision log, people, threaded and legacy comments gone')
+    p = Presentation(io.BytesIO(got('review.pptx')))
+    check(p.slides[0].shapes.title.text == 'Quarterly plan', 'review.pptx: python-pptx opens it, title intact')
+    check(b'commentRel' not in zipfile.ZipFile(os.path.join(OUT, 'review.pptx')).read('ppt/slides/slide1.xml'), 'review.pptx: the slide no longer links to modern comments')
+    o = zipfile.ZipFile(os.path.join(OUT, 'review.odt'))
+    c = o.read('content.xml')
+    check(b'The salary is 92,000 per year.' in c and b'Start date is May.' in c and not re.findall(rb'<(text:tracked-changes|text:change|office:annotation)\b', c), 'review.odt: insertion kept, deletion, change marks and comment gone')
+    s = zipfile.ZipFile(os.path.join(OUT, 'review.ods')).read('content.xml')
+    check(b'office:value="5100"' in s and b'Kestrel Ltd' in s and b'tracked-changes' not in s and b'annotation' not in s, 'review.ods: the cell value stays, its comment and the change log go')
+    check(b'>false<' in o.read('settings.xml') and o.infolist()[0].filename == 'mimetype' and o.infolist()[0].compress_type == zipfile.ZIP_STORED, 'review.odt: track changes off, mimetype first and stored')
+    print('comments and tracked changes: kept by policy')
+    for name in files:
+        k = f'{name}@comments,changes'
+        check(rv[k].get('left') == [] and rv[k]['removed'] > 0, f'{k}: the rest is still cleaned ({rv[k]})')
+        a, b = zipfile.ZipFile(os.path.join(HERE, 'files', name)), zipfile.ZipFile(os.path.join(OUT, f'comments+changes-{name}'))
+        same = [n for n in a.namelist() if not n.startswith(('docProps/', 'meta.xml', 'Thumbnails/', '_rels/.rels'))]
+        check(all(n in b.namelist() and a.read(n) == b.read(n) for n in same), f'{k}: every content part byte for byte')
+    z = sound('review.docx@comments', got('comments-review.docx'))
+    check(b'Okonkwo' in z.read('word/comments.xml') and b'w:del ' not in z.read('word/document.xml') and b'commentReference' in z.read('word/document.xml'), 'review.docx@comments: comments kept, changes accepted')
+    z = sound('review.docx@changes', got('changes-review.docx'))
+    check('word/comments.xml' not in z.namelist() and b'w:del ' in z.read('word/document.xml') and b'commentReference' not in z.read('word/document.xml'), 'review.docx@changes: changes kept, comments gone')
+    z = sound('review.xlsx@comments', got('comments-review.xlsx'))
+    check('xl/comments/comment1.xml' in z.namelist() and not [n for n in z.namelist() if n.startswith('xl/revisions/')], 'review.xlsx@comments: comments kept, revision log gone')
+
+
 if __name__ == '__main__':
     rep = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), *CASES, 'notajpeg.jpg', 'notes.txt', 'clean.jpg'], check=True, capture_output=True, text=True).stdout)
     for name in CASES:
@@ -180,8 +285,8 @@ if __name__ == '__main__':
     print('content checks: shown, kept')
     risk = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), 'hidden.xlsx', 'hidden.docx', 'hidden.pptx', 'saves.pdf'], check=True, capture_output=True, text=True).stdout)
     want = {
-        'hidden.xlsx': ['Hidden sheet=Salaries', 'Very hidden sheet=Owners', 'Hidden rows and columns=Fees: 1 row, 1 column', 'Pivot table data=943 source rows', 'Cell comments=1 comment', 'Linked workbook=file:///C:/Users/hdelacroix/Clients/Tamarind rates.xlsx'],
-        'hidden.docx': ['Hidden text=1 passage', 'Deleted text still inside=1 tracked deletion', 'Fetches on opening=https://canary.example/t.png', 'Image fetched on opening=https://pixel.example/open?id=7'],
+        'hidden.xlsx': ['Hidden sheet=Salaries', 'Very hidden sheet=Owners', 'Hidden rows and columns=Fees: 1 row, 1 column', 'Pivot table data=943 source rows', 'Comments=1 comment', 'Written by=H. Delacroix', 'Linked workbook=file:///C:/Users/hdelacroix/Clients/Tamarind rates.xlsx'],
+        'hidden.docx': ['Hidden text=1 passage', 'Deleted text=1 tracked deletion', 'Changed by=H. Delacroix', 'Fetches on opening=https://canary.example/t.png', 'Image fetched on opening=https://pixel.example/open?id=7'],
         'hidden.pptx': ['Speaker notes=on 1 slide', 'Hidden slides=1 slide', 'Embedded file=Microsoft_Excel_Worksheet.xlsx'],
         'saves.pdf': ['Earlier versions inside=1:', 'Runs JavaScript=', 'Contacts on opening=https://track.example/o?doc=31'],
     }
@@ -198,7 +303,10 @@ if __name__ == '__main__':
             check(z.testzip() is None, f'{name}: cleaned copy is a sound zip')
     z = zipfile.ZipFile(os.path.join(OUT, 'hidden.xlsx'))
     check(b'state="hidden"' in z.read('xl/workbook.xml') and 'xl/pivotCache/pivotCacheRecords1.xml' in z.namelist(), 'hidden.xlsx: the hidden sheet and pivot cache are left in the file')
-    check(b'w:delText' in zipfile.ZipFile(os.path.join(OUT, 'hidden.docx')).read('word/document.xml'), 'hidden.docx: the tracked deletion is left in the document')
+    check(not [n for n in z.namelist() if 'comment' in n.lower()] and b'Delacroix' not in z.read('xl/worksheets/sheet1.xml'), 'hidden.xlsx: the cell comment and its box are gone')
+    doc = zipfile.ZipFile(os.path.join(OUT, 'hidden.docx')).read('word/document.xml')
+    check(b'w:delText' not in doc and b'Salary floor' not in doc and b'Salary as agreed.' in doc and b'Delacroix' not in doc, 'hidden.docx: the tracked deletion is gone, the insertion kept as plain text')
+    review()
     lk = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), 'locked.pdf'], check=True, capture_output=True, text=True).stdout)['locked.pdf']
     check(lk['removed'] == 0 and lk['kept'] == 1 and 'encrypted' in lk['note'] and 'not cleaned' in lk['note'], f'locked.pdf: an encrypted PDF is shown as not cleaned, nothing blanked ({lk})')
     check(open(os.path.join(OUT, 'locked.pdf'), 'rb').read() == open(os.path.join(HERE, 'files', 'locked.pdf'), 'rb').read(), 'locked.pdf: left byte for byte')
