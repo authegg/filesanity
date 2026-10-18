@@ -228,6 +228,7 @@ def review():
     text = '\n'.join(p.text for p in d.paragraphs)
     check('The salary is 92,000 per year.' in text and 'Start date is May.' in text and 'Closing line.' in text and text.count('Moved sentence.') == 1, f'review.docx: python-docx opens it; insertion kept, deletion gone, moved text once ({text!r})')
     check([c.text for row in d.tables[0].rows for c in row.cells] == ['Row that stays'], 'review.docx: the deleted table row is gone, the other row kept')
+    check(len(d.tables) == 1 and b'Whole table deleted' not in z.read('word/document.xml'), 'review.docx: a table whose rows were all deleted goes with them')
     check(any(r.bold and r.text == 'Bold now.' for p in d.paragraphs for r in p.runs), 'review.docx: the formatting change is accepted (bold stays, the old formatting record goes)')
     body = z.read('word/document.xml')
     check(not re.findall(rb'<w:(ins|del|moveFrom|moveTo|rPrChange|commentRangeStart|commentReference)\b', body) and b'trackRevisions' not in z.read('word/settings.xml'), 'review.docx: no change or comment marks left, track changes switched off')

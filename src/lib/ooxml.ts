@@ -237,6 +237,8 @@ const wordFn = (comments: boolean, changes: boolean) => (name: string, tag: stri
     // A self-closing w:del in a row's properties deletes the row; w:cellDel deletes the cell. The mark travels up to it.
     if ((name === 'w:del' && tag.endsWith('/>')) || name === 'w:cellDel') return ROW
     if (WORD_CHANGE.test(name)) return ''
+    // Word refuses a table left without rows, or a row without cells, so those go too.
+    if ((name === 'w:tbl' && !/<w:tr[\s>]/.test(inner)) || (name === 'w:tr' && !/<w:tc[\s>]/.test(inner))) return ''
     if (inner.includes(ROW)) return name === 'w:tr' || name === 'w:tc' ? '' : name === 'w:trPr' || name === 'w:tcPr' ? undefined : `${tag}${inner.replaceAll(ROW, '')}</${name}>`
   }
   if (comments) {

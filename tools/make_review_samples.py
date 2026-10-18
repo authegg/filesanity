@@ -40,6 +40,9 @@ def docx():
         '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr><w:tblGrid><w:gridCol w:w="4000"/></w:tblGrid>'
         '<w:tr><w:tc><w:p><w:r><w:t>Row that stays</w:t></w:r></w:p></w:tc></w:tr>'
         f'<w:tr><w:trPr><w:del w:id="19" {a}/></w:trPr><w:tc><w:p><w:r><w:t>Row that was deleted</w:t></w:r></w:p></w:tc></w:tr></w:tbl>'
+        # A table whose every row was deleted: accepting must drop the table, since Word refuses one without rows.
+        '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr><w:tblGrid><w:gridCol w:w="4000"/></w:tblGrid>'
+        f'<w:tr><w:trPr><w:del w:id="20" {a}/></w:trPr><w:tc><w:p><w:r><w:t>Whole table deleted</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p/>'
         '<w:p><w:r><w:t>Closing line.</w:t></w:r></w:p>')
     comments = (f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:comments {W}><w:comment w:id="0" w:author="{NOTE}" w:date="2026-05-01T09:00:00Z" w:initials="MO">'
                 '<w:p><w:r><w:annotationRef/></w:r><w:r><w:t>Can we push this to June?</w:t></w:r></w:p></w:comment></w:comments>')
