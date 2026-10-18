@@ -11,6 +11,8 @@
 import { applyPolicy, cleanName, fieldCount, inspect, keptCount, parsePolicy, strip, Unsupported } from '../src/lib/index'
 
 export type Env = { API_TOKEN?: string }
+/** The clean output behind each /clean reply, for a caller that hashes it without holding it (the hosted API's report). */
+export const outputs = new WeakMap<Response, Blob>()
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, GET, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Filename', 'Access-Control-Expose-Headers': 'Content-Disposition, X-FileSanity-Removed, X-FileSanity-Kept, X-FileSanity-Note' }
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...CORS } })
@@ -30,7 +32,8 @@ async function fileFrom(req: Request, url: URL): Promise<File> {
 const disposition = (name: string) =>
   `attachment; filename="${name.replace(/[^\x20-\x7e]|["\\]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`
 
-export async function handle(req: Request, env: Env = {}): Promise<Response> {
+/** `given`: a file the caller already has (the hosted API's ranged upload); the body is then not read. */
+export async function handle(req: Request, env: Env = {}, given?: File): Promise<Response> {
   const url = new URL(req.url)
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   if (req.method === 'GET') {
@@ -40,11 +43,12 @@ export async function handle(req: Request, env: Env = {}): Promise<Response> {
   if (env.API_TOKEN && req.headers.get('Authorization') !== `Bearer ${env.API_TOKEN}`) return json({ error: 'unauthorised' }, 401)
   if (req.method !== 'POST' || !['/inspect', '/clean'].includes(url.pathname)) return json({ error: 'POST /inspect or POST /clean' }, 404)
   try {
-    const file = await fileFrom(req, url)
+    const file = given ?? (await fileFrom(req, url))
     const report = applyPolicy(await inspect(file), parsePolicy(url.search))
     if (url.pathname === '/inspect') return json(report)
     const out = await strip(file, report)
-    return new Response(out, {
+    // A ranged file's output is not a Blob (ranged.ts): it streams.
+    const res = new Response(out instanceof Blob ? out : (out as Blob).stream(), {
       headers: {
         ...CORS,
         'Content-Type': out.type || 'application/octet-stream',
@@ -54,6 +58,8 @@ export async function handle(req: Request, env: Env = {}): Promise<Response> {
         ...(report.note ? { 'X-FileSanity-Note': report.note.replace(/[^\x20-\x7e]/g, ' ') } : {}),
       },
     })
+    outputs.set(res, out)
+    return res
   } catch (e) {
     if (e instanceof Unsupported) return json({ error: e.message }, 415)
     return json({ error: e instanceof Error ? e.message : 'could not process the file' }, 422)

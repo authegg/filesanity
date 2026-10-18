@@ -6,7 +6,7 @@ export const MAKER_URL = 'https://authegg.com'
 export const LEGAL = 'AUTHEGG SOFTWARE DEVELOPMENT SERVICES' // DTI-registered sole proprietorship
 export const CTA = 'Clean a file'
 export const FORMATS = 'JPEG, PNG, HEIC, WebP, MP4, MOV, M4A, MP3, Word, Excel, PowerPoint, OpenDocument and PDF'
-export const UPDATED = '17 October 2026'
+export const UPDATED = '18 October 2026'
 
 export const NAV = [
   { href: '/how-it-works', label: 'How it works' },

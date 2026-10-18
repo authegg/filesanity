@@ -14,6 +14,10 @@
   // The hosted API's monthly count, one object per charged account: atomic where a KV read-then-write is not.
   "durable_objects": { "bindings": [{ "name": "QUOTA", "class_name": "Quota" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Quota"] }],
+  // Hosted API uploads over 25 MB (API_LIMITS.memory), one object per request under a random key, deleted after the reply.
+  // Deploy: npx wrangler r2 bucket create filesanity-api-uploads, then a lifecycle rule that deletes objects after 1 day
+  // (npx wrangler r2 bucket lifecycle add filesanity-api-uploads expire-1d --expire-days 1) for requests that drop.
+  "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "filesanity-api-uploads" }],
   // Secrets (npx wrangler secret put <NAME>): TURNSTILE_SECRET, PADDLE_API_KEY, PADDLE_WEBHOOK_SECRET,
   // PADDLE_PRICE_PRO, PADDLE_PRICE_TEAM, PADDLE_PRICE_API, REPORT_PRIVATE_KEY_JWK (node tools/keygen.mjs). Local values: .dev.vars
   // Sign-in links go out through Cloudflare Email Sending; filesanity.com must be onboarded as a sending domain.

@@ -129,6 +129,37 @@ const jwk = await (await fetch(`${B}/api/report-key`)).json()
 const pub = await crypto.subtle.importKey('jwk', jwk, { name: 'Ed25519' }, false, ['verify'])
 assert.ok(await crypto.subtle.verify('Ed25519', pub, sig, report), 'signature verifies')
 assert.equal(JSON.parse(report).sha256_out, Buffer.from(await crypto.subtle.digest('SHA-256', out)).toString('hex')); ok('signed report verifies and matches the clean file')
+
+// Over 25 MB (API_LIMITS.memory) a paid upload streams into R2 and is read by ranges: the same clean, the object gone after.
+const hex256 = async (b) => Buffer.from(await crypto.subtle.digest('SHA-256', b)).toString('hex')
+// wrangler dev's local explorer lists the simulated bucket; a deployed Worker has none, so the check runs locally only.
+const listed = async () => (await (await fetch(`${B}/cdn-cgi/local/explorer/api/r2/buckets/filesanity-api-uploads/objects`)).json()).result.length
+const local = await listed().then(() => true, () => false)
+const drained = async () => { let n = await listed(); for (let i = 0; i < 40 && n; i++) { await new Promise((ok) => setTimeout(ok, 100)); n = await listed() } return n }
+const raw = (k, body, { q = '', path = 'clean', name = 'video.mp4', type = '' } = {}) => fetch(`${B}/api/v1/${path}${q}`, { method: 'POST', headers: { Authorization: `Bearer ${k}`, 'X-Filename': name, ...(type ? { 'Content-Type': type } : {}) }, body }).catch((e) => ({ status: e.cause?.code }))
+const vid = readFileSync('tests/files/video.mp4'), pad = 40e6, box = Buffer.alloc(8); box.writeUInt32BE(pad + 8); box.write('free', 4)
+const big = Buffer.concat([vid, box, Buffer.alloc(pad, 7)])
+const small = Buffer.from(await (await raw(key, vid)).arrayBuffer())
+const used0 = (await me(a)).used
+r = await raw(key, big, { q: '?report=1' }); assert.equal(r.status, 200, await r.clone().text().catch(() => ''))
+const bigOut = Buffer.from(await r.arrayBuffer())
+assert.ok(bigOut.equals(Buffer.concat([small, big.subarray(vid.length)])), 'the small clean plus the untouched padding')
+assert.equal(r.headers.get('content-length'), String(big.length)); assert.equal((await me(a)).used, used0 + 1)
+const rep2 = r.headers.get('x-filesanity-report')
+assert.equal(JSON.parse(Buffer.from(rep2, 'base64')).sha256_out, await hex256(bigOut))
+assert.ok(await crypto.subtle.verify('Ed25519', pub, Buffer.from(r.headers.get('x-filesanity-report-signature'), 'base64'), Buffer.from(rep2, 'base64')), 'report signature verifies')
+ok(`a ${(big.length / 1e6).toFixed(0)} MB video, over the old 25 MB, cleans by ranges from R2 with a signed report of the streamed output`)
+r = await raw(key, big, { path: 'inspect' }); assert.equal(r.status, 200); assert.equal((await r.json()).kind, 'mp4'); ok('inspect takes the same large file')
+if (local) { assert.equal(await drained(), 0, 'R2 objects left after the replies'); ok('the R2 objects are deleted after each reply') }
+const f = new FormData(); f.append('file', new Blob([big]), 'video.mp4')
+r = await fetch(`${B}/api/v1/clean`, { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: f }).catch((e) => ({ status: e.cause?.code }))
+assert.equal(r.status, 413); ok('a large file as a multipart form is refused with the raw-body instruction')
+const jpg = Buffer.alloc(50e6 + 1); jpg.set([0xff, 0xd8, 0xff, 0xe0])
+const used1 = (await me(a)).used
+r = await raw(key, jpg, { name: 'scan.jpg' }); assert.equal(r.status, 413); assert.match((await r.json()).error, /JPEG and PDF/)
+assert.equal((await me(a)).used, used1, 'a refused file is not counted'); ok('a JPEG over 50 MB is refused (read whole) and not counted')
+if (local) { assert.equal(await drained(), 0); ok('the refused upload is deleted from R2 too') }
+r = await raw(key, Buffer.alloc(95e6 + 1)); assert.equal(r.status, 413); ok('an upload over the paid 95 MB is refused')
 r = await clean(key, '', 'фото «отпуск».jpg'); assert.equal(r.status, 200)
 const cd = r.headers.get('content-disposition'); assert.match(cd, /^attachment; filename="[\x20-\x7e]+"; filename\*=UTF-8''[A-Za-z0-9%._~!-]+$/)
 assert.match(decodeURIComponent(cd.split("''")[1]), /^фото «отпуск»/); ok('a non-ASCII file name cleans, with an ASCII name and the UTF-8 one')

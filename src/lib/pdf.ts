@@ -1,4 +1,4 @@
-import { ascii, concat, deflateZlib, indexOf, inflateZlib, latin1, read } from './bytes'
+import { ascii, concat, deflateZlib, indexOf, inflateZlib, latin1, read, join } from './bytes'
 import { parseXmp } from './xmp'
 import type { Field, Report, Segment } from './types'
 
@@ -334,5 +334,5 @@ export async function stripPdf(blob: Blob, keep = new Set<string>()): Promise<Bl
     pos = e.end
   }
   parts.push(blob.slice(pos))
-  return new Blob(parts, { type: 'application/pdf' })
+  return join(blob, parts, 'application/pdf')
 }

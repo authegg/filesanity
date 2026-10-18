@@ -1,4 +1,4 @@
-import { ascii, concat, crc32, deflateRaw, inflateRaw, lastIndexOf, read, u16, u32, utf8, type Bytes } from './bytes'
+import { ascii, concat, crc32, deflateRaw, inflateRaw, lastIndexOf, read, u16, u32, utf8, type Bytes, join } from './bytes'
 import type { Field, Report, Segment } from './types'
 import { parseXml, rewriteXml, unescapeXml, type XEl } from './xml'
 
@@ -356,5 +356,5 @@ export async function rewriteZip(blob: Blob, entries: Entry[], plan: Map<string,
   const cd = concat(central)
   const eocd = new Uint8Array([...le32(0x06054b50), ...le16(0), ...le16(0), ...le16(central.length / 2), ...le16(central.length / 2), ...le32(cd.length), ...le32(offset), ...le16(0)])
   parts.push(cd, eocd)
-  return new Blob(parts, { type: blob.type || 'application/octet-stream' })
+  return join(blob, parts, blob.type || 'application/octet-stream')
 }

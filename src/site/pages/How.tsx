@@ -1,3 +1,4 @@
+import { API_LIMITS } from '../plans'
 import { Block, Head } from '../ui'
 
 export const meta = {
@@ -29,7 +30,7 @@ export default function How() {
         <p>Sometimes you want a field to stay: the copyright line on a photographer's picture, or the title of a contract. With a <a href="/batch">batch</a> you set a policy, the kinds of field to keep, and it applies to every file. Pro and Team accounts save the policy so it is the same next time.</p>
       </Block>
       <Block id="h-leave" title="When a file does leave">
-        <p>Once, by design: the <a href="/developers">hosted API</a> is for your own systems, which call it with a key. A file sent to the API is held in memory on our server for the length of one request and is not stored. Everything on this website, batches included, runs in your browser.</p>
+        <p>Once, by design: the <a href="/developers">hosted API</a> is for your own systems, which call it with a key. A file sent to the API is held on our server for the length of one request: in memory, or, over {API_LIMITS.memory / 1e6} MB, in temporary storage that is deleted when the reply is sent. It is not kept. Everything on this website, batches included, runs in your browser.</p>
       </Block>
     </>
   )

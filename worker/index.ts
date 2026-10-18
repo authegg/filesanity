@@ -19,17 +19,20 @@
  *   GET  /api/ext/me          { plan, policy } and nothing else; the extension never sends a file or a file name
  *
  *  Stored in KV: per account the email, plan, subscription state, key hashes and names, team emails and policy. The
- *  monthly API count is a Durable Object per charged account. Never a file: the hosted API holds the file in memory for
- *  one request. */
+ *  monthly API count is a Durable Object per charged account. Never a file: the hosted API holds a file in memory for
+ *  one request, or, over API_LIMITS.memory, in R2 (UPLOADS) for that request only. */
 import { DurableObject } from 'cloudflare:workers'
-import { handle } from './handler'
+import { handle, outputs } from './handler'
 import { POLICY } from '../src/lib/index'
-import { PAID, PLANS, type PlanKey } from '../src/site/plans'
+import { read, startsWith } from '../src/lib/bytes'
+import { Ranged } from '../src/lib/ranged'
+import { API_LIMITS, PAID, PLANS, type PlanKey } from '../src/site/plans'
 
 export type Env = {
   ASSETS: Fetcher
   DB: KVNamespace
   QUOTA: DurableObjectNamespace<Quota>
+  UPLOADS: R2Bucket // hosted API uploads over API_LIMITS.memory, for one request each
   EMAIL?: { send(m: { from: string | { email: string; name?: string }; to: string; subject: string; text: string; html?: string }): Promise<{ messageId: string }> } // Cloudflare Email Sending
   MAIL_FROM?: string // signin@filesanity.com
   TURNSTILE_SECRET: string
@@ -431,7 +434,7 @@ async function sign(env: Env, body: string) {
   return b64(await crypto.subtle.sign('Ed25519', k, enc.encode(body)))
 }
 
-async function hosted(req: Request, env: Env, url: URL): Promise<Response> {
+async function hosted(req: Request, env: Env, url: URL, ctx: ExecutionContext): Promise<Response> {
   const cors = (r: Response) => { const h = new Headers(r.headers); for (const [k, v] of Object.entries(API_CORS)) h.set(k, v); return new Response(r.body, { status: r.status, headers: h }) }
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: API_CORS })
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
@@ -445,31 +448,54 @@ async function hosted(req: Request, env: Env, url: URL): Promise<Response> {
   const size = req.headers.get('Content-Length')
   const big = () => cors(json({ error: `Files over ${P.maxBytes / 1e6} MB are over this plan's API limit${plan === 'free' ? `; paid plans take ${PLANS.pro.maxBytes / 1e6} MB` : ''}. The browser cleaner at filesanity.com sets no size limit.` }, 413))
   if (size === null) return cors(json({ error: 'Send the file with a Content-Length header; chunked uploads are not taken.' }, 411))
-  if (Number(size) > P.maxBytes) return big()
+  const n = Number(size), ranged = n > API_LIMITS.memory
+  if (n > P.maxBytes) return big()
+  if (ranged && (req.headers.get('Content-Type') ?? '').startsWith('multipart/')) return cors(json({ error: `Files over ${API_LIMITS.memory / 1e6} MB go as the raw request body with an X-Filename header, not as a multipart form: curl --data-binary @file -H "X-Filename: name.pdf"` }, 413))
   const used = await q.take(m, P.apiFiles)
   if (used === null) return cors(json({ error: 'This month\'s files are used up. A larger plan is at https://filesanity.com/pricing' }, 402))
 
-  // The header is the client's word; the bytes are counted too, and the read stops past the limit.
-  let seen = 0
-  const body = req.body?.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({ transform(c, ctl) { if ((seen += c.byteLength) > P.maxBytes) ctl.error(new Error('too large')); else ctl.enqueue(c) } }))
   const inner = new URL(url); inner.pathname = url.pathname.slice('/api/v1'.length)
-  const res = await handle(new Request(inner, { method: 'POST', headers: req.headers, body }), {})
-  if (res.status >= 400 || seen > P.maxBytes) { await q.give(m); return seen > P.maxBytes ? big() : cors(res) }
+  let seen = 0, res: Response, key = ''
+  const fail = async (r: Response) => { await q.give(m); if (key) ctx.waitUntil(env.UPLOADS.delete(key)); return cors(r) }
+  if (ranged) {
+    // Over the in-memory size the body streams into R2 under a random key, the cleaner reads it by ranges, and the object
+    // is deleted once the reply has been read out (a 1-day lifecycle rule on the bucket catches a dropped request).
+    key = crypto.randomUUID()
+    if (!(await env.UPLOADS.put(key, req.body!.pipeThrough(new FixedLengthStream(n))).catch(() => null))) return fail(json({ error: 'The body did not match its Content-Length.' }, 400))
+    const file = new Ranged(req.headers.get('X-Filename') || url.searchParams.get('name') || 'file', n, req.headers.get('Content-Type') ?? '', async (offset, length) => (await env.UPLOADS.get(key, { range: { offset, length } }))!.body)
+    const head = await read(file as unknown as Blob, 0, 8)
+    if (n > API_LIMITS.whole && (startsWith(head, [0xff, 0xd8, 0xff]) || startsWith(head, [0x25, 0x50, 0x44, 0x46]))) return fail(json({ error: `JPEG and PDF files are read whole, so the API takes them up to ${API_LIMITS.whole / 1e6} MB. The browser cleaner at filesanity.com sets no size limit.` }, 413))
+    res = await handle(new Request(inner, { method: 'POST' }), {}, file as unknown as File)
+  } else {
+    // The header is the client's word; the bytes are counted too, and the read stops past the limit.
+    const body = req.body?.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({ transform(c, ctl) { if ((seen += c.byteLength) > P.maxBytes) ctl.error(new Error('too large')); else ctl.enqueue(c) } }))
+    res = await handle(new Request(inner, { method: 'POST', headers: req.headers, body }), {})
+  }
+  if (res.status >= 400 || seen > P.maxBytes) return fail(seen > P.maxBytes ? big() : res)
   const h = new Headers(res.headers)
   h.set('X-FileSanity-Used', `${used}/${P.apiFiles}`)
-  if (url.pathname === '/api/v1/clean' && url.searchParams.get('report') === '1' && plan !== 'free' && plan !== 'pro') {
-    const out = await res.arrayBuffer()
-    const report = JSON.stringify({ at: new Date().toISOString(), removed: Number(res.headers.get('X-FileSanity-Removed')), kept: Number(res.headers.get('X-FileSanity-Kept')), note: res.headers.get('X-FileSanity-Note') ?? undefined, sha256_out: hex(await crypto.subtle.digest('SHA-256', out)), bytes_out: out.byteLength })
+  const out = outputs.get(res)
+  if (out && url.searchParams.get('report') === '1' && plan !== 'free' && plan !== 'pro') {
+    // Hashed as a stream: a second read of the output, never the whole file in memory.
+    const d = new crypto.DigestStream('SHA-256')
+    await out.stream().pipeTo(d)
+    const report = JSON.stringify({ at: new Date().toISOString(), removed: Number(res.headers.get('X-FileSanity-Removed')), kept: Number(res.headers.get('X-FileSanity-Kept')), note: res.headers.get('X-FileSanity-Note') ?? undefined, sha256_out: hex(await d.digest), bytes_out: out.size })
     h.set('X-FileSanity-Report', b64(enc.encode(report).buffer as ArrayBuffer))
     const sig = await sign(env, report)
     if (sig) h.set('X-FileSanity-Report-Signature', sig)
-    return cors(new Response(out, { status: res.status, headers: h }))
   }
-  return cors(new Response(res.body, { status: res.status, headers: h }))
+  let body = res.body
+  if (key && body) {
+    // The object goes once every range has been read out; FixedLengthStream gives the reply its Content-Length.
+    const t = out ? new FixedLengthStream(out.size) : new TransformStream()
+    ctx.waitUntil(body.pipeTo(t.writable).catch(() => {}).then(() => env.UPLOADS.delete(key)))
+    body = t.readable
+  }
+  return cors(new Response(body, { status: res.status, headers: h }))
 }
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url)
     const p = url.pathname
     // The share sheet's POST normally stops in the service worker. If it arrives here (worker not installed yet), the body
@@ -477,7 +503,7 @@ export default {
     if (p === '/share-target') return Response.redirect(new URL('/?shared=0#cleaner', url).href, 303)
     if (!p.startsWith('/api/')) return env.ASSETS.fetch(req)
     try {
-      if (p.startsWith('/api/v1/')) return await hosted(req, env, url)
+      if (p.startsWith('/api/v1/')) return await hosted(req, env, url, ctx)
       if (p.startsWith('/api/auth/')) return await auth(req, env, url)
       if (p === '/api/ext/me') return await extMe(req, env)
       if (p === '/api/webhooks/paddle' && req.method === 'POST') return await webhook(req, env)

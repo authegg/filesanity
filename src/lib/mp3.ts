@@ -1,4 +1,4 @@
-import { latin1, read, startsWith } from './bytes'
+import { latin1, read, startsWith, join } from './bytes'
 import type { Field, Report, Segment } from './types'
 
 /** MP3: tags sit outside the audio, in an ID3v2 block at the start, an ID3v1 block in the last 128 bytes (with an
@@ -99,5 +99,5 @@ export async function stripMp3(blob: Blob, keep = new Set<string>()): Promise<Bl
   const { start, end } = await layout(blob)
   const s = keep.has('id3v2') ? 0 : start
   const e = keep.has('id3v1') || keep.has('ape') ? blob.size : end
-  return new Blob([blob.slice(s, e)], { type: 'audio/mpeg' })
+  return join(blob, [blob.slice(s, e)], 'audio/mpeg')
 }

@@ -1,4 +1,4 @@
-import { inflateZlib, latin1, read, u16, u32, utf8 } from './bytes'
+import { inflateZlib, latin1, read, u16, u32, utf8, join } from './bytes'
 import { parseTiff } from './exif'
 import { parseXmp } from './xmp'
 import { c2paFields } from './c2pa'
@@ -75,5 +75,5 @@ export async function stripPng(blob: Blob, keep = new Set<string>()): Promise<Bl
   for (const c of chunks) if (c.seg && keep.has(c.seg.id)) c.strip = false
   const parts: BlobPart[] = [blob.slice(0, 8)]
   for (const c of chunks) if (!c.strip) parts.push(blob.slice(c.start, c.end))
-  return new Blob(parts, { type: 'image/png' })
+  return join(blob, parts, 'image/png')
 }

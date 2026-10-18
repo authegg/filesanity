@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FAQ } from '../content'
-import { PAID, PLANS, fmtPrice, type PlanKey } from '../plans'
+import { API_LIMITS, PAID, PLANS, fmtPrice, type PlanKey } from '../plans'
 import { Head } from '../ui'
 import { knownPlan } from '../useMe'
 
@@ -18,7 +18,7 @@ const ROWS: [string, (k: PlanKey) => string][] = [
   ['Saved policy', (k) => (k === 'team' ? 'Shared by the team' : PLANS[k].batch ? 'Yes' : 'No')],
   ['People', (k) => String(PLANS[k].seats)],
   ['Hosted API files a month', (k) => n(PLANS[k].apiFiles)],
-  ['Largest API file', (k) => `${PLANS[k].maxBytes / 1e6} MB`],
+  ['Largest API file', (k) => `${PLANS[k].maxBytes / 1e6} MB${PLANS[k].maxBytes > API_LIMITS.whole ? `; JPEG, PDF ${API_LIMITS.whole / 1e6} MB` : ''}`],
   ['Signed API reports', (k) => (k === 'team' || k === 'api' ? 'Yes' : 'No')],
 ]
 

@@ -1,4 +1,4 @@
-import { latin1, read, startsWith, u32, utf8 } from './bytes'
+import { latin1, read, startsWith, u32, utf8, join } from './bytes'
 import { parseTiff } from './exif'
 import { parseXmp } from './xmp'
 import { c2paFields } from './c2pa'
@@ -59,5 +59,5 @@ export async function stripWebp(blob: Blob, keep = new Set<string>()): Promise<B
   }
   const head = new Uint8Array(12)
   head.set([0x52, 0x49, 0x46, 0x46, size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >>> 24) & 0xff, 0x57, 0x45, 0x42, 0x50])
-  return new Blob([head, ...parts], { type: 'image/webp' })
+  return join(blob, [head, ...parts], 'image/webp')
 }

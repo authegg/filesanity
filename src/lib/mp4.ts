@@ -1,4 +1,4 @@
-import { latin1, read, u16, u32, utf8 } from './bytes'
+import { latin1, read, u16, u32, utf8, join } from './bytes'
 import { boxes, c2paBoxes, uint } from './heic'
 import type { Field, Report, Segment } from './types'
 
@@ -158,5 +158,5 @@ export async function stripMp4(blob: Blob, keep = new Set<string>()): Promise<Bl
   let pos = 0
   for (const e of edits) { parts.push(blob.slice(pos, e.at), e.bytes); pos = e.at + e.bytes.length }
   parts.push(blob.slice(pos))
-  return new Blob(parts, { type: blob.type || 'video/mp4' })
+  return join(blob, parts, blob.type || 'video/mp4')
 }

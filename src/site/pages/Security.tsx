@@ -1,4 +1,5 @@
 import { REPO } from '../content'
+import { API_LIMITS } from '../plans'
 import { Block, Head } from '../ui'
 
 export const meta = {
@@ -26,7 +27,7 @@ export default function Security() {
         <p>Sign-in is by a link sent to your email, good once for 15 minutes. The session is one cookie, HttpOnly and Secure, that lasts 30 days or until you sign out.</p>
       </Block>
       <Block id="h-api" title="The hosted API">
-        <p>Files sent to the <a href="/developers">API</a> are held in memory on Cloudflare's network for one request and are not written anywhere. If that is not acceptable for a file, <a href={REPO}>self-host the same API</a>.</p>
+        <p>Files sent to the <a href="/developers">API</a> are cleaned on Cloudflare's network for one request. Up to {API_LIMITS.memory / 1e6} MB a file stays in memory and is not written anywhere. A larger file, on a paid plan, is written to Cloudflare R2 storage (encrypted at rest) for that request only and deleted once the reply is sent, or within a day if the connection drops. If that is not acceptable for a file, <a href={REPO}>self-host the same API</a>.</p>
       </Block>
       <Block id="h-report" title="Report a problem">
         <p>If you find a security problem, or a file that FileSanity said was clean but was not, email <a href="mailto:hello@filesanity.com?subject=Security">hello@filesanity.com</a> with "Security" in the subject or open an issue on <a href={`${REPO}/issues`}>GitHub</a>. Please send a sample file with invented data, not a real one.</p>

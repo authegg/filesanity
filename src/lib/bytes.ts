@@ -4,6 +4,9 @@
 export type Bytes = Uint8Array<ArrayBuffer>
 export const read = async (blob: Blob, start: number, len: number): Promise<Bytes> =>
   new Uint8Array(await blob.slice(start, Math.min(blob.size, start + len)).arrayBuffer())
+/** A strip's output: a Blob of the parts, unless the source builds its own (a file read by ranges, ranged.ts). */
+export const join = (src: Blob, parts: BlobPart[], type: string): Blob =>
+  (src as Blob & { join?: (p: BlobPart[], t: string) => Blob }).join?.(parts, type) ?? new Blob(parts, { type })
 
 export const u16 = (b: Uint8Array, i: number, le = false) => (le ? b[i] | (b[i + 1] << 8) : (b[i] << 8) | b[i + 1])
 export const u32 = (b: Uint8Array, i: number, le = false) =>

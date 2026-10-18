@@ -1,4 +1,4 @@
-import { concat, latin1, read, startsWith, u16, utf8 } from './bytes'
+import { concat, latin1, read, startsWith, u16, utf8, join } from './bytes'
 import { orientationOnlyExif, parseTiff } from './exif'
 import { parseIrb, parseXmp } from './xmp'
 import { c2paFields, isC2pa } from './c2pa'
@@ -133,5 +133,5 @@ export async function stripJpeg(blob: Blob, keep = new Set<string>()): Promise<B
   const tail = segs.find((s) => s.marker === 0xd9)
   for (const s of segs) if (!s.strip && s !== tail) parts.push(blob.slice(s.start, s.end))
   parts.push(blob.slice(sos < 0 ? segs[segs.length - 1]?.end ?? 2 : sos, tail?.strip ? tail.start : blob.size))
-  return new Blob(parts, { type: 'image/jpeg' })
+  return join(blob, parts, 'image/jpeg')
 }

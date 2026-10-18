@@ -1,4 +1,5 @@
 import { LEGAL, MAIL, UPDATED } from '../content'
+import { API_LIMITS } from '../plans'
 import { Block, Head } from '../ui'
 
 export const meta = {
@@ -31,7 +32,7 @@ export default function Privacy() {
         <p>The paid plans are sold by <a href="https://www.paddle.com">Paddle</a>, acting as merchant of record. It collects your payment details, billing address and tax information under its own privacy policy and tells us your email address, plan and subscription status. We never see your card.</p>
       </Block>
       <Block id="p-api" title="The hosted API">
-        <p>A file sent to the API is held in memory on Cloudflare's network for the length of one request, cleaned, returned, and dropped. It is not written to disk or logged. We keep only the count of files for your quota.</p>
+        <p>A file sent to the API is cleaned on Cloudflare's network for the length of one request. Up to {API_LIMITS.memory / 1e6} MB it is held in memory only, never written to disk. A larger file, on a paid plan, is written for that request to Cloudflare R2 storage (encrypted at rest) under a random name, read from there, and deleted as soon as the reply has been sent; a storage rule deletes anything a dropped connection leaves behind within a day. Neither is logged. We keep only the count of files for your quota.</p>
       </Block>
       <Block id="p-keep" title="How long, and your rights">
         <p>Account data is kept while the account exists and deleted within 30 days of a request to close it; payment records are kept by the merchant of record as tax law requires. Under the Philippine Data Privacy Act of 2012, and similar laws where you live, you can ask to see, correct, export or delete your data, and complain to the National Privacy Commission. Email <a href={`mailto:${MAIL}`}>{MAIL}</a> from your account's address.</p>

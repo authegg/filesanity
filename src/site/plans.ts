@@ -9,7 +9,7 @@ export type Plan = {
   seats: number
   batch: boolean // batches of more than one file, saved policies, the batch record
   apiFiles: number // hosted API files a month
-  maxBytes: number // largest file the hosted API takes (two copies must fit a Worker's 128 MB); the browser has no limit
+  maxBytes: number // largest file the hosted API takes (API_LIMITS); the browser has no limit
   checkout: string // Paddle price id; '' while plans are not on sale
   items: string[]
 }
@@ -26,21 +26,26 @@ export const PLANS: Record<PlanKey, Plan> = {
     items: ['Every format, one file at a time', 'The report for each file', 'Works offline, no account needed'],
   },
   pro: {
-    name: 'Pro', price: 6, who: 'For one person who sends files often', seats: 1, batch: true, apiFiles: 1000, maxBytes: 25e6,
+    name: 'Pro', price: 6, who: 'For one person who sends files often', seats: 1, batch: true, apiFiles: 1000, maxBytes: 95e6,
     checkout: sell('pri_01m53tp6e6hx9m8bqbyazpaq6z', 'pri_01m530fy3k84nhmp59dzwc0ekj'),
     items: ['Batches of any size, zips in and out', 'Saved policy: choose what to keep', 'A record of every batch'],
   },
   team: {
-    name: 'Team', price: 24, who: 'For a firm of up to five', seats: 5, batch: true, apiFiles: 5000, maxBytes: 25e6,
+    name: 'Team', price: 24, who: 'For a firm of up to five', seats: 5, batch: true, apiFiles: 5000, maxBytes: 95e6,
     checkout: sell('pri_01m53tpag4n7018wk8cnnewn46', 'pri_01m530fynd1297384r6bjax1tz'),
     items: ['Pro for five people', 'One policy shared by the team', 'Signed reports from the API'],
   },
   api: {
-    name: 'API', price: 29, who: 'For systems that clean files', seats: 1, batch: true, apiFiles: 50000, maxBytes: 25e6,
+    name: 'API', price: 29, who: 'For systems that clean files', seats: 1, batch: true, apiFiles: 50000, maxBytes: 95e6,
     checkout: sell('pri_01m53tpckbwe97hcwjbarjtgyg', 'pri_01m530fz6h64z1gqjvb3bn17b0'),
     items: ['50,000 files a month by API key', 'Signed reports', 'Files go to our server for one request, then are gone'],
   },
 }
+
+// The hosted API by size. Up to `memory` a file is held in memory for the request (two copies must fit a Worker's 128 MB).
+// Above it the body streams into R2 for the request and is read by ranges, up to the paid plans' maxBytes (Cloudflare caps
+// uploads at 100 MB). JPEG and PDF are still read whole (one copy), so they stop at `whole`.
+export const API_LIMITS = { memory: 25e6, whole: 50e6 }
 
 export const PAID: PlanKey[] = ['pro', 'team', 'api']
 export const fmtPrice = (p: Plan) => (p.price ? `$${p.price}` : '$0')

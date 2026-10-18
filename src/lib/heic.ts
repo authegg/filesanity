@@ -1,4 +1,4 @@
-import { concat, latin1, read, u16, u32, utf8 } from './bytes'
+import { concat, latin1, read, u16, u32, utf8, join } from './bytes'
 import { parseTiff } from './exif'
 import { parseXmp } from './xmp'
 import { c2paFields } from './c2pa'
@@ -169,5 +169,5 @@ export async function stripHeic(blob: Blob, keep = new Set<string>()): Promise<B
   let pos = 0
   for (const [at, len, f] of ranges) { parts.push(blob.slice(pos, at), fills[f] as Uint8Array<ArrayBuffer>); pos = at + len }
   parts.push(blob.slice(pos))
-  return new Blob(parts, { type: blob.type })
+  return join(blob, parts, blob.type)
 }
