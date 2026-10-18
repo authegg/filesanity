@@ -63,7 +63,13 @@ function Skeleton() {
 }
 
 function Signed({ me, reload }: { me: Me; reload: () => void }) {
-  const want = new URLSearchParams(location.search).get('plan') as PlanKey | null
+  // The plan picked on /pricing, then the last one opened here: a closed checkout leaves that row marked.
+  const [want, setWant] = useState(() => new URLSearchParams(location.search).get('plan') as PlanKey | null)
+  const [err, setErr] = useState('')
+  const pick = (k: PlanKey) => {
+    setWant(k); setErr(''); history.replaceState(null, '', `/account?plan=${k}`)
+    checkout(k, me.email).catch(() => setErr('The checkout did not load. Check your connection and try again.'))
+  }
   // Paddle sends a finished checkout back with ?paid=1; the plan lands when the webhook does, so ask again until it shows.
   const [paid] = useState(() => new URLSearchParams(location.search).has('paid'))
   const [waited, setWaited] = useState(false)
@@ -99,10 +105,11 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
                 {PAID.map((k) => (
                   <div key={k} className={`up-row ${want === k ? 'want' : ''}`}>
                     <div><b>{PLANS[k].name}</b> {fmtPrice(PLANS[k])} a month<span>{PLANS[k].items[0]}</span></div>
-                    {PLANS[k].checkout ? <button className={`btn sm ${want === k ? '' : 'ghost'}`} onClick={() => checkout(k, me.email).catch(() => alert('The checkout did not load. Check your connection and try again.'))}>{want === k ? 'Continue to checkout' : `Choose ${PLANS[k].name}`}</button> : <span className="small">Opens soon</span>}
+                    {PLANS[k].checkout ? <button className={`btn sm ${want === k ? '' : 'ghost'}`} onClick={() => pick(k)}>{want === k ? 'Continue to checkout' : `Choose ${PLANS[k].name}`}</button> : <span className="small">Opens soon</span>}
                   </div>
                 ))}
               </div>
+              {err && <p className="err" role="alert">{err}</p>}
               <p className="small">{PLANS.pro.checkout ? 'Your plan shows here a few seconds after paying; reload if it does not.' : 'Paid plans open soon. Your free account carries over.'}</p>
             </>
           )}
