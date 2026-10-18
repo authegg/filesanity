@@ -59,7 +59,12 @@ export default function SignIn() {
 
   const confirm = async () => {
     setState('sending')
-    try { await call('POST', '/api/auth/verify', { t: link }); location.replace('/account') } catch {
+    try {
+      await call('POST', '/api/auth/verify', { t: link })
+      let plan: string | null = null
+      try { plan = localStorage.getItem('fs-want'); localStorage.removeItem('fs-want') } catch { /* storage blocked */ }
+      location.replace(plan ? `/account?plan=${encodeURIComponent(plan)}` : '/account')
+    } catch {
       setState('idle'); setLink(''); setExpired(true); history.replaceState(null, '', '/sign-in?expired=1')
     }
   }

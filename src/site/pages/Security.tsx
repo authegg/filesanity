@@ -19,8 +19,8 @@ export default function Security() {
         </ol>
       </Block>
       <Block id="h-page" title="What the page loads">
-        <p>The site's own HTML, script, styles, font and images, all from filesanity.com. No advertising and no tracking pixel. Two scripts come from Cloudflare: Web Analytics, which counts page views without a cookie and never sees a file, and, on the sign-in page only, Turnstile, which stops automated sign-up requests.</p>
-        <p>The pages are served with a Content Security Policy that only lets them connect back to filesanity.com and to Cloudflare's page counter, so even a mistake in our code could not send a file anywhere else.</p>
+        <p>The site's own HTML, script, styles, font and images, all from filesanity.com. No advertising and no tracking pixel. Two scripts come from Cloudflare: Web Analytics, which counts page views without a cookie and never sees a file, and, on the sign-in page only, Turnstile, which stops automated sign-up requests. On the account page only, and only when you open a checkout, Paddle's checkout script loads to take the payment.</p>
+        <p>The pages are served with a Content Security Policy that only lets them connect back to filesanity.com and to Cloudflare's page counter (and, on the account page, to Paddle for checkout), so even a mistake in our code could not send a file anywhere else.</p>
       </Block>
       <Block id="h-account" title="What an account stores">
         <p>Your email address, your plan and its renewal date from the payment provider, the names and last four characters of your API keys (the keys themselves are stored only as SHA-256 hashes), your team's email addresses, your saved policy, and a monthly count of API files. Nothing about any file you clean in the browser, because we never see one.</p>

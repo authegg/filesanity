@@ -15,10 +15,11 @@ let onPaddle: ((name: string) => void) | undefined
 const ask = (text: string, yes: string) => new Promise<boolean>((done) => {
   const d = document.createElement('dialog')
   d.className = 'sheet ask'
-  d.innerHTML = '<form method="dialog"><p></p><div><button class="btn sm" value="y"></button><button class="btn sm ghost" value="" autofocus>Cancel</button></div></form>'
+  d.setAttribute('aria-labelledby', 'ask-text')
+  d.innerHTML = '<form method="dialog"><p id="ask-text"></p><div><button class="btn sm" value="y"></button><button class="btn sm ghost" value="" autofocus>Cancel</button></div></form>'
   d.querySelector('p')!.textContent = text
   d.querySelector('button')!.textContent = yes
-  d.onclick = (e) => { if (e.target === d) d.close() } // a tap on the backdrop cancels
+  d.onclick = (e) => { if (e.target === d) d.close() } // a tap on the backdrop cancels (the padding sits on the form, so only the backdrop is the dialog itself)
   d.onclose = () => { done(d.returnValue === 'y'); d.remove() }
   ;(document.querySelector('.page') ?? document.body).append(d)
   d.showModal()
@@ -44,8 +45,26 @@ export default function Account() {
   const { me, reload } = useMe()
   // A checkout link (_ptxn) opens without signing in: the buyer may be on another device.
   const ptxn = typeof location !== 'undefined' && new URLSearchParams(location.search).has('_ptxn')
-  useEffect(() => { if (ptxn) loadPaddle().catch(() => alert('The checkout did not load. Check your connection and try again.')) }, [ptxn])
-  useEffect(() => { if (me === null && !ptxn) location.replace(`/sign-in`) }, [me, ptxn])
+  const [ptxnErr, setPtxnErr] = useState(false)
+  useEffect(() => { if (ptxn) loadPaddle().catch(() => setPtxnErr(true)) }, [ptxn])
+  useEffect(() => {
+    if (me !== null || ptxn) return
+    // The plan picked on /pricing survives the sign-in link, which may open in another tab.
+    const plan = new URLSearchParams(location.search).get('plan')
+    try { if (plan) localStorage.setItem('fs-want', plan) } catch { /* storage blocked: the pick is lost, the account is not */ }
+    location.replace('/sign-in')
+  }, [me, ptxn])
+  if (me === null && ptxn) return (
+    <section className="head" aria-labelledby="h1">
+      <div className="wrap acct">
+        <div className="acct-top"><h1 id="h1">Account</h1></div>
+        <div className="sheet group">
+          {ptxnErr ? <p className="err" role="alert">The checkout did not load. Check your connection and reload this page.</p> : <p>Finish your payment in the checkout window.</p>}
+          <p>To see your plan afterwards, <a href="/sign-in">sign in</a> with the email you paid with.</p>
+        </div>
+      </div>
+    </section>
+  )
   if (!me) return <Skeleton />
   return <Signed me={me} reload={reload} />
 }
@@ -82,9 +101,10 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
   }
   // Paddle sends a finished checkout back with ?paid=1; the plan lands when the webhook does, so ask again until it shows.
   const [paid] = useState(() => new URLSearchParams(location.search).has('paid'))
+  const [billingErr] = useState(() => new URLSearchParams(location.search).has('billing'))
   const [waited, setWaited] = useState(false)
   const on = me.plan !== 'free'
-  useEffect(() => { if (paid) history.replaceState(null, '', '/account') }, [paid]) // a later reload shows the plan, not the note
+  useEffect(() => { if (paid || billingErr) history.replaceState(null, '', '/account') }, [paid, billingErr]) // a later reload shows the plan, not the note
   useEffect(() => {
     if (!paid || on) return
     let n = 0
@@ -101,14 +121,15 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
         <div className="sheet group" aria-labelledby="g-plan">
           <h2 id="g-plan">Plan</h2>
           {paid && <p className="note" role="status">{on ? <>Checkout complete. You are on <b>{PLANS[me.plan].name}</b>; Paddle emails the receipt.</> : waited ? 'Checkout complete. Your plan is taking longer than usual to show; reload in a minute. The receipt from Paddle confirms the payment.' : 'Checkout complete. Turning on your plan…'}</p>}
+          {billingErr && <p className="err" role="alert">The billing page did not open. Try again in a minute, or write to us.</p>}
           {me.invite && <Invite by={me.invite} reload={reload} />}
-          {me.via ? <p>You are on <b>{me.via}</b>'s Team plan. They manage billing and set your policy. <button className="link-btn" onClick={() => leave(reload)}>Leave the team</button></p> : me.plan !== 'free' ? (
+          {me.via ? <p>You are on <b>{me.via}</b>'s Team plan. They manage billing and set your policy. <button className="link-btn" onClick={() => leave(reload, setErr)}>Leave the team</button></p> : me.plan !== 'free' ? (
             <>
               <p><b>{p.name}</b>, {fmtPrice(p)} a month. {me.status === 'cancelled' ? `Cancelled; runs until ${day(me.ends)}.` : me.status === 'past_due' ? 'The last payment failed; update your card.' : me.renews ? `Renews ${day(me.renews)}.` : ''}</p>
-              {(me.status === 'active' || me.status === 'trialing') && <Switch me={me} want={want} reload={reload} />}
+              {(me.status === 'active' || me.status === 'trialing') && me.portal && <Switch me={me} want={want} reload={reload} />}
               {me.portal && <><a className="btn" href={me.portal}>Manage billing</a><p className="small">Change your card, see receipts, or cancel, on the billing page.</p></>}
             </>
-          ) : (
+          ) : paid ? null : ( // just paid: no plan buttons while the plan lands, so nobody pays twice
             <>
               <p>Free. Single files in the browser, and {PLANS.free.apiFiles} API files a month to try the API.</p>
               <div className="up">
@@ -119,10 +140,10 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
                   </div>
                 ))}
               </div>
-              {err && <p className="err" role="alert">{err}</p>}
               <p className="small">{PLANS.pro.checkout ? 'Your plan shows here a few seconds after paying; reload if it does not.' : 'Paid plans open soon. Your free account carries over.'}</p>
             </>
           )}
+          {err && <p className="err" role="alert">{err}</p>}
         </div>
 
         <Keys me={me} reload={reload} />
@@ -131,7 +152,7 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
 
         <div className="sheet group" aria-labelledby="g-pol">
           <h2 id="g-pol">Policy</h2>
-          <p>{me.keep.length ? `Keeps ${me.keep.join(', ')}; everything else is removed.` : 'Removes everything FileSanity can remove.'} {p.batch ? <a href="/batch">Change it on the batch page</a> : 'Saved policies come with Pro.'}</p>
+          <p>{me.keep.length ? `Keeps ${me.keep.join(', ')}; everything else is removed.` : 'Removes everything FileSanity can remove.'} {me.via ? `Set by ${me.via}.` : p.batch ? <a href="/batch">Change it on the batch page</a> : 'Saved policies come with Pro.'}</p>
         </div>
       </div>
     </section>
@@ -147,13 +168,14 @@ function Switch({ me, want, reload }: { me: Me; want: PlanKey | null; reload: ()
     if (!to) return
     if (me.plan === to) { setTo(null); return }
     let n = 0
-    const t = setInterval(() => { if (++n > 30) clearInterval(t); else reload() }, 3000)
+    const t = setInterval(() => { if (++n > 30) { clearInterval(t); setTo(null); setErr('Your new plan is taking longer than usual to show; reload in a minute.') } else reload() }, 3000)
     return () => clearInterval(t)
   }, [to, me.plan, reload])
   const go = async (k: PlanKey) => {
-    if (!await ask(`Switch to ${PLANS[k].name}, ${fmtPrice(PLANS[k])} a month? The difference is charged or credited now, prorated.`, `Switch to ${PLANS[k].name}`)) return
-    setErr('')
-    try { await call('POST', '/api/plan', { plan: k }); setTo(k) } catch (x) { setErr((x as Error).message) }
+    const left = me.plan === 'team' && me.team.length ? ` Your ${me.team.length === 1 ? 'team member goes' : `${me.team.length} team members go`} back to Free.` : ''
+    if (!await ask(`Switch to ${PLANS[k].name}, ${fmtPrice(PLANS[k])} a month? The difference is charged or credited now, prorated.${left}`, `Switch to ${PLANS[k].name}`)) return
+    setErr(''); setTo(k) // disables every switch button before the request, so a second tap cannot send a second change
+    try { await call('POST', '/api/plan', { plan: k }) } catch (x) { setTo(null); setErr((x as Error).message) }
   }
   return (
     <>
@@ -175,9 +197,11 @@ function Keys({ me, reload }: { me: Me; reload: () => void }) {
   const [name, setName] = useState('')
   const [fresh, setFresh] = useState('')
   const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
   const create = async (e: React.FormEvent) => {
-    e.preventDefault(); setErr('')
+    e.preventDefault(); setErr(''); setBusy(true)
     try { const r = await call<{ key: string }>('POST', '/api/keys', { name }); setFresh(r.key); setName(''); reload() } catch (x) { setErr((x as Error).message) }
+    setBusy(false)
   }
   const revoke = async (id: string, n: string) => {
     if (!await ask(`Revoke "${n}"? Anything using it stops working.`, 'Revoke key')) return
@@ -198,14 +222,17 @@ function Keys({ me, reload }: { me: Me; reload: () => void }) {
       )}
       <form className="inline" onSubmit={create}>
         <label htmlFor="kname">New key name</label>
-        <div><input id="kname" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. upload form" maxLength={40} /><button className="btn sm">Create key</button></div>
+        <div><input id="kname" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. upload form" maxLength={40} /><button className="btn sm" disabled={busy}>{busy ? 'Creating…' : 'Create key'}</button></div>
       </form>
       <p className="err" role="alert">{err}</p>
     </div>
   )
 }
 
-const leave = async (reload: () => void) => { if (await ask('Leave this team? You go back to your own plan.', 'Leave team')) { await call('POST', '/api/team/leave').catch(() => {}); reload() } }
+const leave = async (reload: () => void, setErr: (m: string) => void) => {
+  if (!await ask('Leave this team? You go back to your own plan.', 'Leave team')) return
+  try { await call('POST', '/api/team/leave'); reload() } catch (x) { setErr((x as Error).message) }
+}
 
 /** A Team owner's invitation: joining puts this account under their plan and their policy, so it takes the person's own click. */
 function Invite({ by, reload }: { by: string; reload: () => void }) {
@@ -214,7 +241,7 @@ function Invite({ by, reload }: { by: string; reload: () => void }) {
   return (
     <div className="note" role="status">
       <p><b>{by}</b> invited you to their Team plan. Joining gives you Team features and their cleaning policy, which only they can change.</p>
-      <p><button className="btn sm" onClick={join}>Join the team</button> <button className="link-btn" onClick={async () => { await call('POST', '/api/team/leave').catch(() => {}); reload() }}>Decline</button></p>
+      <p><button className="btn sm" onClick={join}>Join the team</button> <button className="link-btn" onClick={async () => { try { await call('POST', '/api/team/leave'); reload() } catch (x) { setErr((x as Error).message) } }}>Decline</button></p>
       {err && <p className="err" role="alert">{err}</p>}
     </div>
   )
@@ -227,7 +254,9 @@ function Team({ me, reload }: { me: Me; reload: () => void }) {
     e.preventDefault(); setErr('')
     try { await call('POST', '/api/team', { email }); setEmail(''); reload() } catch (x) { setErr((x as Error).message) }
   }
-  const remove = async (m: string) => { try { await call('DELETE', `/api/team/${encodeURIComponent(m)}`); reload() } catch (x) { setErr((x as Error).message) } }
+  const remove = async (m: string) => {
+    if (!await ask(`Remove ${m}? They go back to Free and lose your policy.`, 'Remove')) return
+    try { await call('DELETE', `/api/team/${encodeURIComponent(m)}`); reload() } catch (x) { setErr((x as Error).message) } }
   return (
     <div className="sheet group" aria-labelledby="g-team">
       <h2 id="g-team">Team</h2>
@@ -249,9 +278,11 @@ function Extension({ me, reload }: { me: Me; reload: () => void }) {
   const [fresh, setFresh] = useState('')
   const [err, setErr] = useState('')
   const tokens = me.keys.filter((k) => k.scope === 'ext')
+  const [busy, setBusy] = useState(false)
   const create = async () => {
-    setErr('')
+    setErr(''); setBusy(true)
     try { const r = await call<{ key: string }>('POST', '/api/keys', { scope: 'ext', name: 'Browser extension' }); setFresh(r.key); reload() } catch (x) { setErr((x as Error).message) }
+    setBusy(false)
   }
   const revoke = async (id: string) => {
     if (!await ask('Disconnect this extension? It goes back to the free features.', 'Disconnect')) return
@@ -267,7 +298,7 @@ function Extension({ me, reload }: { me: Me; reload: () => void }) {
           <tr key={k.id}><th scope="row">{k.name}</th><td><code>fs_ext_…{k.hint}</code></td><td>{day(k.created)}</td><td><button className="link-btn" onClick={() => revoke(k.id)}>Disconnect</button></td></tr>
         ))}</tbody></table>
       )}
-      <button className="btn sm" onClick={create}>Create a connection token</button>
+      <button className="btn sm" onClick={create} disabled={busy}>{busy ? 'Creating…' : 'Create a connection token'}</button>
       <p className="err" role="alert">{err}</p>
     </div>
   )

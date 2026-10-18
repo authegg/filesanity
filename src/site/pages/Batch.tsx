@@ -4,7 +4,7 @@ import { useBatch } from '../../shared/useBatch'
 import { POLICY } from '../../lib'
 import { PLANS } from '../plans'
 import { Block, Head } from '../ui'
-import { call, useMe } from '../useMe'
+import { call, knownPlan, useMe } from '../useMe'
 
 export const meta = {
   title: 'Batch: clean many files at once, with a policy and a record',
@@ -14,7 +14,9 @@ export const meta = {
 export default function Batch() {
   const b = useBatch()
   const { me } = useMe()
-  const can = !!me && PLANS[me.plan].batch
+  // Until the account answers (or offline), the plan this browser last saw decides, so Pro is not shown "needs Pro".
+  const last = knownPlan()
+  const can = me ? PLANS[me.plan].batch : me === undefined && !!last && !!PLANS[last]?.batch
   const [saved, setSaved] = useState('')
 
   // A saved policy loads once the account is known.

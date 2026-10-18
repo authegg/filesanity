@@ -259,8 +259,9 @@ code, pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fo
 .guide-list a:hover { color: var(--accent-ink) !important; text-decoration: underline; text-underline-offset: 4px; }
 .guide-list p { margin: 0; }
 
-.ask { width: min(440px, calc(100vw - 32px)); border: 0; margin: auto; }
+.ask { width: min(440px, calc(100vw - 32px)); border: 0; margin: auto; padding: 0; }
 .ask::backdrop { background: color-mix(in srgb, #04201a 88%, transparent); }
-.ask form { display: grid; gap: 1.25rem; }
+.ask form { display: grid; gap: 1.25rem; padding: clamp(20px, 3vw, 32px); }
 .ask p { margin: 0; color: var(--sheet-ink); font-size: 1.0625rem; }
 .ask div { display: flex; flex-wrap: wrap; gap: .75rem; }
+.v-j .nav { border-bottom: 0; background: linear-gradient(var(--line), var(--line)) bottom center / calc(min(1240px, 100%) - 2 * var(--gutter)) 1px no-repeat, var(--bg); } /* the rule spans the content column, as the section rules do */

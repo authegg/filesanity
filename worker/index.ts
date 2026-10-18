@@ -93,11 +93,13 @@ const active = (a: Account) => a.plan !== 'free' && (['active', 'trialing', 'pas
 /** The plan an account works under: its own if paid and running, else its Team owner's, else free. */
 async function effective(env: Env, a: Account): Promise<{ plan: PlanKey; via?: string }> {
   if (active(a)) return { plan: a.plan }
-  if (a.owner) {
-    const o = await get(env, a.owner)
-    if (o && o.plan === 'team' && active(o) && o.team.includes(a.email)) return { plan: 'team', via: o.email }
-  }
+  if (await member(env, a)) return { plan: 'team', via: a.owner }
   return { plan: 'free' }
+}
+/** Whether the account's owner link still holds: a running Team plan that lists it. A link left by an ended plan holds nobody. */
+const member = async (env: Env, a: Account) => {
+  const o = a.owner ? await get(env, a.owner) : null
+  return !!o && o.plan === 'team' && active(o) && o.team.includes(a.email)
 }
 
 /** A month's hosted-API count, one object per charged account (a Team member's owner), so parallel calls queue on it. */
@@ -210,7 +212,7 @@ async function auth(req: Request, env: Env, url: URL): Promise<Response> {
 
 async function account(req: Request, env: Env, url: URL): Promise<Response> {
   const a = await session(req, env)
-  if (!a) return req.method === 'GET' && url.pathname === '/api/me' ? json(null) : json({ error: 'Signed out. Sign in again.' }, 401)
+  if (!a) return req.method === 'GET' && url.pathname === '/api/me' ? json(null) : url.pathname === '/api/billing' ? Response.redirect(new URL('/sign-in', url).href, 303) : json({ error: 'Signed out. Sign in again.' }, 401)
   if (req.method !== 'GET' && !sameOrigin(req, url)) return json({ error: 'cross-origin' }, 403)
   const { plan, via } = await effective(env, a)
   const p = url.pathname
@@ -221,12 +223,15 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
     const keep = via ? ((await get(env, via))?.keep ?? []) : a.keep
     const invite = via ? null : await env.DB.get(`invite:${a.email}`)
     const pending = (await Promise.all(a.team.map(async (e) => ((await env.DB.get(`invite:${e}`)) === a.email ? e : null)))).filter(Boolean)
+    // An invitation that expired unanswered frees its seat, rather than turning into a member who never joined.
+    const lapsed = (await Promise.all(a.team.filter((e) => !pending.includes(e)).map(async (e) => ((await get(env, e))?.owner === a.email ? null : e)))).filter(Boolean)
+    if (lapsed.length) { a.team = a.team.filter((e) => !lapsed.includes(e)); await put(env, a) }
     return json({ email: a.email, plan, via, invite: invite ?? undefined, pending, own: a.plan, status: a.status, renews: a.renews, ends: a.ends, portal: a.customer ? '/api/billing' : undefined, team: a.team, keys: a.keys.map(({ hash: _, ...k }) => k), keep, used, quota: PLANS[plan].apiFiles, period: month() })
   }
   if (p === '/api/billing' && req.method === 'GET') {
     if (!a.customer) return Response.redirect(new URL('/account', url).href, 303)
     const r = await paddle<{ urls: { general: { overview: string } } }>(env, `/customers/${a.customer}/portal-sessions`, 'POST', {}).catch(() => null)
-    if (!r || r.status >= 300) return json({ error: 'The billing page is not available right now. Try again in a minute.' }, 502)
+    if (!r || r.status >= 300) return Response.redirect(new URL('/account?billing=failed', url).href, 303) // a link, not a fetch: the page says what went wrong
     return Response.redirect(r.data.urls.general.overview, 303)
   }
   if (p === '/api/plan' && req.method === 'POST') {
@@ -235,6 +240,7 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
     if (!to || !PAID.includes(to) || to === a.plan) return json({ error: 'Choose another paid plan.' }, 400)
     if (a.status === 'cancelled' || a.status === 'past_due') return json({ error: a.status === 'past_due' ? 'Update your card on the billing page first.' : 'Your plan is cancelled. Resume it on the billing page first.' }, 409)
     // Accounts from before the subscription id was stored find it by customer.
+    if (!a.sub && !a.customer) return json({ error: 'Your plan cannot be switched here. Write to us and we will move it.' }, 409)
     const sub = a.sub ?? (await paddle<Sub[]>(env, `/subscriptions?customer_id=${a.customer}&status=active,trialing`)).data?.[0]?.id
     if (!sub) return json({ error: 'Your subscription was not found. Use the billing page.' }, 409)
     const price = ({ pro: env.PADDLE_PRICE_PRO, team: env.PADDLE_PRICE_TEAM, api: env.PADDLE_PRICE_API } as Record<PlanKey, string>)[to]
@@ -277,7 +283,7 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
     if (a.team.includes(email)) return json({ team: a.team })
     if (a.team.length + 1 >= PLANS.team.seats) return json({ error: `The Team plan has ${PLANS.team.seats} seats, yours included.` }, 400)
     const m = await get(env, email), inv = await env.DB.get(`invite:${email}`)
-    if ((m?.owner && m.owner !== a.email) || (inv && inv !== a.email)) return json({ error: 'That person is already on another team.' }, 409)
+    if ((m?.owner && m.owner !== a.email && (await member(env, m))) || (inv && inv !== a.email)) return json({ error: 'That person is already on another team.' }, 409)
     // An invitation, not a membership: the person joins from their own account page, so nobody is put under a policy unasked.
     a.team.push(email)
     await Promise.all([put(env, a), env.DB.put(`invite:${email}`, a.email, { expirationTtl: 30 * 86400 })])
@@ -285,8 +291,8 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
   }
   if (p === '/api/team/join' && req.method === 'POST') {
     const by = await env.DB.get(`invite:${a.email}`), o = by ? await get(env, by) : null
-    if (!o || !o.team.includes(a.email) || o.plan !== 'team' || !active(o)) return json({ error: 'That invitation is no longer open.' }, 409)
-    if (a.owner && a.owner !== o.email) return json({ error: 'Leave your current team first.' }, 409)
+    if (!o || !o.team.includes(a.email) || o.plan !== 'team' || !active(o)) { await env.DB.delete(`invite:${a.email}`); return json({ error: 'That invitation is no longer open.' }, 409) }
+    if (a.owner && a.owner !== o.email && (await member(env, a))) return json({ error: 'Leave your current team first.' }, 409)
     a.owner = o.email
     await Promise.all([put(env, a), env.DB.delete(`invite:${a.email}`)])
     return json({ ok: true })
@@ -417,7 +423,12 @@ async function webhook(req: Request, env: Env): Promise<Response> {
   if (a.sub !== d.id) {
     // Custom data is the buyer's to write (Paddle.js runs in their browser), so a new subscription binds to an account
     // only when its Paddle customer has that email, and never replaces one that is still running.
-    if (a.sub && active(a)) { console.warn(`webhook: ${d.id} ignored, ${email} runs on ${a.sub}`); return json({ ok: true }) }
+    if (a.sub && active(a)) {
+      // A second checkout for a running account would bill every month for nothing; stop it now (the owner refunds the first charge).
+      console.warn(`webhook: ${d.id} ignored, ${email} runs on ${a.sub}`)
+      if (['active', 'trialing', 'past_due'].includes(d.status)) await cancelNow(env, d.id).catch((e) => { if (!permanent(e)) throw e; console.error('duplicate cancel gave up', d.id, e) })
+      return json({ ok: true })
+    }
     const c = await paddle<{ email: string }>(env, `/customers/${d.customer_id}`)
     if (c.status >= 300 && c.status !== 404) throw new PaddleError(c.status, c.code, 'customer') // a 500 has Paddle retry
     if (norm(c.data?.email) !== email) { console.warn(`webhook: ${d.id} ignored, customer ${d.customer_id} is not ${email}`); return json({ ok: true }) }

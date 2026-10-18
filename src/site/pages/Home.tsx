@@ -62,7 +62,7 @@ export default function Home({ c }: { c: Cleaner }) {
           <ol className="steps">
             <li><h3>Drop</h3><p>Drop, paste or choose a photo, an Office document or a PDF.</p></li>
             <li><h3>Read</h3><p>FileSanity lists what the file carries, sorted by what it gives away: the person, the place, the time, the device.</p></li>
-            <li><h3>Clean</h3><p>Remove it and download the clean copy. The picture, text and cells are not touched.</p></li>
+            <li><h3>Clean</h3><p>Remove it and download the clean copy. The picture and cells are not touched; in documents, comments go and tracked changes are accepted.</p></li>
           </ol>
           <p className="more"><a href="/how-it-works">How it works, in detail</a></p>
         </div>

@@ -9,13 +9,15 @@ export const meta = {
 export default function How() {
   return (
     <>
-      <Head h1="It reads the file where the file already is." lede="A browser can open a file's bytes, find the parts that describe the file, and write a copy without them. FileSanity is the code that does that, about a thousand lines, and the page around it." />
+      <Head h1="It reads the file where the file already is." lede="A browser can open a file's bytes, find the parts that describe the file, and write a copy without them. FileSanity is the code that does that, a few thousand lines you can read, and the page around it." />
       <Block id="h-read" title="1. Read">
         <p>When you drop, paste or choose a file, the browser hands its bytes to the page. Nothing is sent anywhere. FileSanity looks at the first bytes to decide what the file is, whatever its name says, and then walks its structure.</p>
         <ul>
           <li><b>JPEG:</b> the APP segments before the image data: EXIF, XMP, IPTC, Photoshop blocks and comments.</li>
           <li><b>PNG:</b> the text chunks, eXIf, iTXt XMP and the time chunk.</li>
-          <li><b>Word, Excel, PowerPoint:</b> the zip's core, app and custom property parts, the thumbnail, comments, and tracked changes.</li>
+          <li><b>HEIC and WebP:</b> the Exif and XMP items or chunks.</li>
+          <li><b>MP4 and MOV video, M4A and MP3 audio:</b> the user-data and metadata boxes, header times, and ID3 tags.</li>
+          <li><b>Word, Excel, PowerPoint and OpenDocument:</b> the zip's core, app and custom property parts, the thumbnail, comments, and tracked changes.</li>
           <li><b>PDF:</b> the document information dictionary and the XMP metadata stream.</li>
         </ul>
       </Block>
@@ -23,7 +25,7 @@ export default function How() {
         <p>Every field found is listed with its value, sorted by what it gives away: who made the file, where it was, when, and on what. Technical fields like exposure come last. If a part could not be read, the list says so and says why.</p>
       </Block>
       <Block id="h-remove" title="3. Remove">
-        <p>FileSanity writes a new copy. In photos the metadata segments are left out of the copy. In Office files the property parts are replaced with empty ones, the thumbnail and the comments are dropped, and tracked changes are accepted: inserted text stays, deleted text goes. In PDFs the text of each field is blanked in place, so the byte offsets the PDF depends on stay valid. Otherwise the picture, the text, the cells and the slides are copied as they are.</p>
+        <p>FileSanity writes a new copy. In JPEG, PNG and WebP the metadata segments are left out of the copy; in HEIC and video they are blanked in place, at the same length, so the file's offsets hold. In Office files the property parts are replaced with empty ones, the thumbnail and the comments are dropped, and tracked changes are accepted: inserted text stays, deleted text goes. In PDFs the text of each field is blanked in place, so the byte offsets the PDF depends on stay valid. Otherwise the picture, the text, the cells and the slides are copied as they are.</p>
         <p>One limit, said plainly: when a PDF is encrypted, FileSanity shows its metadata and keeps it, and the result tells you, instead of calling the file clean.</p>
       </Block>
       <Block id="h-keep" title="Keeping some fields">

@@ -6,7 +6,7 @@ export const meta = {
   description: 'The FileSanity extension for Chrome and Firefox removes metadata from a photo, document or PDF the moment you choose it for upload, on any site. Free, and the file never leaves your browser.',
 }
 
-const RELEASES = `${REPO}/releases`
+const SOURCE = `${REPO}/tree/main/extension#readme`
 
 export default function Extension() {
   return (
@@ -14,9 +14,9 @@ export default function Extension() {
       <Head h1="Clean every upload, on every site." lede="Choose a photo, a Word file or a PDF on any website and the extension removes its metadata before the site sees it. The cleaning happens inside your browser, as it does on this site.">
         <div className="sheet group" aria-labelledby="h-install">
           <h2 id="h-install">Install</h2>
-          <p><a className="btn" href={RELEASES}>Get it for Chrome</a></p>
-          <p><a className="btn ghost" href={RELEASES}>Get it for Firefox</a></p>
-          <p className="small">Store listings pending review. Until they are live, the builds are on the GitHub releases page with steps to load them.</p>
+          <p>In review at the Chrome Web Store and Firefox Add-ons. The install buttons go here when the listings are live.</p>
+          <p><a className="btn ghost" href={SOURCE}>Build it from the source</a></p>
+          <p className="small">Two commands and a "Load unpacked", described in the extension's README on GitHub.</p>
         </div>
       </Head>
       <Block id="h-free" title="Free, no account">

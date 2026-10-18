@@ -6,9 +6,7 @@ It is the same cleaner that runs in the browser at [filesanity.com](https://file
 
 ## Install
 
-```sh
-npm i -g filesanity
-```
+Not on npm yet. Until it is, build it from this repository: `npm ci && npm run build:cli`, then run `node cli/dist/filesanity.mjs`.
 
 It needs Node 20.12 or later.
 

@@ -14,7 +14,7 @@ export function App({ path }: { path: string }) {
   return (
     <div className="page v-j jv-1">
       <a className="skip" href="#main">Skip to content</a>
-      <Nav path={r.path} onCta={r.tool ? c.open : undefined} />
+      <Nav path={r.path} onCta={r.tool ? () => { document.getElementById('cleaner')?.scrollIntoView({ block: 'center' }); c.open() } : undefined} />
       <main id="main"><r.Page c={c} /></main>
       <Footer samples={r.path === '/' || r.path === '/batch'} />
     </div>

@@ -6,7 +6,7 @@ export const MAKER_URL = 'https://authegg.com'
 export const LEGAL = 'AUTHEGG SOFTWARE DEVELOPMENT SERVICES' // DTI-registered sole proprietorship
 export const CTA = 'Clean a file'
 export const FORMATS = 'JPEG, PNG, HEIC, WebP, MP4, MOV, M4A, MP3, Word, Excel, PowerPoint, OpenDocument and PDF'
-export const UPDATED = '18 October 2026'
+export const UPDATED = '19 October 2026'
 
 export const NAV = [
   { href: '/how-it-works', label: 'How it works' },
@@ -69,7 +69,7 @@ export const FAQ: { group: string; items: [string, string][] }[] = [
       ['What does it remove?', 'From photos: GPS position, camera and serial number, dates, editing software, names, comments, and AI and Content Credentials (C2PA) records. From Word, Excel and PowerPoint: author, last editor, company, manager, editing time, custom properties, the preview thumbnail and comments; tracked changes are accepted. From videos and voice recordings: GPS position, camera, software, titles and recording time. From MP3s: the ID3 tags. From OpenDocument files: author, editing time, generator, the printer name and comments; tracked changes are accepted. From PDFs: the document information and the XMP, compressed or not.'],
       ['Does it remove AI labels and Content Credentials?', 'It shows and removes the metadata ones: C2PA Content Credentials, the IPTC "made by AI" tag, and the prompt and settings AI tools write into PNG files. Pro can keep them with a saved policy, for example when a client asks for provenance. It does not touch watermarks hidden in the pixels, such as SynthID: FileSanity never changes the picture.'],
       ['How do I know it worked?', 'After cleaning, FileSanity reads the clean copy again with the same parsers and tells you whether any metadata is left. Download the receipt to keep that result with SHA-256 fingerprints of the file before and after; batches put the same in their record.'],
-      ['Does it change what is in my file?', 'No. The picture, the text, the cells and the slides stay as they were. Only the metadata parts are removed or blanked.'],
+      ['Does it change what is in my file?', 'Only where review marks count as hidden data: comments are removed and tracked changes are accepted, so deleted text leaves the file. A saved policy can keep either. Otherwise the picture, the text, the cells and the slides stay as they were; only the metadata parts are removed or blanked.'],
       ['What can it not clean yet?', 'Encrypted PDFs: their metadata is shown and kept, and the result says so instead of calling the file clean. GIF, TIFF, audio other than MP3 and M4A, and legacy .doc, .xls and .ppt files are not read yet. And no cleaner can clean a file name: FileSanity warns when a name gives something away and offers a neutral one.'],
       ['Does it work offline?', 'Yes. After your first visit the site is stored by your browser. Turn off Wi-Fi and clean a file: it still works, because the file never needed the network.'],
       ['Does it remove viruses or macros?', 'No. FileSanity removes metadata. Removing active content from documents is a different job, done by tools sold as content disarm and reconstruction.'],

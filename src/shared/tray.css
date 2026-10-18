@@ -33,3 +33,5 @@
 .tr-name { display: flex; gap: .6rem; align-items: flex-start; font-size: .9rem; color: var(--muted); line-height: 1.45; }
 .tr-name input { margin-top: .2rem; accent-color: var(--ink); flex: none; width: 1.05rem; height: 1.05rem; }
 .tr-name b { color: var(--ink); }
+.tr-chip b, .tr-big, .tr-status { overflow-wrap: anywhere; }
+.tr-big:focus, .tr-status:focus { outline: none; }

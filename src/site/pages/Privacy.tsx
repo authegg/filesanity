@@ -25,7 +25,7 @@ export default function Privacy() {
         <p>If you connect an account, the extension sends your connection token to filesanity.com to read your plan and saved policy, and nothing else. You can disconnect the extension from your account page at any time.</p>
       </Block>
       <Block id="p-account" title="Accounts">
-        <p>If you create an account we keep: your email address; your plan, its status and renewal date; your API keys' names and creation dates, with the keys stored only as hashes; the email addresses you add to a team; your saved policy; and a monthly count of API files. We use them to run your account and nothing else.</p>
+        <p>If you create an account we keep: your email address; your plan, its status and renewal date; your API keys' names, creation dates and last four characters, with the keys stored only as hashes; Paddle's customer and subscription ids for a paid plan; the email addresses you add to a team; your saved policy; and a monthly count of API files. We use them to run your account and nothing else.</p>
         <p>Sign-in emails are sent through Cloudflare Email Sending, which processes your email address for that purpose. Signing in sets one cookie, <code>fs_s</code>, needed to keep you signed in; it lasts 30 days or until you sign out. Your account page also keeps your plan's name in this browser's storage, so the pricing page can mark it without asking our server; signing out removes it. The sign-in page uses Cloudflare Turnstile to block automated requests.</p>
       </Block>
       <Block id="p-pay" title="Payment">

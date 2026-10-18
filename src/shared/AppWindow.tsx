@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fieldCount, fmtBytes, keptCount } from '../lib'
+import { fieldCount, fmtBytes, keptCount, warnCount } from '../lib'
 import { GROUPS, ORDER, rows, when } from './reveal'
 import { useBatch } from './useBatch'
 import { useRequests } from './useRequests'
@@ -52,20 +52,21 @@ export function AppWindow({ batch, label = 'FileSanity', canBatch = true, hold =
         <aside className="aw-side" aria-label="Files">
           <div className="aw-side-head">
             <span>Files</span>
-            <button className="aw-add" onClick={b.open}>Add files</button>
+            <span>{b.items.length > 0 && !b.busy && <button className="aw-add" onClick={b.clear}>Clear</button>} <button className="aw-add" onClick={b.open}>Add files</button></span>
           </div>
           {b.items.length === 0 ? <p className="aw-hint">Nothing here yet.</p> : (
             <ul>
               {b.items.map((it) => {
                 const rr = it.report && b.withPolicy(it.report)
                 return (
-                  <li key={it.id}>
+                  <li key={it.id} className="aw-li">
                     <button className={`aw-file ${it.id === sel ? 'on' : ''}`} onClick={() => setSel(it.id)} aria-current={it.id === sel}>
                       <span className="aw-fn">{it.file.name}</span>
                       <span className="aw-fm">
                         {it.sample ? 'Sample, ' : ''}{it.error ? 'cannot read' : rr ? `${fieldCount(rr)} fields` : 'reading…'}
                       </span>
                     </button>
+                    {!b.busy && <button className="aw-x" onClick={() => b.remove(it.id)} aria-label={`Remove ${it.file.name}`}>×</button>}
                   </li>
                 )
               })}
@@ -90,11 +91,11 @@ export function AppWindow({ batch, label = 'FileSanity', canBatch = true, hold =
               <div className="aw-head">
                 <div>
                   <h3 className="aw-title">{cur.file.name}</h3>
-                  <p className="aw-small">{r.kindLabel}, {fmtBytes(r.bytes)}. {fieldCount(r)} fields to remove{keptCount(r) ? `, ${keptCount(r)} kept` : ''}.</p>
+                  <p className="aw-small">{r.kindLabel}, {fmtBytes(r.bytes)}. {fieldCount(r)} fields to remove{keptCount(r) ? `, ${keptCount(r)} kept` : ''}{warnCount(r) ? `, ${warnCount(r)} in the content left as ${warnCount(r) === 1 ? 'it is' : 'they are'}` : ''}.</p>
                 </div>
               </div>
               {r.note && <p className="aw-note">{r.note}</p>}
-              {fieldCount(r) === 0 && !keptCount(r) ? <p className="aw-clean">This file carries no metadata FileSanity can find. It is already clean.</p> : (
+              {fieldCount(r) === 0 && !keptCount(r) && !warnCount(r) ? <p className="aw-clean">This file carries no metadata FileSanity can find. It is already clean.</p> : (
                 <div className="aw-table" tabIndex={0} role="region" aria-label={`Fields in ${cur.file.name}`}>
                   <table>
                     {ORDER.map((g) => {
@@ -124,14 +125,14 @@ export function AppWindow({ batch, label = 'FileSanity', canBatch = true, hold =
 
       <div className="aw-foot">
         <span className="aw-small" role="status">
-          {b.done ? (b.done.checking ? 'Cleaning and checking each copy…' : `Saved, ${fmtBytes(b.done.bytes)}. ${b.done.left ? `${b.done.left} ${b.done.left === 1 ? 'file still carries' : 'files still carry'} metadata after cleaning: see the record before sending.` : 'Each clean copy was read again: no metadata left.'} Nothing was uploaded.`) : b.ready.length ? `${b.ready.length} ${b.ready.length === 1 ? 'file' : 'files'} ready.` : 'Files are read and cleaned in this tab.'}
+          {b.done?.failed ? <span className="aw-err">{b.done.failed}</span> : b.done ? (b.done.checking ? 'Cleaning and checking each copy…' : `Saved, ${fmtBytes(b.done.bytes)}. ${b.done.left ? `${b.done.left} ${b.done.left === 1 ? 'file still carries' : 'files still carry'} metadata after cleaning: see the record before sending.` : 'Each clean copy was read again: no metadata left.'} Nothing was uploaded.`) : b.reading ? 'Reading your files…' : b.ready.length ? `${b.ready.length} ${b.ready.length === 1 ? 'file' : 'files'} ready.` : 'Files are read and cleaned in this tab.'}
         </span>
         {b.risky > 0 && <label className="aw-nm"><input type="checkbox" checked={b.neutral} onChange={(e) => b.setNeutral(e.target.checked)} /> Rename {b.risky} {b.risky === 1 ? 'file whose name gives' : 'files whose names give'} something away</label>}
         <div className="aw-acts">
-          {b.ready.length > 1 && <button className="aw-ghost" onClick={() => cur && b.cleanOne(cur.id)} disabled={!r}>Clean this one</button>}
+          {b.ready.length > 1 && <button className="aw-ghost" onClick={() => cur && b.cleanOne(cur.id)} disabled={!r || b.busy}>Clean this one</button>}
           <button className="aw-ghost" onClick={b.saveRecord} disabled={!b.ready.length}>Download report</button>
           {b.ready.length > 1 && !canBatch ? <a className="aw-primary" href="/pricing">Clean all {b.ready.length}: needs Pro</a> : (
-            <button className="aw-primary" onClick={() => (b.ready.length > 1 ? b.cleanAll() : cur && b.cleanOne(cur.id))} disabled={!b.ready.length}>
+            <button className="aw-primary" onClick={() => (b.ready.length > 1 ? b.cleanAll() : b.cleanOne(b.ready[0].id))} disabled={!b.ready.length || b.busy || b.reading}>
               {b.ready.length > 1 ? `Clean all ${b.ready.length} and download` : 'Remove all and download'}
             </button>
           )}

@@ -36,7 +36,7 @@ export default function Developers() {
           <tr><th scope="row"><code>?report=1</code></th><td>On <code>/clean</code>, Team and API plans: adds <code>X-FileSanity-Report</code>, a base64 JSON record with the clean file's SHA-256, and <code>X-FileSanity-Report-Signature</code>, an Ed25519 signature over it.</td></tr>
         </tbody></table>
         <p>Files over {API_LIMITS.memory / 1e6} MB go as the raw body with <code>X-Filename</code>, not as a multipart form: <code>curl --data-binary @scan.pdf -H "X-Filename: scan.pdf"</code>. JPEG and PDF files are read whole, so the API takes them up to {API_LIMITS.whole / 1e6} MB; the other formats go up to your plan's size.</p>
-        <p>All paths are under <code>{BASE}</code>. Errors are JSON with an <code>error</code> field: 401 for a missing or revoked key, 402 when the month's files are used, 413 for a file over your plan's size, 415 for a format FileSanity does not read.</p>
+        <p>All paths are under <code>{BASE}</code>. Errors are JSON with an <code>error</code> field: 401 for a missing or revoked key, 402 when the month's files are used, 411 when the request has no Content-Length (chunked uploads are not taken), 413 for a file over your plan's size, 415 for a format FileSanity does not read.</p>
       </Block>
       <Block id="h-verify" title="Checking a signed report">
         <p>The public key is at <code>https://filesanity.com/api/report-key</code>. Anyone holding the clean file, the report and the signature can check that this file came out of FileSanity on that date with those fields removed, without trusting the person who sent it.</p>

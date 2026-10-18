@@ -9,7 +9,7 @@ export function useBatch() {
   const [items, setItems] = useState<Item[]>([])
   const [keep, setKeep] = useState<string[]>([])
   const [over, setOver] = useState(false)
-  const [done, setDone] = useState<{ bytes: number; at: Date; checking: boolean; left: number } | null>(null)
+  const [done, setDone] = useState<{ bytes: number; at: Date; checking: boolean; left: number; failed?: string } | null>(null)
   // Files whose names give something away are saved as photo-01.jpg and so on; the record keeps the old names.
   const [neutral, setNeutral] = useState(true)
   // When files last arrived: the request counter starts here, after any sample download has finished.
@@ -44,8 +44,9 @@ export function useBatch() {
       setItems((xs) => [...(sample ? [] : xs.filter((x) => !x.sample)), ...fresh])
       for (const it of fresh) {
         let patch: Partial<Item>
-        try { patch = { report: await inspect(it.file) } } catch (e) {
-          patch = { error: e instanceof Unsupported ? e.message : `${it.file.name} could not be read.` }
+        // An encrypted PDF cannot be cleaned here; listing it as unreadable keeps it out of the zip and the "no metadata left" line.
+        try { const r = await inspect(it.file); patch = r.segments.some((s) => s.id === 'encrypted') ? { error: r.note } : { report: r } } catch (e) {
+          patch = { error: e instanceof Unsupported ? (/\.zip$/i.test(it.file.name) ? `${it.file.name} could not be opened. It may be damaged, encrypted or a zip inside a zip.` : e.message) : `${it.file.name} could not be read.` }
         }
         setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, ...patch } : x)))
       }
@@ -56,6 +57,8 @@ export function useBatch() {
 
   const withPolicy = (r: Report) => applyPolicy(r, keep)
   const ready = items.filter((x) => x.report)
+  const reading = items.some((x) => !x.report && !x.error)
+  const busy = !!done?.checking
 
   /** Output names for every readable file: cleanName, or photo-01.jpg style for names that give something away. */
   const names = useCallback(() => {
@@ -104,31 +107,42 @@ export function useBatch() {
   }
 
   const cleanAll = useCallback(async () => {
+    if (busy || reading) return
     const at = new Date()
     setDone({ bytes: 0, at, checking: true, left: 0 })
     const paths = names()
     const files = [], proofs = new Map<number, Proof>()
-    for (const it of ready) {
-      const [data, proof] = await cleanItem(it, paths.get(it.id)!)
-      files.push({ path: proof.out, data })
-      proofs.set(it.id, proof)
+    let it: Item | undefined
+    try {
+      for (it of ready) {
+        const [data, proof] = await cleanItem(it, paths.get(it.id)!)
+        files.push({ path: proof.out, data })
+        proofs.set(it.id, proof)
+      }
+      it = undefined
+      files.push({ path: 'filesanity-record.txt', data: new Blob([record(at, proofs)]) })
+      const zip = await zipStore(files)
+      save(zip, `cleaned-${at.toISOString().slice(0, 10)}.zip`)
+      setDone({ bytes: zip.size, at, checking: false, left: [...proofs.values()].filter((p) => p.left.length).length })
+    } catch {
+      setDone({ bytes: 0, at, checking: false, left: 0, failed: it ? `${it.file.name} could not be cleaned, so no zip was saved. Remove it and try again.` : 'The zip could not be made on this device. Try fewer files at a time.' })
     }
-    files.push({ path: 'filesanity-record.txt', data: new Blob([record(at, proofs)]) })
-    const zip = await zipStore(files)
-    save(zip, `cleaned-${at.toISOString().slice(0, 10)}.zip`)
-    setDone({ bytes: zip.size, at, checking: false, left: [...proofs.values()].filter((p) => p.left.length).length })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, record, names])
+  }, [ready, record, names, busy, reading])
 
   /** One file on its own: the clean copy alone, no zip. */
   const cleanOne = useCallback(async (id: number) => {
     const it = items.find((x) => x.id === id)
-    if (!it?.report) return
-    const [blob, proof] = await cleanItem(it, names().get(id)!.split('/').pop()!)
-    save(blob, proof.out)
-    setDone({ bytes: blob.size, at: new Date(), checking: false, left: proof.left.length ? 1 : 0 })
+    if (!it?.report || busy) return
+    const at = new Date()
+    setDone({ bytes: 0, at, checking: true, left: 0 })
+    try {
+      const [blob, proof] = await cleanItem(it, names().get(id)!.split('/').pop()!)
+      save(blob, proof.out)
+      setDone({ bytes: blob.size, at, checking: false, left: proof.left.length ? 1 : 0 })
+    } catch { setDone({ bytes: 0, at, checking: false, left: 0, failed: `${it.file.name} could not be cleaned. It may be damaged; nothing was saved.` }) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, keep, names])
+  }, [items, keep, names, busy])
 
   const sample = useCallback(async () => {
     const names = ['shoes.jpg', 'tour.mov', 'offer.docx', 'memo.pdf']
@@ -143,16 +157,16 @@ export function useBatch() {
   }
   const inputProps = {
     ref: input, type: 'file' as const, hidden: true, multiple: true, tabIndex: -1, 'aria-hidden': true,
-    accept: '.jpg,.jpeg,.png,.heic,.heif,.webp,.mp4,.mov,.m4v,.m4a,.mp3,.pdf,.docx,.xlsx,.pptx,.odt,.ods,.odp',
+    accept: '.jpg,.jpeg,.png,.heic,.heif,.webp,.mp4,.mov,.m4v,.m4a,.mp3,.pdf,.docx,.xlsx,.pptx,.odt,.ods,.odp,.zip,application/zip',
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => { add([...(e.target.files ?? [])]); e.target.value = '' },
   }
 
   return {
-    items, keep, setKeep, over, done, ready, since, withPolicy, cleanOne, neutral, setNeutral,
+    items, keep, setKeep, over, done, ready, reading, busy, since, withPolicy, cleanOne, neutral, setNeutral,
     risky: ready.filter((x) => nameRisks(x.file.name.split('/').pop()!).length).length,
     open: () => input.current?.click(),
     toggle: (k: string) => setKeep((xs) => (xs.includes(k) ? xs.filter((x) => x !== k) : [...xs, k])),
-    remove: (id: number) => setItems((xs) => xs.filter((x) => x.id !== id)),
+    remove: (id: number) => { setItems((xs) => xs.filter((x) => x.id !== id)); setDone(null) },
     clear: () => { setItems([]); setDone(null) },
     cleanAll, sample, add, dropProps, inputProps,
     saveRecord: () => save(new Blob([record(new Date())], { type: 'text/plain' }), 'filesanity-record.txt'),

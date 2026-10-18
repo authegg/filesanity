@@ -21,9 +21,19 @@ export function Nav({ path, onCta }: { path: string; onCta?: () => void }) {
   useEffect(() => {
     if (!open) return
     document.documentElement.style.overflow = 'hidden' // the page under the sheet does not scroll
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
-    addEventListener('keydown', esc)
-    return () => { document.documentElement.style.overflow = ''; removeEventListener('keydown', esc) }
+    // The sheet comes before the burger in the page, so focus goes into it on open and Tab cycles its links and the burger.
+    const stops = () => [...document.querySelectorAll<HTMLElement>('#menu a, .menu-btn')]
+    stops()[0]?.focus()
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setOpen(false); document.querySelector<HTMLElement>('.menu-btn')?.focus() }
+      if (e.key !== 'Tab') return
+      const s = stops(), i = s.indexOf(document.activeElement as HTMLElement), next = e.shiftKey ? (i <= 0 ? s.length - 1 : i - 1) : (i + 1) % s.length
+      e.preventDefault(); s[next]?.focus()
+    }
+    // A tablet turned past the sheet's width would keep the page locked with no burger to undo it.
+    const wide = matchMedia('(min-width: 961px)'), shut = () => { if (wide.matches) setOpen(false) }
+    addEventListener('keydown', key); wide.addEventListener('change', shut)
+    return () => { document.documentElement.style.overflow = ''; removeEventListener('keydown', key); wide.removeEventListener('change', shut) }
   }, [open])
   // The bar's CTA steps back while a page's own "Clean a file" button is on screen, so the two never show at once.
   // Starts hidden on home, whose hero button is always on the first screen, so the prerendered page never shows it then hides it.

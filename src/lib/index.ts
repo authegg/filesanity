@@ -39,7 +39,7 @@ export async function inspect(file: File): Promise<Report> {
   if (startsWith(head, [0x50, 0x4b, 0x03, 0x04])) {
     const r = (await readOoxml(file, file.name).catch(() => null)) ?? (await readOdf(file, file.name).catch(() => null))
     if (r) return r
-    if (ext === 'zip' || !KNOWN[ext]) throw new Unsupported(`${file.name} is a zip archive. Clean every file inside it on the batch page: you get a cleaned zip back with the same folders.`)
+    if (ext === 'zip' || !KNOWN[ext]) throw new Unsupported(`${file.name} is a zip archive. Add it on the batch page, which cleans every file inside and gives back a cleaned zip with the same folders (with Pro).`)
   }
   if (KNOWN[ext]) throw new Unsupported(`This .${ext} does not begin like a ${KNOWN[ext]}. FileSanity reads files by their first bytes, and these are not ones it knows.`)
   throw new Unsupported(`FileSanity cannot read ${ext ? `.${ext}` : 'this kind of'} files yet. It reads JPEG, PNG, HEIC, WebP, MP4, MOV, M4A, MP3, DOCX, XLSX, PPTX, OpenDocument and PDF.`)
