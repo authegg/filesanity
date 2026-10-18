@@ -36,7 +36,7 @@ export default function Home({ c }: { c: Cleaner }) {
 
       <section className="sec says" aria-labelledby="says">
         <div className="wrap says-in">
-          {/* The three supported kinds as the logo's file shape, and they are the switch: no photo, no drawn page. */}
+          {/* The four supported kinds as the logo's file shape, and they are the switch: no photo, no drawn page. */}
           <div className="says-files" role="group" aria-label="Example file">
             {EXAMPLES.map((e) => (
               <button key={e.key} aria-pressed={e.key === ex.key} onClick={() => setEx(e)}>
@@ -45,7 +45,7 @@ export default function Home({ c }: { c: Cleaner }) {
               </button>
             ))}
           </div>
-          {/* All three are laid in one cell and only the chosen one shows, so switching never changes the section's height. */}
+          {/* All four are laid in one cell and only the chosen one shows, so switching never changes the section's height. */}
           <div className="says-stack">{EXAMPLES.map((e) => (
             <div key={e.key} className="says-ex" style={e.key === ex.key ? undefined : { visibility: 'hidden' }} aria-hidden={e.key !== ex.key || undefined}>
               <h2 id={e.key === ex.key ? 'says' : undefined}>{e.title}</h2>

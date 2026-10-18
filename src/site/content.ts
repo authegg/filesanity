@@ -30,6 +30,16 @@ export const EXAMPLES = [
     ],
   },
   {
+    key: 'video', tab: 'Video', ext: 'MOV', url: '/samples/tour.mov', fields: 8,
+    title: 'The followers see a clip. The file pins where you stood.',
+    rows: [
+      { k: 'Where it was', v: 'Cebu City, 10.3157° N, 123.8854° E' },
+      { k: 'When', v: '2 May 2026 at 18:20 local time' },
+      { k: 'On what', v: 'iPhone 16 Pro, iOS 18.5' },
+      { k: 'And again', v: 'In the file header: 10:20:14 UTC' },
+    ],
+  },
+  {
     key: 'word', tab: 'Word', ext: 'DOCX', url: '/samples/offer.docx', fields: 18,
     title: 'The candidate sees an offer. The file names everyone who touched it.',
     rows: [

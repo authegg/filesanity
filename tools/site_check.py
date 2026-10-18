@@ -78,7 +78,7 @@ with sync_playwright() as p:
         # Batch, signed out: samples load, one file cleans, the batch button sends you to Pro, the counter stays 0.
         pg = br.new_page(viewport={'width': 1917, 'height': 870})
         pg.goto(BASE + '/batch', wait_until='networkidle')
-        pg.get_by_text('Clean all 3: needs Pro').wait_for(timeout=8000)
+        pg.get_by_text('Clean all 4: needs Pro').wait_for(timeout=8000)
         check(pg.locator('.aw-net b').inner_text() == '0', f'{eng} batch counter not 0')
         if SHOTS and eng == 'firefox': pg.screenshot(path=f'{OUT}/batch-desk-loaded.png')
         pg.close()

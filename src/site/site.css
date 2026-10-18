@@ -75,15 +75,15 @@ code, pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fo
 @media (min-width: 1024px) { .v-j .hero-in { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: start; } } /* start: the copy stays put when the tray grows */ /* below 1024 j.css stacks the tray under the copy */
 .v-j .hero h1 { font-size: clamp(2.75rem, 4.7vw, 5.25rem); }
 
-/* Home: the three sample files and what each says. */
+/* Home: the four sample files and what each says. */
 .says-in { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 3rem; align-items: start; } /* 4fr|8fr, 3rem: the column the steps, proof and FAQ share */
-.says-files { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 1.5vw, 20px); }
+.says-files { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1.5vw, 20px); }
 .says-files button { background: none; border: 0; padding: 0; color: var(--muted); display: grid; gap: .6rem; justify-items: center; font-weight: 600; }
 .says-glyph { position: relative; display: block; width: 100%; }
 .says-glyph svg { display: block; width: 100%; height: auto; overflow: visible; }
 .says-glyph .body { fill: transparent; stroke: var(--line-strong); stroke-width: .6; transition: fill .2s, stroke .2s; }
 .says-glyph .flap { fill: var(--line-strong); transition: fill .2s; }
-.says-glyph b { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 12%; font-size: clamp(.9375rem, 1.6vw, 1.375rem); font-weight: 800; font-stretch: 125%; color: var(--ink); }
+.says-glyph b { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 12%; font-size: clamp(.75rem, 1.2vw, 1.125rem); font-weight: 800; font-stretch: 125%; color: var(--ink); }
 .says-files button:hover .body { stroke: var(--ink); }
 .says-files button[aria-pressed="true"] { color: var(--ink); }
 .says-files button[aria-pressed="true"] .body { fill: var(--ink); stroke: var(--ink); }
@@ -97,7 +97,7 @@ code, pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fo
 .says-foot { margin-top: 1.5rem !important; }
 .says-stack { display: grid; }
 .says-ex { grid-area: 1 / 1; }
-@media (max-width: 767px) { .says-in { grid-template-columns: minmax(0, 1fr); gap: 2rem; } .says-files { max-width: 300px; } .says-list > div { grid-template-columns: minmax(0, 1fr); gap: .15rem; } }
+@media (max-width: 767px) { .says-in { grid-template-columns: minmax(0, 1fr); gap: 2rem; } .says-files { max-width: 360px; } .says-list > div { grid-template-columns: minmax(0, 1fr); gap: .15rem; } }
 /* Home: kinds table. */
 .kinds { width: 100%; border-collapse: collapse; margin-top: 2.5rem; }
 .kinds th, .kinds td { text-align: left; vertical-align: baseline; padding: 1.1rem 1.5rem 1.1rem 0; border-bottom: 1px solid var(--line); }

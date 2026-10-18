@@ -2,7 +2,8 @@
 
 public/sample.jpg   the Codex still, resized, with EXIF (camera, dates, GPS,
                     artist, software), XMP and IPTC injected
-public/samples/*    the batch page's samples: that photo, offer.docx, memo.pdf
+public/samples/*    the batch page's samples: that photo, offer.docx, memo.pdf, and tour.mov
+                    (the home page's video example: the same still, with an iPhone's tags)
 tests/files/*       one file per format the parser reads, each carrying
                     metadata, plus one clean JPEG and one unsupported file
 
@@ -315,5 +316,18 @@ def make_pdf(compressed=False):
     return bytes(out)
 
 
+def tour_mov():
+    """Two seconds panning across the sample still, tagged the way an iPhone tags a MOV. Invented place and phone."""
+    import subprocess
+    subprocess.run(['ffmpeg', '-y', '-v', 'error', '-loop', '1', '-i', os.path.join(PUB, 'sample.jpg'), '-t', '2', '-r', '15',
+                    '-vf', "crop=800:800:x='200*t':y=0,scale=360:360", '-c:v', 'libx264', '-crf', '32', '-pix_fmt', 'yuv420p',
+                    '-movflags', 'use_metadata_tags', '-metadata', 'creation_time=2026-05-02T10:20:14Z',
+                    '-metadata', 'com.apple.quicktime.location.ISO6709=+10.3157+123.8854+009.000/',
+                    '-metadata', 'com.apple.quicktime.make=Apple', '-metadata', 'com.apple.quicktime.model=iPhone 16 Pro',
+                    '-metadata', 'com.apple.quicktime.software=18.5', '-metadata', 'com.apple.quicktime.creationdate=2026-05-02T18:20:14+0800',
+                    os.path.join(PUB, 'samples', 'tour.mov')], check=True)
+
+
 if __name__ == '__main__':
-    main()
+    import sys
+    tour_mov() if sys.argv[1:] == ['tour'] else main()

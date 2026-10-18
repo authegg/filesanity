@@ -131,7 +131,7 @@ export function useBatch() {
   }, [items, keep, names])
 
   const sample = useCallback(async () => {
-    const names = ['shoes.jpg', 'offer.docx', 'memo.pdf']
+    const names = ['shoes.jpg', 'tour.mov', 'offer.docx', 'memo.pdf']
     add(await Promise.all(names.map(async (n) => new File([await (await fetch(`/samples/${n}`)).blob()], n))), true)
   }, [add])
 
