@@ -19,11 +19,18 @@ export default function SignIn() {
   const [expired, setExpired] = useState(false)
   // The emailed link lands here with ?t=; signing in takes a click, so a mail scanner that opens the link uses nothing up.
   const [link, setLink] = useState('')
+  const [who, setWho] = useState('')
 
   useEffect(() => {
     const q = new URLSearchParams(location.search)
     setExpired(q.has('expired'))
-    setLink(q.get('t') ?? '')
+    const t = q.get('t') ?? ''
+    setLink(t)
+    // The link stays in memory only: out of the address bar, history and the page counter.
+    if (t) {
+      history.replaceState(null, '', '/sign-in')
+      call<{ email: string }>('POST', '/api/auth/verify', { t, peek: true }).then((r) => setWho(r.email), () => { setLink(''); setExpired(true) })
+    }
     const w = window as unknown as { turnstile?: TS; onTs?: () => void }
     w.onTs = () => { if (box.current && w.turnstile && !wid.current) wid.current = w.turnstile.render(box.current, { sitekey: SITEKEY, callback: setToken, 'expired-callback': () => setToken(''), theme: 'light', size: box.current.clientWidth < 300 ? 'compact' : 'normal' }) }
     const s = document.createElement('script')
@@ -63,9 +70,9 @@ export default function SignIn() {
         <h1 id="h1">Sign in</h1>
         {link ? (
           <div className="sheet">
-            <p className="sheet-lede">Your link is good. Confirm to sign in on this device.</p>
-            <button className="btn" onClick={confirm} disabled={state === 'sending'}>{state === 'sending' ? 'Signing in…' : 'Confirm sign-in'}</button>
-            <p className="small">Did not ask to sign in? Close this tab; nothing happens without the click.</p>
+            <p className="sheet-lede">{who ? <>Sign in as <b>{who}</b> on this device.</> : 'Checking your link…'}</p>
+            <button className="btn" onClick={confirm} disabled={state === 'sending' || !who}>{state === 'sending' ? 'Signing in…' : 'Confirm sign-in'}</button>
+            <p className="small">Not your address, or did not ask to sign in? Close this tab; nothing happens without the click.</p>
           </div>
         ) : state === 'sent' ? (
           <div className="sheet" role="status">

@@ -62,6 +62,8 @@ async function signIn(email) {
   }
   const verify = (h) => fetch(`${B}/api/auth/verify`, { method: 'POST', headers: { ...h, 'Content-Type': 'application/json' }, body: JSON.stringify({ t }) })
   assert.equal((await verify({ Origin: 'https://evil.example' })).status, 403, 'confirm from another origin is refused')
+  r = await fetch(`${B}/api/auth/verify`, { method: 'POST', headers: { ...O, 'Content-Type': 'application/json' }, body: JSON.stringify({ t, peek: true }) })
+  assert.deepEqual(await r.json(), { email }, 'the confirm page can name the account'); assert.equal(r.headers.get('set-cookie'), null, 'naming it signs nobody in')
   r = await verify(O); assert.equal(r.status, 200)
   const cookie = r.headers.get('set-cookie').split(';')[0]
   assert.match(r.headers.get('set-cookie'), /HttpOnly; Secure; SameSite=Lax/)
@@ -137,7 +139,9 @@ assert.equal((await acct(a, 'PUT', '/api/policy', { keep: ['exif', 'bogus'] })).
 r = await acct(a, 'POST', '/api/team', { email: M }); assert.deepEqual((await r.json()).team, [M])
 assert.deepEqual(await (await ext(tok)).json(), { plan: 'team', policy: ['exif'] }); ok('extension token follows the plan and the saved policy')
 assert.equal((await acct(a, 'DELETE', `/api/keys/${tokId}`)).status, 200); assert.equal((await ext(tok)).status, 401); ok('revoked extension token refused')
-const b = await signIn(M); m = await me(b); assert.equal(m.plan, 'team'); assert.equal(m.via, A); assert.deepEqual(m.keep, ['exif']); ok('member gets Team and the owner\'s policy (unknown keys dropped)')
+const b = await signIn(M); m = await me(b); assert.equal(m.plan, 'free'); assert.equal(m.invite, A); assert.deepEqual((await me(a)).pending, [M]); ok('adding a person invites them; nothing changes until they join')
+assert.equal((await acct(b, 'POST', '/api/team/join')).status, 200); assert.deepEqual((await me(a)).pending, [])
+m = await me(b); assert.equal(m.plan, 'team'); assert.equal(m.via, A); assert.equal(m.invite, undefined); assert.deepEqual(m.keep, ['exif']); ok('member gets Team and the owner\'s policy (unknown keys dropped)')
 assert.equal((await acct(b, 'PUT', '/api/policy', { keep: [] })).status, 403); ok('member cannot change the team policy')
 const { key: bkey } = await (await acct(b, 'POST', '/api/keys', { name: 'member' })).json()
 const before = (await me(a)).used
@@ -151,6 +155,10 @@ r = await acct(a, 'POST', '/api/plan', { plan: 'api' }); assert.equal(r.status, 
 const sw = calls('PATCH', `/subscriptions/${sid(A)}`).at(-1); assert.deepEqual(sw?.body, { items: [{ price_id: vars.PADDLE_PRICE_API, quantity: 1 }], proration_billing_mode: 'prorated_immediately' })
 assert.equal((await me(a)).plan, 'team', 'the plan moves when the webhook says so'); ok('owner switches plan: one prorated PATCH to Paddle')
 await acct(a, 'DELETE', `/api/team/${encodeURIComponent(M)}`); m = await me(b); assert.equal(m.plan, 'free'); ok('removed member drops to free')
+await acct(a, 'POST', '/api/team', { email: M }); assert.equal((await acct(b, 'POST', '/api/team/leave')).status, 200)
+assert.deepEqual((await me(a)).team, []); assert.equal((await me(b)).invite, undefined); assert.equal((await acct(b, 'POST', '/api/team/join')).status, 409); ok('a declined invitation frees the seat and cannot be joined')
+await acct(a, 'POST', '/api/team', { email: M }); await acct(b, 'POST', '/api/team/join'); assert.equal((await me(b)).via, A)
+await acct(b, 'POST', '/api/team/leave'); m = await me(b); assert.equal(m.plan, 'free'); assert.equal(m.via, undefined); assert.deepEqual((await me(a)).team, []); ok('a member can leave the team')
 
 assert.equal((await acct(a, 'DELETE', `/api/keys/${id}`)).status, 200)
 assert.equal((await clean(key)).status, 401); ok('revoked key refused')

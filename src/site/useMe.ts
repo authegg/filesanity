@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { PlanKey } from './plans'
 
 export type Me = {
-  email: string; plan: PlanKey; via?: string; own: PlanKey; status?: string; renews?: string; ends?: string; portal?: string
+  email: string; plan: PlanKey; via?: string; invite?: string; pending: string[]; own: PlanKey; status?: string; renews?: string; ends?: string; portal?: string
   team: string[]; keys: { id: string; name: string; hint: string; created: string; scope?: 'ext' }[]; keep: string[]; used: number; quota: number; period: string
 }
 

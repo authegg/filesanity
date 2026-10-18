@@ -188,6 +188,7 @@ code, pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fo
 .up-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-block: .8rem; border-top: 1px solid var(--sheet-line); flex-wrap: wrap; }
 .up-row span { display: block; color: var(--sheet-muted); font-size: .9375rem; }
 .sheet .note { background: #e9f1c4; color: var(--sheet-ink); padding: .6rem .75rem; border-radius: var(--radius); }
+.sheet .note .btn + .link-btn { margin-left: 1rem; }
 .up-row.want { background: #e9f1c4; margin-inline: -.75rem; padding-inline: .75rem; border-radius: var(--radius); }
 /* Phones: every plan stacks its button under the text, so rows do not mix layouts by description length. */
 @media (max-width: 600px) { .up-row { flex-direction: column; align-items: flex-start; gap: .6rem; } }

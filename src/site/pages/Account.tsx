@@ -72,7 +72,8 @@ function Signed({ me, reload }: { me: Me; reload: () => void }) {
         <div className="sheet group" aria-labelledby="g-plan">
           <h2 id="g-plan">Plan</h2>
           {paid && <p className="note" role="status">{on ? <>Checkout complete. You are on <b>{PLANS[me.plan].name}</b>; Paddle emails the receipt.</> : waited ? 'Checkout complete. Your plan is taking longer than usual to show; reload in a minute. The receipt from Paddle confirms the payment.' : 'Checkout complete. Turning on your plan…'}</p>}
-          {me.via ? <p>You are on <b>{me.via}</b>'s Team plan. They manage billing.</p> : me.plan !== 'free' ? (
+          {me.invite && <Invite by={me.invite} reload={reload} />}
+          {me.via ? <p>You are on <b>{me.via}</b>'s Team plan. They manage billing and set your policy. <button className="link-btn" onClick={() => leave(reload)}>Leave the team</button></p> : me.plan !== 'free' ? (
             <>
               <p><b>{p.name}</b>, {fmtPrice(p)} a month. {me.status === 'cancelled' ? `Cancelled; runs until ${day(me.ends)}.` : me.status === 'past_due' ? 'The last payment failed; update your card.' : me.renews ? `Renews ${day(me.renews)}.` : ''}</p>
               {(me.status === 'active' || me.status === 'trialing') && <Switch me={me} want={want} reload={reload} />}
@@ -174,6 +175,21 @@ function Keys({ me, reload }: { me: Me; reload: () => void }) {
   )
 }
 
+const leave = async (reload: () => void) => { if (confirm('Leave this team? You go back to your own plan.')) { await call('POST', '/api/team/leave').catch(() => {}); reload() } }
+
+/** A Team owner's invitation: joining puts this account under their plan and their policy, so it takes the person's own click. */
+function Invite({ by, reload }: { by: string; reload: () => void }) {
+  const [err, setErr] = useState('')
+  const join = async () => { try { await call('POST', '/api/team/join'); reload() } catch (x) { setErr((x as Error).message) } }
+  return (
+    <div className="note" role="status">
+      <p><b>{by}</b> invited you to their Team plan. Joining gives you Team features and their cleaning policy, which only they can change.</p>
+      <p><button className="btn sm" onClick={join}>Join the team</button> <button className="link-btn" onClick={async () => { await call('POST', '/api/team/leave').catch(() => {}); reload() }}>Decline</button></p>
+      {err && <p className="err" role="alert">{err}</p>}
+    </div>
+  )
+}
+
 function Team({ me, reload }: { me: Me; reload: () => void }) {
   const [email, setEmail] = useState('')
   const [err, setErr] = useState('')
@@ -185,8 +201,8 @@ function Team({ me, reload }: { me: Me; reload: () => void }) {
   return (
     <div className="sheet group" aria-labelledby="g-team">
       <h2 id="g-team">Team</h2>
-      <p>{me.team.length + 1} of {PLANS.team.seats} seats used. People you add sign in with their own email and get Team features and your policy.</p>
-      {me.team.length > 0 && <table className="keys"><tbody>{me.team.map((m) => <tr key={m}><th scope="row">{m}</th><td><button className="link-btn" onClick={() => remove(m)}>Remove</button></td></tr>)}</tbody></table>}
+      <p>{me.team.length + 1} of {PLANS.team.seats} seats used. People you add are invited: they sign in with their own email and join from their account page, then get Team features and your policy.</p>
+      {me.team.length > 0 && <table className="keys"><tbody>{me.team.map((m) => <tr key={m}><th scope="row">{m}{me.pending.includes(m) && <span className="small"> invited</span>}</th><td><button className="link-btn" onClick={() => remove(m)}>Remove</button></td></tr>)}</tbody></table>}
       {me.team.length + 1 < PLANS.team.seats && (
         <form className="inline" onSubmit={add}>
           <label htmlFor="tmail">Add a person</label>

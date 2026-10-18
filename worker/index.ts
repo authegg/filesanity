@@ -3,12 +3,12 @@
  *  Accounts (cookie session, same origin):
  *   POST /api/auth/start      { email, turnstile }   emails a sign-in link (15 minutes, one use)
  *   GET  /api/auth/verify?t=  redirects to /sign-in?t=, which asks to confirm (mail scanners open links; a GET consumes nothing)
- *   POST /api/auth/verify     { t }   opens a session
+ *   POST /api/auth/verify     { t }   opens a session; { t, peek: true } names the account without using the link
  *   POST /api/auth/signout
  *   GET  /api/me              the account: plan, usage, keys, team, policy
  *   PUT  /api/policy          { keep: string[] }
  *   POST /api/keys            { name, scope? } -> the key, shown once; scope 'ext' pairs the browser extension      DELETE /api/keys/:id
- *   POST /api/team            { email }                            DELETE /api/team/:email
+ *   POST /api/team            { email } invites      DELETE /api/team/:email      POST /api/team/join, /api/team/leave (the invited person)
  *   GET  /api/billing         redirects to the Paddle customer portal
  *   POST /api/plan            { plan }  switches the own paid subscription, prorated now; the webhook then moves the plan
  *   POST /api/webhooks/paddle subscription events, and refunds (a full one, or a chargeback, cancels) (Paddle-Signature)
@@ -72,8 +72,17 @@ const API_CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Met
 const NOSTORE = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' }
 const json = (body: unknown, status = 200, extra: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...NOSTORE, ...extra } })
 
-const get = (env: Env, email: string) => env.DB.get<Account>(`acct:${email}`, 'json')
+// Billing state has its own key that only the webhook writes: KV serves copies up to a minute old, so an account save
+// (policy, keys, team) from a stale copy could otherwise put back a plan the webhook just ended. Its fields override the
+// account's own, which only accounts from before this key still read.
+const BILL = ['plan', 'status', 'renews', 'ends', 'customer', 'sub', 'at'] as const
+const get = async (env: Env, email: string) => {
+  const [a, b] = await Promise.all([env.DB.get<Account>(`acct:${email}`, 'json'), env.DB.get<Partial<Account>>(`bill:${email}`, 'json')])
+  return a && ({ ...a, ...b } as Account)
+}
 const put = (env: Env, a: Account) => env.DB.put(`acct:${a.email}`, JSON.stringify(a))
+// null, not undefined, so a cleared field (renews after a cancel) also overrides the account's old value.
+const putBill = (env: Env, a: Account) => env.DB.put(`bill:${a.email}`, JSON.stringify(Object.fromEntries(BILL.map((k) => [k, a[k] ?? null]))))
 const fresh = (email: string): Account => ({ email, created: new Date().toISOString(), plan: 'free', team: [], keys: [], keep: [] })
 // Our 'cancelled' is Paddle's scheduled cancel: paid until it ends.
 const active = (a: Account) => a.plan !== 'free' && (['active', 'trialing', 'past_due'].includes(a.status ?? '') || (a.status === 'cancelled' && Date.parse(a.ends ?? '') > Date.now()))
@@ -174,10 +183,13 @@ async function auth(req: Request, env: Env, url: URL): Promise<Response> {
   }
   if (url.pathname === '/api/auth/verify' && req.method === 'POST') {
     if (!sameOrigin(req, url)) return json({ error: 'cross-origin' }, 403)
-    const t = norm(((await req.json().catch(() => ({}))) as { t?: unknown }).t)
+    const body = (await req.json().catch(() => ({}))) as { t?: unknown; peek?: unknown }
+    const t = norm(body.t)
     const k = `login:${await sha(t)}`
     const email = /^[a-f0-9]{48}$/.test(t) ? await env.DB.get(k) : null
     if (!email) return json({ error: 'expired' }, 400)
+    // The confirm page names the account first, so a link someone else sent cannot sign you in to their account unnoticed.
+    if (body.peek === true) return json({ email })
     await env.DB.delete(k)
     if (!(await get(env, email))) await put(env, fresh(email))
     const id = rand()
@@ -204,7 +216,9 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
     const used = await quota(env, a, via).used(month()) // the count the API charges, the owner's for a Team member
     // A Team member works under the owner's policy.
     const keep = via ? ((await get(env, via))?.keep ?? []) : a.keep
-    return json({ email: a.email, plan, via, own: a.plan, status: a.status, renews: a.renews, ends: a.ends, portal: a.customer ? '/api/billing' : undefined, team: a.team, keys: a.keys.map(({ hash: _, ...k }) => k), keep, used, quota: PLANS[plan].apiFiles, period: month() })
+    const invite = via ? null : await env.DB.get(`invite:${a.email}`)
+    const pending = (await Promise.all(a.team.map(async (e) => ((await env.DB.get(`invite:${e}`)) === a.email ? e : null)))).filter(Boolean)
+    return json({ email: a.email, plan, via, invite: invite ?? undefined, pending, own: a.plan, status: a.status, renews: a.renews, ends: a.ends, portal: a.customer ? '/api/billing' : undefined, team: a.team, keys: a.keys.map(({ hash: _, ...k }) => k), keep, used, quota: PLANS[plan].apiFiles, period: month() })
   }
   if (p === '/api/billing' && req.method === 'GET') {
     if (!a.customer) return Response.redirect(new URL('/account', url).href, 303)
@@ -259,12 +273,28 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
     if (!EMAIL.test(email) || email === a.email) return json({ error: 'Enter another person\'s email address.' }, 400)
     if (a.team.includes(email)) return json({ team: a.team })
     if (a.team.length + 1 >= PLANS.team.seats) return json({ error: `The Team plan has ${PLANS.team.seats} seats, yours included.` }, 400)
-    const m = (await get(env, email)) ?? fresh(email)
-    if (m.owner && m.owner !== a.email) return json({ error: 'That person is already on another team.' }, 409)
-    m.owner = a.email
+    const m = await get(env, email), inv = await env.DB.get(`invite:${email}`)
+    if ((m?.owner && m.owner !== a.email) || (inv && inv !== a.email)) return json({ error: 'That person is already on another team.' }, 409)
+    // An invitation, not a membership: the person joins from their own account page, so nobody is put under a policy unasked.
     a.team.push(email)
-    await Promise.all([put(env, a), put(env, m)])
+    await Promise.all([put(env, a), env.DB.put(`invite:${email}`, a.email, { expirationTtl: 30 * 86400 })])
     return json({ team: a.team })
+  }
+  if (p === '/api/team/join' && req.method === 'POST') {
+    const by = await env.DB.get(`invite:${a.email}`), o = by ? await get(env, by) : null
+    if (!o || !o.team.includes(a.email) || o.plan !== 'team' || !active(o)) return json({ error: 'That invitation is no longer open.' }, 409)
+    if (a.owner && a.owner !== o.email) return json({ error: 'Leave your current team first.' }, 409)
+    a.owner = o.email
+    await Promise.all([put(env, a), env.DB.delete(`invite:${a.email}`)])
+    return json({ ok: true })
+  }
+  if (p === '/api/team/leave' && req.method === 'POST') {
+    // Declines an open invitation, or leaves the team: either way the owner's seat frees up.
+    const by = a.owner ?? (await env.DB.get(`invite:${a.email}`)), o = by ? await get(env, by) : null
+    if (o) { o.team = o.team.filter((e) => e !== a.email); await put(env, o) }
+    delete a.owner
+    await Promise.all([put(env, a), env.DB.delete(`invite:${a.email}`)])
+    return json({ ok: true })
   }
   const out = p.match(/^\/api\/team\/(.+)$/)
   if (out && req.method === 'DELETE') {
@@ -272,6 +302,7 @@ async function account(req: Request, env: Env, url: URL): Promise<Response> {
     a.team = a.team.filter((e) => e !== email)
     const m = await get(env, email)
     if (m?.owner === a.email) { delete m.owner; await put(env, m) }
+    if ((await env.DB.get(`invite:${email}`)) === a.email) await env.DB.delete(`invite:${email}`)
     await put(env, a)
     return json({ team: a.team })
   }
@@ -377,7 +408,7 @@ async function webhook(req: Request, env: Env): Promise<Response> {
   const price = d.items[0]?.price.id
   const plan: PlanKey | null = price === env.PADDLE_PRICE_PRO ? 'pro' : price === env.PADDLE_PRICE_TEAM ? 'team' : price === env.PADDLE_PRICE_API ? 'api' : null
   if (!plan) return json({ error: 'unknown price' }, 400)
-  const a = (await get(env, email)) ?? fresh(email)
+  const known = await get(env, email), a = known ?? fresh(email)
   // Paddle does not promise order; a payload is the subscription as it was when the event occurred.
   if (a.at && Date.parse(ev.occurred_at) < Date.parse(a.at)) return json({ ok: true })
   if (a.sub !== d.id) {
@@ -390,7 +421,7 @@ async function webhook(req: Request, env: Env): Promise<Response> {
   }
   const live = ['active', 'trialing', 'past_due'].includes(d.status), ending = live && d.scheduled_change?.action === 'cancel'
   Object.assign(a, { plan: live ? plan : 'free', status: ending ? 'cancelled' : d.status, renews: ending ? undefined : (d.next_billed_at ?? undefined), ends: ending ? d.scheduled_change!.effective_at : undefined, customer: d.customer_id, sub: d.id, at: ev.occurred_at })
-  await put(env, a)
+  await Promise.all([putBill(env, a), known ? null : put(env, a)])
   return json({ ok: true })
 }
 

@@ -74,6 +74,7 @@ hook(ended, VARS['PADDLE_PRICE_PRO'], extra={'next_billed_at': None, 'scheduled_
 cookies = {e: session(e) for e in (owner, member, ended, free)}
 for name in ('Laptop', 'Build server that cleans uploads'): api(cookies[owner], '/api/keys', {'name': name})
 api(cookies[owner], '/api/team', {'email': member})
+api(cookies[member], '/api/team/join', {})
 host = BASE.split('//')[1].split(':')[0]
 pages = [(None, r) for r in ROUTES if r != '/account'] + [(free, '/account'), (free, '/account?plan=pro'), (owner, '/account'), (ended, '/account'), (member, '/account')]
 
