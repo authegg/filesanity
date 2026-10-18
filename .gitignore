@@ -16,3 +16,4 @@ video/node_modules/
 __pycache__/
 # Keys and secrets live outside the repo in ../.secrets; wrangler reads .dev.vars here.
 .secrets/
+cli/dist
