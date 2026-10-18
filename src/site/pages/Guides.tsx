@@ -144,7 +144,7 @@ export const GUIDES: Guide[] = [
           <p>A separate cleaner helps when you do not have desktop Office to hand, when you are on a Mac or a phone, or when you have a folder of files and want them all done the same way.</p>
         </Block>
         <Here>
-          <p>FileSanity's <a href="/documents">document cleaner</a> reads a .docx, .xlsx or .pptx in your browser, shows the author, last editor, company, manager, editing time, custom properties and thumbnail, and downloads a copy with those parts emptied. Every word, cell and slide is copied as it was. It does not touch comments or tracked changes, because they are content: accept or delete them in Office first. Legacy .doc, .xls and .ppt are not read yet; save them as the newer format.</p>
+          <p>FileSanity's <a href="/documents">document cleaner</a> reads a .docx, .xlsx or .pptx in your browser, shows the author, last editor, company, manager, editing time, custom properties and thumbnail, and downloads a copy with those parts emptied. It also removes comments, with their authors' names, and accepts tracked changes, so deleted words leave the file. Every other word, cell and slide is copied as it was. Hidden text, hidden sheets and speaker notes are listed and left for you to remove in Office. Legacy .doc, .xls and .ppt are not read yet; save them as the newer format.</p>
         </Here>
         <Checked />
       </>

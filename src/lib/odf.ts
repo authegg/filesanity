@@ -1,11 +1,12 @@
 import { ascii, utf8, type Bytes } from './bytes'
 import { content, count, directory, plural, rewriteZip, type Entry } from './ooxml'
 import type { Field, Report, Segment } from './types'
-import { parseXml, type XEl } from './xml'
+import { parseXml, rewriteXml, unescapeXml, type XEl } from './xml'
 
 /** OpenDocument (LibreOffice, OpenOffice): a zip whose first part, `mimetype`, names the kind. Metadata is meta.xml,
  *  the first-page thumbnail and the printer named in settings.xml. Cleaning empties office:meta, drops the thumbnail
- *  (and its manifest entry) and blanks the printer; content.xml is copied as it is. */
+ *  (and its manifest entry) and blanks the printer; comments and tracked changes are taken out of content.xml and
+ *  styles.xml, changes accepted. */
 
 const KINDS: Record<string, string> = {
   'application/vnd.oasis.opendocument.text': 'OpenDocument text',
@@ -39,7 +40,11 @@ function metaFields(root: XEl): Field[] {
   return out.filter((f) => f.value)
 }
 
-const PRINTER = /(<config:config-item\b[^>]*config:name="(PrinterName|PrinterSetup)"[^>]*>)([^<]*)(<\/config:config-item>)/g
+const ANNOTATION = /<(office|officeooo):annotation[\s>]/g
+const ANNOTATION_EL = /^(office|officeooo):annotation(-end)?$/
+const CHANGE_EL = /^(text:tracked-changes|table:tracked-changes|text:change|text:change-start|text:change-end)$/
+
+const PRINTER =/(<config:config-item\b[^>]*config:name="(PrinterName|PrinterSetup)"[^>]*>)([^<]*)(<\/config:config-item>)/g
 
 async function plan(blob: Blob) {
   const entries = await directory(blob)
@@ -61,13 +66,28 @@ export async function readOdf(blob: Blob, name: string): Promise<Report | null> 
   const printers = [...(await text('settings.xml')).matchAll(PRINTER)].filter((m) => m[2] === 'PrinterName' && m[3].trim()).map((m) => ({ name: 'Printer', value: m[3].trim() }))
   if (printers.length) segments.push({ id: 'settings.xml', label: 'settings', what: 'the printer it was last set up for', bytes: 0, fields: printers, strip: true })
 
-  // Content the sender may not know is there: shown, never changed (as for Word, Excel and PowerPoint).
   const c = await text('content.xml')
+  // Comments and tracked changes, in the body or in headers and footers: removed, changes accepted.
+  const cs = c + (await text('styles.xml'))
+  const notes = count(cs, ANNOTATION), writers = new Set<string>()
+  for (const m of cs.matchAll(/<(office|officeooo):annotation\b[^]*?<\/\1:annotation>/g)) for (const d of m[0].matchAll(/<dc:creator>([^<]*)</g)) if (d[1].trim()) writers.add(unescapeXml(d[1]).trim())
+  if (notes) segments.push({ id: 'comments', label: 'comments', what: 'comments and the names of who wrote them', bytes: 0, strip: true, fields: [{ name: 'Comments', value: plural(notes, 'comment') }, ...(writers.size ? [{ name: 'Written by', value: Array.from(writers).join(', ') }] : [])] })
+  const log = Array.from(cs.matchAll(/<(text|table):tracked-changes\b[^]*?<\/\1:tracked-changes>/g), (m) => m[0]).join('')
+  const del = count(log, /<(text|table):deletion\b/g), all = count(log, /<(text:changed-region|table:(cell-content-change|insertion|deletion|movement))\b/g)
+  const on = /config:name="RecordChanges"[^>]*>true</.test(await text('settings.xml'))
+  if (all || on) {
+    const changers = new Set<string>()
+    for (const d of log.matchAll(/<dc:creator>([^<]*)</g)) if (d[1].trim()) changers.add(unescapeXml(d[1]).trim())
+    const fields: Field[] = []
+    if (del) fields.push({ name: 'Deleted text', value: `${plural(del, 'tracked deletion')}; the words are in the file until the change is accepted` })
+    if (all - del) fields.push({ name: 'Other tracked changes', value: plural(all - del, 'change') })
+    if (on) fields.push({ name: 'Track changes', value: 'switched on' })
+    if (changers.size) fields.push({ name: 'Changed by', value: Array.from(changers).join(', ') })
+    segments.push({ id: 'changes', label: 'changes', what: 'tracked changes and who made them; cleaning accepts every change as it stands', bytes: 0, strip: true, fields })
+  }
+
+  // Content the sender may not know is there: shown, never changed (as for Word, Excel and PowerPoint).
   const hidden: Field[] = []
-  const del = count(c, /<text:deletion\b/g), changes = count(c, /<text:changed-region\b/g), notes = count(c, /<office:annotation\b/g)
-  if (del) hidden.push({ name: 'Deleted text still inside', value: `${plural(del, 'tracked deletion')}; the words are in the file until the change is accepted` })
-  else if (changes) hidden.push({ name: 'Tracked changes', value: plural(changes, 'change') })
-  if (notes) hidden.push({ name: 'Comments', value: plural(notes, 'comment') })
   const hid = count(c, /<text:hidden-(paragraph|text)\b/g) + count(c, /text:display="none"/g)
   if (hid) hidden.push({ name: 'Hidden text', value: plural(hid, 'passage') })
   const rows = count(c, /table:visibility="(collapse|filter)"/g)
@@ -92,5 +112,18 @@ export async function stripOdf(blob: Blob, keep = new Set<string>()): Promise<Bl
   if (!keep.has('meta.xml') && entries.some((e) => e.name === 'meta.xml')) out.set('meta.xml', ascii((await text('meta.xml')).replace(/<office:meta\b[^>]*>[^]*<\/office:meta>/, '<office:meta/>')))
   if (!keep.has('settings.xml') && entries.some((e) => e.name === 'settings.xml')) out.set('settings.xml', ascii((await text('settings.xml')).replace(PRINTER, '$1$4')))
   if (drop.length) out.set('META-INF/manifest.xml', ascii((await text('META-INF/manifest.xml')).replace(/<manifest:file-entry\b[^>]*manifest:full-path="Thumbnails\/[^"]*"[^>]*\/>/g, '')))
+  // Accepting a change in OpenDocument: the change log (which holds the deleted words) and the marks in the text go, and
+  // the text between the marks is already the current version.
+  const comments = !keep.has('comments'), changes = !keep.has('changes')
+  for (const part of ['content.xml', 'styles.xml']) {
+    const src = await text(part)
+    const t = rewriteXml(src, (name) => ((comments && ANNOTATION_EL.test(name)) || (changes && CHANGE_EL.test(name)) ? '' : undefined))
+    if (t !== src) out.set(part, ascii(t))
+  }
+  if (changes) {
+    const s = out.has('settings.xml') ? utf8(out.get('settings.xml')!) : await text('settings.xml')
+    const t = s.replace(/(config:name="RecordChanges"[^>]*>)true</, '$1false<')
+    if (t !== s) out.set('settings.xml', ascii(t))
+  }
   return rewriteZip(blob, entries, out)
 }

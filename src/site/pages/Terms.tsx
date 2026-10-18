@@ -14,7 +14,7 @@ export default function Terms() {
         <p>FileSanity is run by {LEGAL}, a sole proprietorship registered with the DTI in the Philippines (&ldquo;we&rdquo;). It removes metadata from files. The website does this in your browser; the hosted API does it on our server for one request. The software is also published under the <a href={`${REPO}/blob/main/LICENSE`}>MIT licence</a>, which governs the code; these terms govern the service at filesanity.com.</p>
       </Block>
       <Block id="t-check" title="Check the result">
-        <p>FileSanity tells you what it removed and what it kept. It does not read every format or every place metadata can hide, and it does not remove content such as tracked changes, comments, hidden text or what a picture shows. You are responsible for checking a file before you send it. The service is provided as is, without warranty.</p>
+        <p>FileSanity tells you what it removed and what it kept. It does not read every format or every place metadata can hide, and apart from removing comments and accepting tracked changes in office documents, it does not remove content such as hidden text, speaker notes or what a picture shows. You are responsible for checking a file before you send it. The service is provided as is, without warranty.</p>
       </Block>
       <Block id="t-account" title="Accounts">
         <p>Keep access to your email address and your API keys to yourself; anything done with them is treated as done by you. A Team owner may add and remove people and decides the team's policy. We may suspend an account used to abuse the service or others.</p>

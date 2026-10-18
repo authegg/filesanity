@@ -86,3 +86,27 @@ export function parseXml(src: string): XEl | null {
   doc.parent = null
   return doc
 }
+
+const TOKEN = /<!--[^]*?-->|<!\[CDATA\[[^]*?\]\]>|<[?!][^>]*>|<\/([^\s>]+)\s*>|<([^\s/>]+)(?:[^>"']|"[^"]*"|'[^']*')*?(\/?)>/g
+
+/** Rebuilds an XML text element by element, innermost first: `fn` gets each element's name, its start tag and its already
+ *  rebuilt inner text, and returns what to write in its place (undefined keeps the element). Everything else passes through
+ *  as it was, so a part with nothing to change comes back identical. */
+export function rewriteXml(src: string, fn: (name: string, tag: string, inner: string) => string | undefined): string {
+  const stack: { name: string; tag: string; out: string[] }[] = [{ name: '', tag: '', out: [] }]
+  let i = 0
+  for (const m of src.matchAll(TOKEN)) {
+    const top = stack[stack.length - 1]
+    top.out.push(src.slice(i, m.index))
+    i = m.index + m[0].length
+    if (m[2] && m[3]) top.out.push(fn(m[2], m[0], '') ?? m[0])
+    else if (m[2]) stack.push({ name: m[2], tag: m[0], out: [] })
+    else if (m[1] && stack.length > 1) {
+      const el = stack.pop()!, inner = el.out.join('')
+      stack[stack.length - 1].out.push(fn(el.name, el.tag, inner) ?? el.tag + inner + m[0])
+    } else top.out.push(m[0])
+  }
+  // An element left open (not well-formed) is written back as it came.
+  while (stack.length > 1) { const el = stack.pop()!; stack[stack.length - 1].out.push(el.tag + el.out.join('')) }
+  return stack[0].out.join('') + src.slice(i)
+}

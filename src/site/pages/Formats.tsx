@@ -65,11 +65,12 @@ export const Documents = page({
     ['Device', 'Application name and version, template'],
     ['Custom fields', 'Every custom property: client numbers, matter numbers, internal tags'],
     ['Preview', 'The thumbnail picture of the first page'],
-    ['OpenDocument', 'LibreOffice files: the same fields from meta.xml, the thumbnail, and the name of the printer it was last set up for'],
+    ['Review', 'Comments and the names of who wrote them; tracked changes are accepted, so deleted words leave the file'],
+    ['OpenDocument', 'LibreOffice files: the same fields from meta.xml, the thumbnail, the name of the printer it was last set up for, comments and tracked changes'],
   ],
-  keeps: ['Every word, cell, formula, slide and picture in the document', 'Styles, layout and formatting'],
+  keeps: ['Every word, cell, formula, slide and picture in the current version of the document', 'Styles, layout and formatting'],
   guide: <>To do it in Office with Document Inspector, read <a href="/guides/remove-author-from-office-files">remove the author and company from Word, Excel and PowerPoint</a>.</>,
-  note: 'Some of what leaks is content, not metadata: hidden sheets, rows and columns, the data behind a pivot table, hidden text, deleted text kept as a tracked change, comments, speaker notes, hidden slides, embedded files, and pictures or templates fetched from the web when the file opens. FileSanity lists each one before you clean and leaves it as it is, because removing it would change the document; remove it in Office. Legacy .doc, .xls and .ppt files are not read yet.',
+  note: 'Some of what leaks is content, not metadata. Comments go, with their authors, and tracked changes are accepted as they stand, so deleted text leaves the file; a batch policy can keep either. Hidden sheets, rows and columns, the data behind a pivot table, hidden text, speaker notes, hidden slides, embedded files, and pictures or templates fetched from the web when the file opens are listed before you clean and left as they are, because removing them would change the document; remove them in Office. Legacy .doc, .xls and .ppt files are not read yet.',
 })
 
 export const Pdf = page({

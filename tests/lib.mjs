@@ -14,15 +14,18 @@ await build({ entryPoints: [join(here, '../src/lib/index.ts')], bundle: true, fo
 const lib = await import(pathToFileURL(bundle).href)
 
 const report = {}
-for (const name of process.argv.slice(2)) {
+// "name@key1,key2" cleans under a policy that keeps those keys and writes out/lib/key1+key2-name.
+for (const arg of process.argv.slice(2)) {
+  const [name, policy] = arg.split('@')
+  const keep = policy ? policy.split(',') : []
   const file = new File([await readFile(join(here, 'files', name))], name)
   try {
-    const r = await lib.inspect(file)
+    const r = lib.applyPolicy(await lib.inspect(file), keep)
     const blob = await lib.strip(file, r)
-    await writeFile(join(out, name), new Uint8Array(await blob.arrayBuffer()))
-    report[name] = { removed: lib.fieldCount(r), kept: lib.keptCount(r), note: r.note ?? '', kind: r.kind, fields: r.segments.flatMap((s) => s.fields.map((f) => `${f.name}=${f.value}`)), left: (await lib.checkClean(blob, name)).map((f) => `${f.name}=${f.value}`), keys: r.segments.map((s) => `${s.id}=${lib.policyKey(s.id) ?? ''}`) }
+    await writeFile(join(out, policy ? `${keep.join('+')}-${name}` : name), new Uint8Array(await blob.arrayBuffer()))
+    report[arg] = { removed: lib.fieldCount(r), kept: lib.keptCount(r), note: r.note ?? '', kind: r.kind, fields: r.segments.flatMap((s) => s.fields.map((f) => `${f.name}=${f.value}`)), left: (await lib.checkClean(blob, name, keep)).map((f) => `${f.name}=${f.value}`), keys: r.segments.map((s) => `${s.id}=${lib.policyKey(s.id) ?? ''}`) }
   } catch (e) {
-    report[name] = { error: `${e.constructor.name}: ${e.message}` }
+    report[arg] = { error: `${e.constructor.name}: ${e.message}` }
   }
 }
 console.log(JSON.stringify(report))
