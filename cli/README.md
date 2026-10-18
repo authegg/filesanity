@@ -10,7 +10,7 @@ It is the same cleaner that runs in the browser at [filesanity.com](https://file
 npm i -g filesanity
 ```
 
-It needs Node 20 or later.
+It needs Node 20.12 or later.
 
 ## Use
 
