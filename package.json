@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build && vite build --ssr src/site/entry-server.tsx --outDir dist/server && node scripts/prerender.mjs && node scripts/pwa.mjs",
     "lint": "oxlint",
     "preview": "npm run build && wrangler dev",
-    "build:ext": "node scripts/build-extension.mjs"
+    "build:ext": "node scripts/build-extension.mjs",
+    "build:cli": "node cli/build.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
