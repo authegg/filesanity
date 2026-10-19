@@ -1,6 +1,6 @@
 # Store listings: Chrome Web Store and Firefox Add-ons (AMO)
 
-Chrome: submitted for review 2026-10-17 (item nlhdbbnjdjaeloofbgddkladdagleghk, contains in-app purchases, publishes automatically on approval). AMO: submitted 2026-10-17 as `filesanity` (desktop only, MIT, source zip from `git archive HEAD` attached, notes give the build), awaiting review. Upload `dist-extension/filesanity-chrome-1.0.0.zip` to Chrome and `dist-extension/filesanity-firefox-1.0.0.zip` to AMO (build with `npm run build:ext`). AMO asks for the source as well: upload a zip of the repository at the release commit, with the build steps from `extension/README.md`.
+Chrome: submitted for review 2026-10-17 (item nlhdbbnjdjaeloofbgddkladdagleghk, contains in-app purchases, publishes automatically on approval). Rejected 2026-10-18 for "Keyword Spam" (Yellow Argon): the format list in the long description; replaced with plain words, resubmitted. Keep format lists out of the store text; they live on filesanity.com/how-it-works. AMO: submitted 2026-10-17 as `filesanity` (desktop only, MIT, source zip from `git archive HEAD` attached, notes give the build), awaiting review. Upload `dist-extension/filesanity-chrome-1.0.0.zip` to Chrome and `dist-extension/filesanity-firefox-1.0.0.zip` to AMO (build with `npm run build:ext`). AMO asks for the source as well: upload a zip of the repository at the release commit, with the build steps from `extension/README.md`.
 
 ## Name
 
@@ -19,7 +19,7 @@ Photos, documents and PDFs carry more than you can see: the GPS position where a
 FileSanity removes that metadata the moment you choose, drop or paste a file for upload, on any website, before the site receives it. The cleaning happens inside your browser. Your files are never uploaded to FileSanity.
 
 Free, with no account:
-- Cleans JPEG, PNG, HEIC, WebP, MP4, MOV, M4A, MP3, DOCX, XLSX, PPTX, ODT, ODS, ODP and PDF uploads on every site.
+- Cleans the photos, videos, audio, Office documents and PDFs you upload, on every site.
 - The toolbar button shows how many files were cleaned on the current tab and today.
 - Pause it for any site with one switch.
 - Drop a file on the toolbar panel to clean it and download the clean copy.
