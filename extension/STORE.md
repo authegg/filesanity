@@ -1,6 +1,6 @@
 # Store listings: Chrome Web Store and Firefox Add-ons (AMO)
 
-Chrome: submitted for review 2026-10-17 (item nlhdbbnjdjaeloofbgddkladdagleghk, contains in-app purchases, publishes automatically on approval). Rejected 2026-10-18 for "Keyword Spam" (Yellow Argon): the format list in the long description; replaced with plain words, resubmitted. Keep format lists out of the store text; they live on filesanity.com/how-it-works. AMO: submitted 2026-10-17 as `filesanity` (desktop only, MIT, source zip from `git archive HEAD` attached, notes give the build), awaiting review. Upload `dist-extension/filesanity-chrome-1.0.0.zip` to Chrome and `dist-extension/filesanity-firefox-1.0.0.zip` to AMO (build with `npm run build:ext`). AMO asks for the source as well: upload a zip of the repository at the release commit, with the build steps from `extension/README.md`.
+Chrome: submitted for review 2026-10-17 (item nlhdbbnjdjaeloofbgddkladdagleghk, contains in-app purchases, publishes automatically on approval). Rejected 2026-10-18 for "Keyword Spam" (Yellow Argon): the format list in the long description; replaced with plain words, resubmitted. Rejected again 2026-10-21 for the audience list ("Journalists, lawyers, …"); removed it and the list of field examples, resubmitted. Keep every comma-separated list of nouns out of the store text; they live on filesanity.com/how-it-works. AMO: submitted 2026-10-17 as `filesanity` (desktop only, MIT, source zip from `git archive HEAD` attached, notes give the build), awaiting review. Upload `dist-extension/filesanity-chrome-1.0.0.zip` to Chrome and `dist-extension/filesanity-firefox-1.0.0.zip` to AMO (build with `npm run build:ext`). AMO asks for the source as well: upload a zip of the repository at the release commit, with the build steps from `extension/README.md`.
 
 ## Name
 
@@ -14,7 +14,7 @@ Chrome takes the name and this summary from `manifest.json`; keep them in step.
 
 ## Long description
 
-Photos, documents and PDFs carry more than you can see: the GPS position where a photo was taken, the phone and its serial number, the author and company in a Word file, editing time in a spreadsheet, names in a PDF.
+Photos, documents and PDFs carry more than you can see: where a photo was taken, which phone took it, and who wrote or edited a document.
 
 FileSanity removes that metadata the moment you choose, drop or paste a file for upload, on any website, before the site receives it. The cleaning happens inside your browser. Your files are never uploaded to FileSanity.
 
@@ -31,8 +31,6 @@ With a FileSanity Pro, Team or API plan:
 - A log of your last 100 cleans, kept in your browser only.
 
 What it does not do: it does not clean files a site reads from the clipboard, and an encrypted PDF is reported as not cleaned rather than changed. The source code is open under the MIT licence.
-
-Who it is for: people who send files to strangers. Journalists, lawyers, HR staff, freelancers and marketplace sellers.
 
 ## Category
 
