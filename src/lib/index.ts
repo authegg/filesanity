@@ -63,7 +63,7 @@ export function strip(file: File, report: Report): Promise<Blob> {
 
 /** A policy is the list of segment kinds a team keeps; everything else is removed. Shared as a URL, stored nowhere. */
 export const POLICY: { key: string; label: string; formats: string }[] = [
-  { key: 'exif', label: 'EXIF', formats: 'JPEG, HEIC, WebP' },
+  { key: 'exif', label: 'EXIF', formats: 'JPEG, HEIC, WebP, photos in PDFs' },
   { key: 'xmp', label: 'XMP', formats: 'JPEG, HEIC, WebP, PDF' },
   { key: 'iptc', label: 'IPTC', formats: 'JPEG' },
   { key: 'com', label: 'Comments', formats: 'JPEG' },
@@ -84,7 +84,7 @@ export const POLICY: { key: string; label: string; formats: string }[] = [
   { key: 'info', label: 'Info dictionary', formats: 'PDF' },
 ]
 const KEY: [RegExp, string][] = [
-  [/^(exif|EXIF)-/, 'exif'], [/^(xmp[xz]?|XMP)-/, 'xmp'], [/^iptc-/, 'iptc'], [/^com-/, 'com'],
+  [/^(exif|EXIF|exifimg)-/, 'exif'], [/^(xmp[xz]?|XMP)-/, 'xmp'], [/^iptc-/, 'iptc'], [/^com-/, 'com'],
   [/^(tEXt|zTXt|iTXt)-/, 'text'], [/^eXIf-/, 'exif-png'], [/^tIME-/, 'time'], [/^(c2pa|caBX|C2PA)-/, 'c2pa'],
   [/^(docProps\/core|meta)\.xml$/, 'core'], [/^settings\.xml$/, 'printer'], [/^docProps\/app\.xml$/, 'app'], [/^docProps\/custom\.xml$/, 'custom'], [/^(docProps\/thumbnail\.|Thumbnails\/)/i, 'thumbnail'],
   [/^comments$/, 'comments'], [/^changes$/, 'changes'],

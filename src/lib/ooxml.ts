@@ -1,6 +1,8 @@
 import { ascii, concat, crc32, deflateRaw, inflateRaw, lastIndexOf, read, u16, u32, utf8, type Bytes, join } from './bytes'
 import type { Field, Report, Segment } from './types'
 import { parseXml, rewriteXml, unescapeXml, type XEl } from './xml'
+import { readJpeg, stripJpeg } from './jpeg'
+import { readPng, stripPng } from './png'
 
 export type Entry = { name: string; nameBytes: Bytes; flags: number; method: number; crc: number; csize: number; usize: number; offset: number; extAttr: number; madeBy: number; dataStart?: number }
 
@@ -95,6 +97,10 @@ export async function readOoxml(blob: Blob, name: string): Promise<Report | null
     }
   }
   for (const s of await reviewing(blob, entries)) {
+    segments.push(s)
+    stripped += s.bytes
+  }
+  for (const s of await pictureSegment(blob, entries)) {
     segments.push(s)
     stripped += s.bytes
   }
@@ -310,6 +316,33 @@ async function unreview(blob: Blob, entries: Entry[], plan: Map<string, Bytes | 
   for (const [n, t] of texts) if (!drop.has(n)) plan.set(n, ascii(t))
 }
 
+/** Photos stored in the package (word/media, ppt/media, xl/media, OpenDocument Pictures/) keep their own EXIF and GPS;
+ *  they are read and cleaned with the photo parsers. The first-page thumbnail is not one: it is dropped whole.
+ *  shortcut: JPEG and PNG only; HEIC, WebP or TIFF stored in a document are not opened. Add them if users send them. */
+async function pictures(blob: Blob, entries: Entry[]) {
+  const out: { en: Entry; pic: Blob; r: Report }[] = []
+  for (const en of entries) {
+    if (!/\.(jpe?g|png)$/i.test(en.name) || /^(docProps\/thumbnail\.|Thumbnails\/)/i.test(en.name) || en.usize > 60e6) continue
+    const data = await content(blob, en)
+    const pic = new Blob([data as Bytes])
+    const r = await (data[0] === 0xff && data[1] === 0xd8 ? readJpeg(pic, en.name) : data[0] === 0x89 && data[1] === 0x50 ? readPng(pic, en.name) : null)?.catch(() => null)
+    if (r?.segments.some((x) => x.strip)) out.push({ en, pic, r })
+  }
+  return out
+}
+
+export async function pictureSegment(blob: Blob, entries: Entry[]): Promise<Segment[]> {
+  const found = await pictures(blob, entries)
+  if (!found.length) return []
+  const fields = found.flatMap(({ en, r }) => r.segments.filter((x) => x.strip).flatMap((x) => x.fields.map((f) => ({ name: `${en.name.split('/').pop()}: ${f.name}`, value: f.value }))))
+  const bytes = found.reduce((n, { r }) => n + r.bytes - r.body.bytes, 0)
+  return [{ id: 'pictures', label: 'pictures', what: `metadata inside ${plural(found.length, 'photo')} placed in the document: camera, dates, position`, bytes, fields, strip: true }]
+}
+
+export async function cleanPictures(blob: Blob, entries: Entry[], plan: Map<string, Bytes | null>) {
+  for (const { en, pic, r } of await pictures(blob, entries)) plan.set(en.name, new Uint8Array(await (await (r.kind === 'jpeg' ? stripJpeg(pic) : stripPng(pic))).arrayBuffer()))
+}
+
 const le16 = (n: number) => [n & 0xff, (n >> 8) & 0xff]
 const le32 = (n: number) => [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >>> 24) & 0xff]
 
@@ -325,6 +358,7 @@ export async function stripOoxml(blob: Blob, keep = new Set<string>()): Promise<
     if (EMPTY[en.name] && !keep.has(en.name)) plan.set(en.name, ascii(EMPTY[en.name]))
     else if (en.name === '_rels/.rels' && dropped.length) plan.set(en.name, ascii(utf8(await content(blob, en)).replace(/<Relationship\b[^>]*Target="[^"]*thumbnail\.[^"]*"[^>]*\/>/gi, '')))
   }
+  if (!keep.has('pictures')) await cleanPictures(blob, entries, plan)
   if (!keep.has('comments') || !keep.has('changes')) await unreview(blob, entries, plan, !keep.has('comments'), !keep.has('changes'))
   return rewriteZip(blob, entries, plan)
 }

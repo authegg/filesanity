@@ -1,5 +1,5 @@
 import { ascii, utf8, type Bytes } from './bytes'
-import { content, count, directory, plural, rewriteZip, type Entry } from './ooxml'
+import { cleanPictures, content, count, directory, pictureSegment, plural, rewriteZip, type Entry } from './ooxml'
 import type { Field, Report, Segment } from './types'
 import { parseXml, rewriteXml, unescapeXml, type XEl } from './xml'
 
@@ -86,6 +86,8 @@ export async function readOdf(blob: Blob, name: string): Promise<Report | null> 
     segments.push({ id: 'changes', label: 'changes', what: 'tracked changes and who made them; cleaning accepts every change as it stands', bytes: 0, strip: true, fields })
   }
 
+  segments.push(...(await pictureSegment(blob, entries)))
+
   // Content the sender may not know is there: shown, never changed (as for Word, Excel and PowerPoint).
   const hidden: Field[] = []
   const hid = count(c, /<text:hidden-(paragraph|text)\b/g) + count(c, /text:display="none"/g)
@@ -125,5 +127,6 @@ export async function stripOdf(blob: Blob, keep = new Set<string>()): Promise<Bl
     const t = s.replace(/(config:name="RecordChanges"[^>]*>)true</, '$1false<')
     if (t !== s) out.set('settings.xml', ascii(t))
   }
+  if (!keep.has('pictures')) await cleanPictures(blob, entries, out)
   return rewriteZip(blob, entries, out)
 }

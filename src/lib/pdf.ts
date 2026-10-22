@@ -1,5 +1,6 @@
 import { ascii, concat, deflateZlib, indexOf, inflateZlib, latin1, read, join } from './bytes'
 import { parseXmp } from './xmp'
+import { parseTiff } from './exif'
 import type { Field, Report, Segment } from './types'
 
 /* ponytail: the PDF is scanned as one byte array, capped at 256 MB; a chunked scan is the upgrade if anyone hits it. */
@@ -229,6 +230,16 @@ async function scan(b: Uint8Array) {
         } else segments.push({ id: `infoz-${s.start}`, label: 'Info', what: 'author, software, dates (compressed)', bytes: 0, fields, strip: false, why: 'shown and kept: this stream is packed in a way FileSanity does not rewrite yet' })
       }
     }
+  }
+  // Photos placed in the PDF as they were (DCTDecode) keep their EXIF: the APP1 body is zeroed in place, same length;
+  // viewers skip an APP1 they do not know, and a PDF never reads a JPEG's orientation flag.
+  const app1 = new Uint8Array([0x45, 0x78, 0x69, 0x66, 0, 0])
+  for (let i = 4; (i = indexOf(b, app1, i)) >= 0; i += 6) {
+    const at = i - 4, end = at + 2 + ((b[at + 2] << 8) | b[at + 3])
+    if (b[at] !== 0xff || b[at + 1] !== 0xe1 || end > b.length || end < i + 6) continue
+    const fields = parseTiff(b.subarray(i + 6, end)).fields
+    segments.push({ id: `exifimg-${at}`, label: 'EXIF', what: 'a photo inside the PDF: camera, dates, position', bytes: end - at, fields: fields.length ? fields : [{ name: 'Photo EXIF', value: `${end - at} bytes` }], strip: true })
+    edits.push({ seg: `exifimg-${at}`, start: at + 4, end, bytes: new Uint8Array(end - at - 4) })
   }
   segments.push(...risks(b))
   return { segments, edits }

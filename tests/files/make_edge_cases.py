@@ -49,6 +49,25 @@ XMP = '''<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.o
 <rdf:Description rdf:about="" xmlns:pdf="http://ns.adobe.com/pdf/1.3/" xmlns:dc="http://purl.org/dc/elements/1.1/" pdf:Author="{author}">
 <dc:creator><rdf:Seq><rdf:li>{creator}</rdf:li></rdf:Seq></dc:creator></rdf:Description></rdf:RDF></x:xmpmeta>'''
 
+def photos_inside():
+    """8. Photos placed inside documents keep their own EXIF: a Word file with a JPEG and a PNG in word/media, an
+    OpenDocument text with a JPEG in Pictures/, and a PDF holding the JPEG as it was (DCTDecode)."""
+    import zipfile
+    from PIL.PngImagePlugin import PngInfo
+    meta = PngInfo()
+    meta.add_text('Author', 'Jane Secret')
+    png = io.BytesIO()
+    Image.new('RGB', (8, 8), (40, 90, 60)).save(png, 'PNG', pnginfo=meta)
+    for src, dst, parts in (('offer.docx', 'photo-in.docx', {'word/media/image1.jpeg': jpeg(), 'word/media/image2.png': png.getvalue()}), ('fees.odt', 'photo-in.odt', {'Pictures/photo.jpg': jpeg()})):
+        with zipfile.ZipFile(os.path.join(HERE, src)) as a, zipfile.ZipFile(os.path.join(HERE, dst), 'w') as b:
+            for i in a.infolist():
+                b.writestr(i, a.read(i.filename))
+            for n, d in parts.items():
+                b.writestr(n, d, zipfile.ZIP_DEFLATED)
+    j = jpeg()
+    write('photo-in.pdf', pdf(b'<< /Producer (Quartz) >>', [b'<< /Type /XObject /Subtype /Image /Width 64 /Height 48 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length %d >>\nstream\n' % len(j) + j + b'\nendstream']))
+
+
 if __name__ == '__main__':
     # 1. A rotated photo: the clean copy keeps Orientation=6 and nothing else.
     write('rotated.jpg', jpeg(orientation=6))
@@ -79,3 +98,4 @@ if __name__ == '__main__':
     p.pages[0].Contents.write(p.pages[0].Contents.read_bytes() + b'\n' + b'% padding\n' * 1200)
     p.save(os.path.join(HERE, 'locked-lin.pdf'), linearize=True, compress_streams=False, static_id=True,
            encryption=pikepdf.Encryption(user='', owner='owner-x', R=4, aes=True))
+    photos_inside()

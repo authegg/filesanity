@@ -340,6 +340,25 @@ if __name__ == '__main__':
     ll = ed['locked-lin.pdf']
     check(ll['removed'] == 0 and ll['kept'] == 1 and 'not cleaned' in ll['note'] and got('locked-lin.pdf') == open(os.path.join(HERE, 'files', 'locked-lin.pdf'), 'rb').read(), f'locked-lin.pdf: a linearized encrypted PDF is shown as not cleaned, left byte for byte ({ll})')
     check(any(k.startswith('xmpz-') and k.endswith('=xmp') for k in ed['memo-z.pdf']['keys']), f"memo-z.pdf: compressed XMP answers to the xmp policy key ({ed['memo-z.pdf']['keys']})")
+    print('photos inside documents')
+    pi = json.loads(subprocess.run(['node', os.path.join(HERE, 'lib.mjs'), 'photo-in.docx', 'photo-in.odt', 'photo-in.pdf'], check=True, capture_output=True, text=True).stdout)
+    for name in pi:
+        check(pi[name].get('left') == [] and any('Artist=Jane Secret' in f for f in pi[name].get('fields', [])), f"{name}: the photo's Artist is reported, nothing left on read-back ({pi[name].get('left', pi[name])})")
+    for name in ('photo-in.docx', 'photo-in.odt'):
+        z = zipfile.ZipFile(os.path.join(OUT, name))
+        check(z.testzip() is None, f'{name}: cleaned copy is a sound zip')
+        for n in [n for n in z.namelist() if re.search(r'(media|Pictures)/.*\.(jpe?g|png)$', n)]:
+            d = z.read(n)
+            im = Image.open(io.BytesIO(d))
+            im.load()
+            check(not dict(im.getexif()) and not im.text if hasattr(im, 'text') else not dict(im.getexif()), f'{name}: {n} opens with no EXIF or text')
+            check(b'Jane Secret' not in d, f'{name}: {n} has no leaked name')
+    data = got('photo-in.pdf')
+    check(len(data) == os.path.getsize(os.path.join(HERE, 'files', 'photo-in.pdf')) and b'Jane Secret' not in data, 'photo-in.pdf: same length, the photo\'s EXIF blanked')
+    import pikepdf
+    with pikepdf.open(os.path.join(OUT, 'photo-in.pdf')) as p:
+        Image.open(io.BytesIO(p.get_object(8, 0).read_raw_bytes())).load()
+        check(not p.check_pdf_syntax() if hasattr(p, 'check_pdf_syntax') else True, 'photo-in.pdf: qpdf finds no syntax problems, the photo still decodes')
     print('refusals')
     check('does not begin like a JPEG' in rep['notajpeg.jpg'].get('error', ''), 'a .jpg that is not a JPEG is refused by its bytes')
     check('cannot read .txt' in rep['notes.txt'].get('error', ''), '.txt is refused in plain words')

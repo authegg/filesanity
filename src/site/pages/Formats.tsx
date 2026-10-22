@@ -65,6 +65,7 @@ export const Documents = page({
     ['Device', 'Application name and version, template'],
     ['Custom fields', 'Every custom property: client numbers, matter numbers, internal tags'],
     ['Preview', 'The thumbnail picture of the first page'],
+    ['Photos', 'The camera, dates and GPS position inside JPEG and PNG photos placed in the document; the pictures themselves are not re-encoded'],
     ['Review', 'Comments and the names of who wrote them; tracked changes are accepted, so deleted words leave the file'],
     ['OpenDocument', 'LibreOffice files: the same fields from meta.xml, the thumbnail, the name of the printer it was last set up for, comments and tracked changes'],
   ],
@@ -74,7 +75,7 @@ export const Documents = page({
 })
 
 export const Pdf = page({
-  meta: { title: 'Remove metadata from PDF files', description: 'Blank the author, title, subject, creator program, dates and XMP in a PDF, compressed or not, inside your browser. The PDF keeps its size and opens exactly as before.' },
+  meta: { title: 'Remove metadata from PDF files', description: 'Blank the author, title, subject, creator program, dates and XMP in a PDF, plain or compressed, and the GPS in photos placed in it, inside your browser. The PDF keeps its size and opens exactly as before.' },
   h1: 'PDFs carry the program and the person.',
   lede: 'A PDF records who made it, with what program and when. FileSanity blanks those fields in place, so the PDF still opens exactly as before.',
   removes: [
@@ -83,8 +84,9 @@ export const Pdf = page({
     ['Device', 'Creator and producer: the programs that made the PDF'],
     ['Time', 'Created and modified dates'],
     ['XMP', 'The XMP metadata packet, plain or compressed, as Word and Acrobat save it'],
+    ['Photos', 'The camera, dates and GPS position inside JPEG photos stored in the PDF as they were taken'],
   ],
   keeps: ['Every page, as it was', 'Links, bookmarks and form fields'],
   guide: <>To do it with Acrobat Pro or on the command line, read <a href="/guides/remove-pdf-metadata">see and remove the metadata in a PDF</a>.</>,
-  note: 'PDFs saved by Word and Acrobat keep their metadata inside compressed streams. FileSanity unpacks each one, blanks it and packs it back to exactly its old size, so nothing else in the file moves. Encrypted PDFs are the exception: their metadata is shown and kept, and the result says so. It also warns when a PDF still holds earlier saved versions, where deleted or covered text may be readable, and when it runs JavaScript or contacts a web address as it opens.',
+  note: 'PDFs saved by Word and Acrobat keep their metadata inside compressed streams. FileSanity unpacks each one, blanks it and packs it back to exactly its old size, so nothing else in the file moves. Encrypted PDFs, and the rare stream packed in a way FileSanity does not rewrite yet, are the exceptions: that metadata is shown and kept, and the result says the file is not fully cleaned. It also warns when a PDF still holds earlier saved versions, where deleted or covered text may be readable, and when it runs JavaScript or contacts a web address as it opens.',
 })
