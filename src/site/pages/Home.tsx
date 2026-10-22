@@ -20,14 +20,14 @@ const KINDS = [
 ]
 
 export default function Home({ c }: { c: Cleaner }) {
-  const [ex, setEx] = useState<(typeof EXAMPLES)[number]>(EXAMPLES[0])
+  const [ex, setEx] = useState<(typeof EXAMPLES)[number]>(EXAMPLES.find((e) => e.key === 'word')!)
   return (
     <>
       <section className="hero" aria-labelledby="h1">
         <div className="wrap hero-in">
           <div className="hero-copy">
             <h1 id="h1">Your files say too much.</h1>
-            <p className="lede">Photos and documents carry who made them, where and when. FileSanity removes that in your browser. Nothing is uploaded.</p>
+            <p className="lede">Photos, Word files and PDFs carry who made them, where and when. FileSanity removes it in your browser, checks the clean copy and gives you a receipt. Nothing is uploaded.</p>
             <div className="ctas"><button className="btn" data-cta onClick={c.open}>{CTA}</button><a className="btn ghost" href="/pricing">See pricing</a></div>
           </div>
           <div className="hero-tool" id="cleaner"><Tray c={c} /></div>
