@@ -54,6 +54,16 @@ const CAI_VERIFY = 'https://opensource.contentauthenticity.org/docs/verify'
 const IPTC_AI = 'https://iptc.org/?p=6867'
 const EXIF_JUMBF = 'https://exiftool.org/TagNames/Jpeg2000.html'
 const WIN_DETAILS = 'https://www.floridabar.org/tech-tips/windows-how-to-easily-remove-metadata-from-files-via-file-explorer/'
+const TRACK = 'https://support.microsoft.com/en-us/office/track-changes-in-word-197ba630-0f5f-4a8e-9a77-3712475e806a'
+const ACCEPT = 'https://support.microsoft.com/en-gb/word/accept-or-reject-tracked-changes-in-word'
+const COMMENTS = 'https://support.microsoft.com/en-US/Word/insert-delete-or-change-a-comment'
+const PRIVACY_OPTS = 'https://support.microsoft.com/en-us/privacy/view-my-privacy-options-in-microsoft-office'
+const ABA_JOURNAL = 'https://www.abajournal.com/magazine/article/metadata_minefield'
+const ELSEVIER_DA = 'https://www.elsevier.com/reviewer/what-is-peer-review/guidelines'
+const SPRINGER_DA = 'https://www.springernature.com/gp/snapp/submitting/how-to-submit/double-anonymous'
+const AUTHOR_NAME = 'https://support.microsoft.com/en-us/office/change-the-author-name-for-documents-presentations-or-workbooks-0ad23fe7-b82e-40c4-b9d9-391fec971a54'
+const USER_NAME = 'https://support.microsoft.com/en-us/office/change-your-user-name-and-initials-cdd4b8ac-fbca-438d-a5b5-a99fb1c750e3'
+const AVIRA_GEO = 'https://www.avira.com/en/blog/geotagging'
 
 export const GUIDES: Guide[] = [
   {
@@ -381,6 +391,134 @@ export const GUIDES: Guide[] = [
       </>
     ),
   },
+  {
+    slug: 'remove-tracked-changes-before-sending',
+    title: 'Remove tracked changes and comments before you send a document',
+    description: 'Hiding markup in Word does not remove it. How to accept every change, delete every comment and check the file before a contract or a draft goes to the other side.',
+    h1: 'Remove tracked changes and comments before you send a document.',
+    lede: 'A Word file that looks clean on screen can still carry every deleted sentence and every comment, with the name of whoever wrote it. Switching the view to No Markup only hides them. Here is how to take them out.',
+    body: (
+      <>
+        <Block id="h-hidden" title="Hidden is not removed">
+          <p>Word shows tracked changes and comments in a view you choose, and the view is not the file. <a href={TRACK}>Microsoft's page on tracking changes</a> says it plainly: "Hiding changes doesn't remove them from the document." Its <a href={ACCEPT}>page on accepting changes</a> adds that choosing the No Markup view "only temporarily hides changes. They will be visible again the next time someone opens the document."</p>
+          <p>So a draft sent with markup hidden carries every deletion, every earlier wording and every comment to whoever opens it, each one with the author's name and the time it was made.</p>
+        </Block>
+        <Block id="h-word" title="In Word">
+          <ol>
+            <li>Save a copy under a new name, and work on the copy.</li>
+            <li>Decide each change first. Anything you want rejected, reject now: the next step accepts the rest.</li>
+            <li>On the <b>Review</b> tab, go to <b>Tracking</b>, open the <b>Accept</b> list and choose <b>Accept All Changes</b>, per <a href={ACCEPT}>Microsoft</a>. <b>Accept All Changes and Stop Tracking</b> also turns tracking off, so new edits are not recorded.</li>
+            <li>Delete the comments: <a href={COMMENTS}>Microsoft's comments page</a> says "click the arrow by Delete, and then click Delete All Comments in Document."</li>
+            <li>On Windows, run <b>File &gt; Info &gt; Check for Issues &gt; Inspect Document</b>, which checks for "revision marks from tracked changes, comments, ink annotations, or versions" and for document properties such as the author, per <a href={INSPECTOR}>Microsoft's Document Inspector page</a>. Remove what it finds, and save.</li>
+          </ol>
+        </Block>
+        <Block id="h-why" title="Why it matters for lawyers">
+          <p>An ABA ethics opinion from 2006, Formal Opinion 06-442, found that the Model Rules do not forbid a lawyer from reading the metadata in a document the other side sends, and, as the <a href={ABA_JOURNAL}>ABA Journal</a> reported, urged lawyers sending electronic documents "to take steps to eliminate metadata from those documents." Whatever the rules say about the receiving side, the safe course is the same: send a file that has nothing to find.</p>
+          <p>Word can also strip personal details every time you save. Microsoft's <a href={PRIVACY_OPTS}>privacy options page</a> describes an option that "removes personal information from the file properties when you save the file", under <b>File &gt; Options &gt; Trust Center &gt; Trust Center Settings &gt; Privacy Options</b>. It covers the properties, not the tracked changes.</p>
+        </Block>
+        <Block id="h-pdf" title="Sending a PDF instead">
+          <p>Exporting to PDF after accepting the changes leaves the markup behind, because the PDF holds the page as it looks. Before you send it, page through the PDF for coloured changes or comment balloons; if any are there, the markup was showing when you exported. The PDF also takes the author from the Word file, so clean the Word file before you export. <a href="/guides/remove-pdf-metadata">See and remove PDF metadata</a> covers the PDF's own fields.</p>
+        </Block>
+        <Here>
+          <p>FileSanity's <a href="/documents">document cleaner</a> shows, in your browser, who left comments and who made tracked changes in a .docx, .xlsx, .pptx or OpenDocument file. It removes the comments with their authors' names, accepts the tracked changes so deleted words leave the file, turns tracking off, and empties the author, last editor and company. The rest of the text is copied as it was. Reject anything you do not want accepted in Word first. The file is not uploaded.</p>
+        </Here>
+        <Checked on="22 October 2026" />
+      </>
+    ),
+  },
+  {
+    slug: 'anonymize-a-manuscript-for-blind-review',
+    title: 'Anonymize a manuscript for double-blind peer review',
+    description: 'What journals ask you to remove for double-anonymized review, where your name hides in a Word or PDF file, and how to check the file reviewers will receive.',
+    h1: 'Anonymize a manuscript for double-blind peer review.',
+    lede: 'Taking your name off the title page is the easy part. The file itself records the author, the last person to save it and the names on every comment and tracked change. Here is what journals ask for and where to look.',
+    body: (
+      <>
+        <Block id="h-ask" title="What journals ask for">
+          <p><a href={ELSEVIER_DA}>Elsevier's guidelines</a> ask authors to "choose file names with care, and ensure that the file's “properties” are also anonymised", to use the third person for their own earlier work and to leave out acknowledgements and funding. <a href={SPRINGER_DA}>Springer Nature</a> lists "the file metadata (personal information from the document properties)" among the places identifying details must not appear, and asks for acknowledgements and contribution statements to be left out of the manuscript file.</p>
+          <p>Check your journal's own page too; the lists are similar but not the same.</p>
+        </Block>
+        <Block id="h-where" title="Where your name is in the file">
+          <ul>
+            <li><b>Author:</b> Word sets it from the user name in Office, per <a href={AUTHOR_NAME}>Microsoft</a>. Open <b>File &gt; Info</b> and look for Author under Related People.</li>
+            <li><b>Comments and tracked changes:</b> Microsoft's <a href={USER_NAME}>user name page</a> says your name "will appear in places like comments, revisions, and general document properties." A co-author's comment left in the file names them too.</li>
+            <li><b>The file name:</b> "smith_jones_draft3.docx" says who wrote it before anyone opens it.</li>
+            <li><b>A PDF made from it:</b> the PDF usually takes its Author field from the Word file, and can add the program and the dates.</li>
+          </ul>
+        </Block>
+        <Block id="h-word" title="In Word">
+          <ol>
+            <li>Save a copy for submission under a neutral name, such as "manuscript.docx".</li>
+            <li>Accept or reject every tracked change and delete every comment: <a href="/guides/remove-tracked-changes-before-sending">remove tracked changes and comments</a> has the steps.</li>
+            <li>On Windows, run <b>File &gt; Info &gt; Check for Issues &gt; Inspect Document</b> and remove the document properties and personal information, per <a href={INSPECTOR}>Microsoft</a>.</li>
+            <li>Open <b>File &gt; Info</b> again and check that Author is empty.</li>
+          </ol>
+          <p>None of this touches the text. Self-citations written in the first person, acknowledgements and a grant number in the methods still need editing by hand.</p>
+        </Block>
+        <Here>
+          <p>FileSanity's <a href="/documents">document cleaner</a> shows the author, the last editor and the names on comments and tracked changes in a .docx or OpenDocument file, removes them and downloads a copy; it also offers a neutral file name when the name gives something away. For the PDF you submit, the <a href="/pdf">PDF cleaner</a> blanks the author and the other document fields. Both run in your browser, so an unpublished manuscript is never uploaded anywhere.</p>
+        </Here>
+        <Checked on="22 October 2026" />
+      </>
+    ),
+  },
+  {
+    slug: 'clean-a-cv-before-you-send-it',
+    title: 'Check your CV file before you send it',
+    description: 'What a CV in Word or PDF can say about you besides what is on the page: comments from whoever reviewed it, old wording in tracked changes, editing time and a revealing file name.',
+    h1: 'Check your CV file before you send it.',
+    lede: 'Your name belongs on a CV. What does not belong is the friend\'s comment in the margin, the job title you deleted, or a file name that says which company you wrote it for. Here is what to check.',
+    body: (
+      <>
+        <Block id="h-what" title="What a CV file can carry">
+          <ul>
+            <li><b>Comments and tracked changes</b> from whoever helped you edit it, with their name. Hidden markup is still in the file: see <a href="/guides/remove-tracked-changes-before-sending">remove tracked changes and comments</a>.</li>
+            <li><b>Author and last modified by:</b> taken from the user name of whichever copy of Office saved it, per <a href={USER_NAME}>Microsoft</a>. If you started from someone else's file or a work computer, that may not be you.</li>
+            <li><b>Company, editing time and revision count</b> in the file's properties, shown under <b>File &gt; Info</b>, per <a href={OFFICE_INFO}>Microsoft</a>.</li>
+            <li><b>The file name.</b> "CV_for_Acme_v7_final.docx" tells the next employer you applied to Acme, and how many drafts it took.</li>
+          </ul>
+        </Block>
+        <Block id="h-do" title="Before you send it">
+          <ol>
+            <li>Accept or reject every tracked change and delete every comment.</li>
+            <li>Open <b>File &gt; Info</b> and read the properties on the right; <b>Show All Properties</b> adds Company and Manager. On Windows, <b>Check for Issues &gt; Inspect Document</b> removes them, per <a href={INSPECTOR}>Microsoft</a>.</li>
+            <li>Save it as a PDF unless the employer asks for Word, and give it a plain name: your name and "CV".</li>
+            <li>Open the PDF's properties (Ctrl+D, or Cmd+D on a Mac) and check the author is you and nothing else is there you did not expect.</li>
+          </ol>
+        </Block>
+        <Here>
+          <p>FileSanity's cleaner reads a Word, OpenDocument or PDF CV in your browser and lists the comments, tracked changes, author, company and editing time in plain words, then downloads a clean copy. It also flags a file name with a date, an email address or words like "draft", "final" or "v3", and offers a neutral one. Nothing is uploaded.</p>
+        </Here>
+        <Checked on="22 October 2026" />
+      </>
+    ),
+  },
+  {
+    slug: 'photos-of-your-home',
+    title: 'Photos taken at home: what they give away when you post them',
+    description: 'A photo taken at home can carry your address as GPS coordinates. How to stop your phone recording it, how to clean photos you have already taken, and what metadata cannot hide.',
+    h1: 'Photos taken at home: what they give away when you post them.',
+    lede: 'A photo of your living room, your new kitten or a room you are renting out can carry the exact position of your front door. Here is how to stop that, and what to check in the picture itself.',
+    body: (
+      <>
+        <Block id="h-gps" title="The address in the file">
+          <p>If the camera had location permission, the photo's GPS fields hold where it was taken. Taken at home, that is your address. Security vendor <a href={AVIRA_GEO}>Avira</a> puts it simply: "If you share shots of your home, place of work, or other sensitive places, geotags can reveal these locations," and advises leaving geotagging off at home.</p>
+          <p>Some sites remove it from the copy other people see; few promise to. <a href="/guides/marketplace-photo-metadata">What Facebook Marketplace and eBay do with photo metadata</a> has what their policies say. A photo sent as a file, by email or in a chat app that keeps the original, arrives with everything in it.</p>
+        </Block>
+        <Block id="h-stop" title="Stop recording it">
+          <p>On iPhone: <b>Settings &gt; Privacy &amp; Security &gt; Location Services &gt; Camera &gt; Never</b>. On Android, the switch is in the camera app's settings, named <b>Save location</b> on a Pixel and <b>Location tags</b> on a Samsung. <a href="/guides/remove-location-from-photos">Remove the location from a photo</a> has the steps and the sources for each, and how to share one iPhone photo without its location.</p>
+          <p>This only affects new photos. The ones already in your library keep their position.</p>
+        </Block>
+        <Block id="h-frame" title="What metadata cannot hide">
+          <p>Removing the GPS does nothing about what is in the frame: a house number, a street sign through the window, a parcel label, a school uniform, a view that neighbours would recognise. Look at the picture the way a stranger would before you post it.</p>
+        </Block>
+        <Here>
+          <p>For photos already taken, FileSanity's <a href="/photos">photo cleaner</a> shows the position in plain words, with the date and the phone, removes them and downloads a clean copy of a JPEG, PNG or iPhone HEIC. The picture is not re-encoded, and the photo never leaves your browser. The <a href="/extension">browser extension</a> does the same automatically whenever you upload a photo to any site.</p>
+        </Here>
+        <Checked on="22 October 2026" />
+      </>
+    ),
+  },
 ]
 
 export function guideModule(g: Guide) {
@@ -403,7 +541,7 @@ export const meta = {
 export default function Guides() {
   return (
     <>
-      <Head h1="Before you send a file." lede="Seven guides to the metadata in photos, Office documents and PDFs: where it sits, how to remove it with the tools you already have, and when those are enough." />
+      <Head h1="Before you send a file." lede="Eleven guides to the metadata in photos, Office documents and PDFs: where it sits, how to remove it with the tools you already have, and when those are enough." />
       <Block id="h-guides" title="Guides">
         <ul className="guide-list">
           {GUIDES.map((g) => <li key={g.slug}><a href={`/guides/${g.slug}`}>{g.title}</a><p>{g.description}</p></li>)}
