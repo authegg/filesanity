@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { FAQ } from '../content'
+import { useEffect, useState, type ReactNode } from 'react'
+import { FAQ, MAIL } from '../content'
 import { API_LIMITS, PAID, PLANS, fmtPrice, type PlanKey } from '../plans'
 import { Head } from '../ui'
 import { knownPlan } from '../useMe'
@@ -20,6 +20,15 @@ const ROWS: [string, (k: PlanKey) => string][] = [
   ['Hosted API files a month', (k) => n(PLANS[k].apiFiles)],
   ['Largest API file', (k) => `${PLANS[k].maxBytes / 1e6} MB${PLANS[k].maxBytes > API_LIMITS.whole ? `; JPEG, PDF ${API_LIMITS.whole / 1e6} MB` : ''}`],
   ['Signed API reports', (k) => (k === 'team' || k === 'api' ? 'Yes' : 'No')],
+]
+
+/** What a law firm or agency asks before it pays; each answer restates the privacy policy, not a new promise. */
+const FIRMS: [string, ReactNode][] = [
+  ['Do our client files reach FileSanity?', 'No. On this website and in the extension, files are read and cleaned inside each person\'s browser, batches included. We never receive them, so there is nothing of your clients\' for us to store, process or lose. Only the hosted API receives files, for one request.'],
+  ['What do you keep about us?', 'The account holder\'s email address, the plan and its renewal date, your team members\' email addresses, your saved policy and a monthly count of API files. Nothing about the files you clean.'],
+  ['How do five people share Team?', 'The account holder adds up to four colleagues by email on the account page. Each signs in with their own address, gets everything in Pro, and cleans under the one policy the team shares.'],
+  ['Do we get an invoice?', 'Yes. Paddle sells the plans as merchant of record: it charges the payment, adds sales tax or VAT where it applies, and emails a receipt for every payment.'],
+  ['Can we see it working first?', <>The free cleaner is the same one the paid plans use: try it on one of your own files. For a ten-minute walkthrough with your team, write to <a href={`mailto:${MAIL}`}>{MAIL}</a>.</>],
 ]
 
 export default function Pricing() {
@@ -59,6 +68,13 @@ export default function Pricing() {
               <tr key={label}><th scope="row">{label}</th>{ALL.map((k) => <td key={k} data-plan={PLANS[k].name}>{f(k)}</td>)}</tr>
             ))}</tbody>
           </table>
+        </div>
+      </section>
+
+      <section className="sec faq" aria-labelledby="firms">
+        <div className="wrap faq-in">
+          <h2 id="firms">For firms</h2>
+          <dl>{FIRMS.map(([q, a]) => <div key={q}><dt>{q}</dt><dd>{a}</dd></div>)}</dl>
         </div>
       </section>
 
