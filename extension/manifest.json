@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FileSanity: remove metadata on upload",
   "short_name": "FileSanity",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Removes hidden metadata (GPS, names, dates, device) from photos, videos, documents and PDFs as you upload them, in your browser.",
   "homepage_url": "https://filesanity.com/extension",
   "permissions": ["storage", "contextMenus", "downloads"],
