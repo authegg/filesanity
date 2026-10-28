@@ -1,0 +1,30 @@
+/* J: own a colour (Mullvad). One colour across every section, a wide bold headline, actions in one contrasting colour, and the tray as a cream sheet.
+   Variants J1 to J6 change only the tokens below and the headline's width and weight. */
+.v-j { --panel: #f4f1e6; --line: color-mix(in srgb, var(--ink) 22%, transparent); --line-strong: color-mix(in srgb, var(--ink) 40%, transparent);
+  --radius: 6px; --btn-radius: 6px; --shadow: 0 1px 2px rgb(0 0 0 / .18), 0 16px 40px -20px rgb(0 0 0 / .4); --font: 'Archivo Variable', system-ui, sans-serif;
+  --wd: 112%; --wt: 800; --case: uppercase; --tray-accent: var(--bg); }
+.jv-1 { --bg: #0d5641; --panel-2: #0b4a38; --ink: #f4f1e6; --muted: #c4d6cc; --accent: #e3f07a; --accent-hover: #edf7a0; --on-accent: #10261d; --accent-ink: #e3f07a; color-scheme: dark; }
+.jv-2 { --bg: #1d3cc4; --panel-2: #1a34ad; --ink: #f6f3ea; --muted: #cfd6f5; --accent: #f5e663; --accent-hover: #f9ee8c; --on-accent: #161a33; --accent-ink: #f5e663; --wd: 125%; --wt: 850; color-scheme: dark; }
+.jv-3 { --bg: #f07436; --panel-2: #e76c30; --ink: #170e09; --muted: #2b170d; --accent: #170e09; --accent-hover: #2e1d12; --on-accent: #fbefe4; --accent-ink: #170e09; --tray-accent: #170e09; --wd: 75%; --wt: 850; --case: none; }
+.jv-4 { --bg: #3b1d48; --panel-2: #33183f; --ink: #f7eee9; --muted: #d9c6d6; --accent: #ffb58a; --accent-hover: #ffc8a6; --on-accent: #2a1208; --accent-ink: #ffb58a; --wd: 100%; --wt: 700; --case: none; color-scheme: dark; }
+.jv-5 { --bg: #d3e5d6; --panel-2: #c4dbc8; --ink: #0e3326; --muted: #2f5446; --accent: #0e3d2d; --accent-hover: #0a2e22; --on-accent: #eef6ef; --accent-ink: #0e3d2d; --tray-accent: #0e3d2d; --panel: #fbfaf5; }
+.jv-6 { --bg: #0b4d59; --panel-2: #09434e; --ink: #f2f0ea; --muted: #bcd6da; --accent: #ffa184; --accent-hover: #ffb59d; --on-accent: #2a0d05; --accent-ink: #ffa184; --wd: 125%; --wt: 600; color-scheme: dark; }
+
+.v-j .nav { background: var(--bg); }
+.v-j .hero-in { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
+.v-j .hero h1 { font-size: clamp(3rem, 6.4vw, 6rem); line-height: .98; font-weight: var(--wt); font-stretch: var(--wd); letter-spacing: -.02em; }
+.jv-3 .hero h1 { font-size: clamp(3.5rem, 8.4vw, 8rem); line-height: .92; letter-spacing: -.01em; }
+.v-j .sec h2 { font-weight: var(--wt); font-stretch: var(--wd); }
+.v-j .btn { text-transform: var(--case); letter-spacing: .04em; font-size: .9375rem; font-weight: 700; }
+.v-j .btn.ghost { color: var(--ink) !important; border-color: var(--ink); }
+/* The tray stays a cream sheet on the colour, with its own light palette; its button takes the page's colour. */
+.v-j .tr { --ink: #14231c; --muted: #4a5a52; --line: #d9d4c3; --line-strong: #b7b09a; --accent: var(--tray-accent); --on-accent: #f4f1e6; --err: #9c2a1c;
+  color: #14231c; box-shadow: var(--shadow); border-style: solid; min-height: 22rem; }
+/* Empty, the sheet shows a drop target: a dashed inset that turns to the action colour while a file is held over it. */
+.v-j .tr-idle .tr-body, .v-j .tr-over .tr-body { border: 1.5px dashed #8a8470; /* 3.3:1 on the cream, a visible boundary */ border-radius: 4px; padding: 1.5rem 1rem; transition: border-color .2s, background-color .2s; }
+.v-j .tr-over .tr-body { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.v-j .plan { background: var(--panel-2); border-color: var(--line); }
+.v-j .steps li::before { border-color: var(--line-strong); color: var(--ink); } /* numbers are not actions: no lime */
+@media (max-width: 1023px) { .v-j .hero-in { grid-template-columns: minmax(0, 1fr); } }
+/* The wordmark: "Sanity" takes the action colour, so the name and the one button share it. */
+.v-j .mark-s { color: var(--accent-ink); }

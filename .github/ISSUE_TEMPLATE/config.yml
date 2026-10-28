@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/authegg/filesanity/security/advisories/new
+    about: Privately, so it can be fixed before it is public.
+  - name: Ask a question
+    url: https://filesanity.com/faq
+    about: The FAQ, or write to hello@filesanity.com.

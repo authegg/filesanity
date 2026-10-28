@@ -1,0 +1,14 @@
+{
+  "name": "filesanity",
+  "version": "1.0.0",
+  "description": "Remove metadata from photos, videos, Office documents and PDFs on your own machine. Nothing is uploaded.",
+  "type": "module",
+  "bin": { "filesanity": "dist/filesanity.mjs" },
+  "files": ["dist", "README.md"],
+  "engines": { "node": ">=20.12" },
+  "scripts": { "prepack": "npm --prefix .. run build:cli" },
+  "keywords": ["metadata", "exif", "privacy", "gps", "pdf", "docx", "cli"],
+  "homepage": "https://filesanity.com",
+  "repository": { "type": "git", "url": "git+https://github.com/authegg/filesanity.git", "directory": "cli" },
+  "license": "MIT"
+}
